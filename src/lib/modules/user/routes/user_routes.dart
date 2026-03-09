@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:src/modules/user/screens/profile_screen.dart';
 
 /// User module route names
 class UserRoutes {
@@ -30,11 +31,11 @@ class UserRoutes {
 List<GoRoute> getUserRoutes() {
   return [
     // Profile
-    // GoRoute(
-    //   path: UserRoutes.profilePath,
-    //   name: UserRoutes.profile,
-    //   builder: (context, state) => const ProfileScreen(),
-    // ),
+    GoRoute(
+      path: UserRoutes.profilePath,
+      name: UserRoutes.profile,
+      builder: (context, state) => const ProfileScreen(),
+    ),
     // GoRoute(
     //   path: UserRoutes.editProfilePath,
     //   name: UserRoutes.editProfile,
