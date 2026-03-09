@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:src/modules/user/screens/profile_screen.dart';
+import 'package:src/modules/user/screens/vehicle_screen.dart';
 
 /// User module route names
 class UserRoutes {
@@ -66,12 +67,12 @@ List<GoRoute> getUserRoutes() {
     //   builder: (context, state) => const FavoriteSpacesScreen(),
     // ),
 
-    // // Vehicles
-    // GoRoute(
-    //   path: UserRoutes.userVehiclesPath,
-    //   name: UserRoutes.userVehicles,
-    //   builder: (context, state) => const UserVehiclesScreen(),
-    // ),
+    // Vehicles
+    GoRoute(
+      path: UserRoutes.userVehiclesPath,
+      name: UserRoutes.userVehicles,
+      builder: (context, state) => const VehicleScreen(),
+    ),
     // GoRoute(
     //   path: UserRoutes.addVehiclePath,
     //   name: UserRoutes.addVehicle,
