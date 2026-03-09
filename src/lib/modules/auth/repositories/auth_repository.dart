@@ -4,6 +4,7 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/core/errors/app_exception.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/services/auth_service.dart';
+import 'package:src/modules/auth/services/session_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class AuthRepository {
@@ -28,9 +29,10 @@ abstract class AuthRepository {
 
 class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     implements AuthRepository {
-  AuthRepositoryImpl(this._authService);
+  AuthRepositoryImpl(this._authService, this._sessionService);
 
   final AuthService _authService;
+  final SessionService _sessionService;
 
   @override
   String get tableName => 'profiles';
@@ -80,7 +82,13 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         throw AppException(AppConstants.errorGeneric);
       }
 
-      return UserModel.fromProfileRow(profile as Map<String, dynamic>);
+      final userModel =
+          UserModel.fromProfileRow(profile as Map<String, dynamic>);
+      final token = response.session?.accessToken;
+      if (token != null) {
+        await _sessionService.saveSession(userModel, token);
+      }
+      return userModel;
     } on AuthException catch (e) {
       throw AppException(e.message);
     } on PostgrestException catch (e) {
@@ -109,10 +117,15 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         throw AppException(AppConstants.errorUserNotFound);
       }
 
-      return UserModel.fromSupabaseUser(
+      final userModel = UserModel.fromSupabaseUser(
         user,
         profile as Map<String, dynamic>,
       );
+      final token = response.session?.accessToken;
+      if (token != null) {
+        await _sessionService.saveSession(userModel, token);
+      }
+      return userModel;
     } on AuthException catch (e) {
       throw AppException(e.message);
     } on PostgrestException catch (e) {
@@ -126,6 +139,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   @override
   Future<void> signOut() async {
     try {
+      await _sessionService.clearSession();
       await _authService.signOut();
     } on AuthException catch (e) {
       throw AppException(e.message);
@@ -210,5 +224,8 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepositoryImpl(ref.watch(authServiceProvider));
+  return AuthRepositoryImpl(
+    ref.watch(authServiceProvider),
+    ref.watch(sessionServiceProvider),
+  );
 });
