@@ -60,6 +60,21 @@ class UserModel {
     };
   }
 
+  Map<String, dynamic> toProfileRow() {
+    return <String, dynamic>{
+      'id': id,
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'phone': phone,
+      'profile_photo': profilePhoto,
+      'average_rating': averageRating,
+      'total_reviews': totalReviews,
+      'fcm_token': fcmToken,
+      'role': role.name,
+    };
+  }
+
   factory UserModel.fromSupabaseUser(
     User user,
     Map<String, dynamic> profileData,
@@ -70,6 +85,22 @@ class UserModel {
       lastName: (profileData['last_name'] as String?) ?? '',
       email: user.email ?? (profileData['email'] as String? ?? ''),
       phone: (profileData['phone'] as String?) ?? user.phone,
+      profilePhoto: profileData['profile_photo'] as String?,
+      averageRating:
+          (profileData['average_rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: profileData['total_reviews'] as int? ?? 0,
+      fcmToken: profileData['fcm_token'] as String?,
+      role: _roleFromString(profileData['role'] as String?),
+    );
+  }
+
+  factory UserModel.fromProfileRow(Map<String, dynamic> profileData) {
+    return UserModel(
+      id: profileData['id'] as String,
+      firstName: (profileData['first_name'] as String?) ?? '',
+      lastName: (profileData['last_name'] as String?) ?? '',
+      email: (profileData['email'] as String?) ?? '',
+      phone: profileData['phone'] as String?,
       profilePhoto: profileData['profile_photo'] as String?,
       averageRating:
           (profileData['average_rating'] as num?)?.toDouble() ?? 0.0,
