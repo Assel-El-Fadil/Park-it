@@ -57,6 +57,34 @@ class VehicleModel {
     };
   }
 
+  Map<String, dynamic> toVehicleRow() {
+    return <String, dynamic>{
+      'id': id,
+      'owner_id': ownerId,
+      'type': type.name,
+      'brand': brand,
+      'model': model,
+      'color': color,
+      'plate_number': plateNumber,
+      'default': isDefault,
+      'active': active,
+    };
+  }
+
+  factory VehicleModel.fromVehicleRow(Map<String, dynamic> row) {
+    return VehicleModel(
+      id: row['id'] as String,
+      ownerId: row['owner_id'] as String,
+      type: _typeFromString(row['type'] as String?),
+      brand: row['brand'] as String,
+      model: row['model'] as String,
+      color: row['color'] as String?,
+      plateNumber: row['plate_number'] as String,
+      isDefault: row['default'] as bool? ?? false,
+      active: row['active'] as bool? ?? true,
+    );
+  }
+
   VehicleModel copyWith({
     String? id,
     String? ownerId,
