@@ -78,7 +78,6 @@ final GoRouter appRouter = GoRouter(
 
     // Module Routes
     ...getAuthRoutes(),
-    ...getAuthRoutes(),
     ...getNavigationRoutes(),
     ...getReviewRoutes(),
     ...getOwnerRoutes(),

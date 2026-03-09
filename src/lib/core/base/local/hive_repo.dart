@@ -45,9 +45,9 @@ abstract class HiveRepository<T> extends BaseRepository<T> {
   }
 
   @override
-  T? get(String key) {
+  Future<T?> getById(String id) async {
     if (Hive.isBoxOpen(boxName)) {
-      return Hive.box<T>(boxName).get(key);
+      return Hive.box<T>(boxName).get(id);
     }
     return null;
   }

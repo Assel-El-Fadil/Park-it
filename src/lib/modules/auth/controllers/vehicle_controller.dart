@@ -46,7 +46,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
 
   Future<VehicleState> loadVehicles(String userId) async {
     state = AsyncValue.data(
-      state.valueOrNull?.copyWith(isLoading: true, errorMessage: null) ??
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const VehicleState(isLoading: true),
     );
 
@@ -59,7 +59,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
         isLoading: false,
         errorMessage: null,
       ));
-      return state.valueOrNull ?? const VehicleState();
+      return state.value ?? const VehicleState();
     } on AppException catch (e) {
       final newState = VehicleState(
         vehicles: const [],
@@ -89,7 +89,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: AppConstants.errorUnauthorized,
         ) ?? VehicleState(errorMessage: AppConstants.errorUnauthorized),
@@ -98,7 +98,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
     }
 
     state = AsyncValue.data(
-      state.valueOrNull?.copyWith(isLoading: true, errorMessage: null) ??
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const VehicleState(isLoading: true),
     );
 
@@ -116,7 +116,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
 
       await vehicleRepository.addVehicle(vehicle);
 
-      final vehicles = [...(state.valueOrNull?.vehicles ?? []), vehicle];
+      final vehicles = [...(state.value?.vehicles ?? []), vehicle];
       state = AsyncValue.data(VehicleState(
         vehicles: vehicles,
         isLoading: false,
@@ -124,14 +124,14 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       ));
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
         ) ?? VehicleState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
         ) ?? VehicleState(isLoading: false, errorMessage: e.toString()),
@@ -141,7 +141,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
 
   Future<void> updateVehicle(VehicleModel vehicle) async {
     state = AsyncValue.data(
-      state.valueOrNull?.copyWith(isLoading: true, errorMessage: null) ??
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const VehicleState(isLoading: true),
     );
 
@@ -149,7 +149,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       final vehicleRepository = ref.read(vehicleRepositoryProvider);
       await vehicleRepository.updateVehicle(vehicle);
 
-      final vehicles = (state.valueOrNull?.vehicles ?? [])
+      final vehicles = (state.value?.vehicles ?? [])
           .map((v) => v.id == vehicle.id ? vehicle : v)
           .toList();
       state = AsyncValue.data(VehicleState(
@@ -159,14 +159,14 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       ));
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
         ) ?? VehicleState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
         ) ?? VehicleState(isLoading: false, errorMessage: e.toString()),
@@ -179,7 +179,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
     if (currentUser == null) return;
 
     state = AsyncValue.data(
-      state.valueOrNull?.copyWith(isLoading: true, errorMessage: null) ??
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const VehicleState(isLoading: true),
     );
 
@@ -188,7 +188,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       await vehicleRepository.deleteVehicle(id);
 
       final vehicles =
-          (state.valueOrNull?.vehicles ?? []).where((v) => v.id != id).toList();
+          (state.value?.vehicles ?? []).where((v) => v.id != id).toList();
       state = AsyncValue.data(VehicleState(
         vehicles: vehicles,
         isLoading: false,
@@ -196,14 +196,14 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       ));
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
         ) ?? VehicleState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
         ) ?? VehicleState(isLoading: false, errorMessage: e.toString()),
@@ -213,7 +213,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
 
   Future<void> setDefault(String id, String userId) async {
     state = AsyncValue.data(
-      state.valueOrNull?.copyWith(isLoading: true, errorMessage: null) ??
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const VehicleState(isLoading: true),
     );
 
@@ -221,7 +221,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       final vehicleRepository = ref.read(vehicleRepositoryProvider);
       await vehicleRepository.setDefault(id, userId);
 
-      final vehicles = (state.valueOrNull?.vehicles ?? [])
+      final vehicles = (state.value?.vehicles ?? [])
           .map((v) => v.id == id ? v.copyWith(isDefault: true) : v.copyWith(isDefault: false))
           .toList();
       state = AsyncValue.data(VehicleState(
@@ -231,14 +231,14 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       ));
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
         ) ?? VehicleState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
         ) ?? VehicleState(isLoading: false, errorMessage: e.toString()),

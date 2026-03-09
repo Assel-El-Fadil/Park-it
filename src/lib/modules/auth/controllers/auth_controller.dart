@@ -73,7 +73,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     UserRole role,
   ) async {
     state = AsyncValue.data(
-      state.valueOrNull?.copyWith(isLoading: true, errorMessage: null) ??
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const AuthState(isLoading: true),
     );
 
@@ -95,14 +95,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       ));
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
         ) ?? AuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
         ) ?? AuthState(isLoading: false, errorMessage: e.toString()),
@@ -112,7 +112,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future<void> signIn(String email, String password) async {
     state = AsyncValue.data(
-      state.valueOrNull?.copyWith(isLoading: true, errorMessage: null) ??
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const AuthState(isLoading: true),
     );
 
@@ -128,14 +128,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       ));
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
         ) ?? AuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
         ) ?? AuthState(isLoading: false, errorMessage: e.toString()),
@@ -145,7 +145,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future<void> signOut() async {
     state = AsyncValue.data(
-      state.valueOrNull?.copyWith(isLoading: true, errorMessage: null) ??
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const AuthState(isLoading: true),
     );
 
@@ -156,14 +156,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = const AsyncValue.data(AuthState());
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
         ) ?? AuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
         ) ?? AuthState(isLoading: false, errorMessage: e.toString()),
@@ -173,7 +173,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future<void> updateProfile(UserModel user) async {
     state = AsyncValue.data(
-      state.valueOrNull?.copyWith(isLoading: true, errorMessage: null) ??
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const AuthState(isLoading: true),
     );
 
@@ -189,14 +189,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       ));
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
         ) ?? AuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.valueOrNull?.copyWith(
+        state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
         ) ?? AuthState(isLoading: false, errorMessage: e.toString()),
@@ -210,7 +210,7 @@ final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
 );
 
 final currentUserProvider = Provider<UserModel?>((ref) =>
-    ref.watch(authNotifierProvider).valueOrNull?.currentUser);
+    ref.watch(authNotifierProvider).value?.currentUser);
 
 final isAuthenticatedProvider = Provider<bool>((ref) =>
-    ref.watch(authNotifierProvider).valueOrNull?.isAuthenticated ?? false);
+    ref.watch(authNotifierProvider).value?.isAuthenticated ?? false);

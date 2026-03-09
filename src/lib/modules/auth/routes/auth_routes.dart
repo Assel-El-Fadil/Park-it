@@ -20,12 +20,12 @@ List<GoRoute> getAuthRoutes() {
     GoRoute(
       path: AuthRoutes.loginPath,
       name: AuthRoutes.login,
-      builder: (context, state) => LoginScreen(),
+      builder: (context, state) => const LoginScreen(),
     ),
     GoRoute(
       path: AuthRoutes.registerPath,
       name: AuthRoutes.register,
-      builder: (context, state) => RegisterScreen(),
+      builder: (context, state) => const RegisterScreen(),
     ),
     GoRoute(
       path: AuthRoutes.forgotPasswordPath,

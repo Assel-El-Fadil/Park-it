@@ -35,11 +35,11 @@ abstract class SupabaseRepository<T> extends BaseRepository<T> {
   }
 
   @override
-  Future<T?> get(String key) async {
+  Future<T?> getById(String id) async {
     final response = await client
         .from(tableName)
         .select()
-        .eq('id', key)
+        .eq('id', id)
         .maybeSingle();
 
     if (response == null) return null;
