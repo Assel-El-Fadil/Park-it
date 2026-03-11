@@ -1,5 +1,16 @@
 import 'package:flutter/material.dart';
 
+enum ThemeMode {
+  /// Always use the light mode regardless of device platform
+  light,
+
+  /// Always use the dark mode regardless of device platform
+  dark,
+
+  /// Follow the device's platform mode (light/dark based on system settings)
+  system,
+}
+
 class AppConstants {
   // ===== App Metadata =====
   static const String appName = 'Park-it';
@@ -183,6 +194,20 @@ class AppConstants {
   static const String languagePortuguese = 'pt';
   static const String languageChinese = 'zh';
   static const String languageJapanese = 'ja';
+
+  static const String languageEnglishString = 'English';
+  static const String languageSpanishString = 'Spanish';
+  static const String languageFrenchString = 'French';
+  static const String languageChineseString = 'Chinese';
+  static const String languageGermanString = 'German';
+
+  static const List<String> supportedLanguagesFull = [
+    languageEnglishString,
+    languageSpanishString,
+    languageFrenchString,
+    languageGermanString,
+    languageChineseString,
+  ];
 
   static const List<String> supportedLanguages = [
     languageEnglish,
