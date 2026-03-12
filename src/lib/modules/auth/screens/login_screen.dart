@@ -7,7 +7,6 @@ import 'package:src/core/config/themes/text_styles.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
-import 'package:src/modules/navigation/routes/navigation_routes.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -20,7 +19,7 @@ class LoginScreen extends ConsumerWidget {
       next.whenOrNull(
         data: (state) {
           if (state.isAuthenticated) {
-            context.go(NavigationRoutes.mainNavPath);
+            context.go(AuthRoutes.profile);
           }
         },
       );
@@ -59,7 +58,7 @@ class LoginScreen extends ConsumerWidget {
                     style: context.textTheme.bodyMedium,
                   ),
                   GestureDetector(
-                    onTap: () => context.goNamed(AuthRoutes.register),
+                    onTap: () => context.go(AuthRoutes.register),
                     child: Text(
                       'Register',
                       style: context.textTheme.bodyMedium?.copyWith(

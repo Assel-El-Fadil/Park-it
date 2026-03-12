@@ -8,7 +8,6 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
-import 'package:src/modules/navigation/routes/navigation_routes.dart';
 
 class RegisterScreen extends ConsumerWidget {
   const RegisterScreen({super.key});
@@ -21,7 +20,7 @@ class RegisterScreen extends ConsumerWidget {
       next.whenOrNull(
         data: (state) {
           if (state.isAuthenticated) {
-            context.go(NavigationRoutes.mainNavPath);
+            context.go(AuthRoutes.profile);
           }
         },
       );
@@ -31,7 +30,7 @@ class RegisterScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.goNamed(AuthRoutes.login),
+          onPressed: () => context.go(AuthRoutes.login),
         ),
       ),
       body: SafeArea(
@@ -65,7 +64,7 @@ class RegisterScreen extends ConsumerWidget {
                     style: context.textTheme.bodyMedium,
                   ),
                   GestureDetector(
-                    onTap: () => context.goNamed(AuthRoutes.login),
+                    onTap: () => context.go(AuthRoutes.login),
                     child: Text(
                       'Login',
                       style: context.textTheme.bodyMedium?.copyWith(

@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 import 'package:src/core/config/themes/color_palette.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/auth/routes/auth_routes.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
@@ -19,19 +21,16 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateToNextScreen() async {
-    // Simulate loading time
-    await Future.delayed(const Duration(seconds: 3));
+    await ref.read(authNotifierProvider.future);
 
-    // Check auth state
-    final prefs = await SharedPreferences.getInstance();
-    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    if (!mounted) return;
 
-    if (mounted) {
-      if (isLoggedIn) {
-        context.goNamed('home');
-      } else {
-        context.goNamed('login');
-      }
+    final isAuthenticated = ref.read(isAuthenticatedProvider);
+
+    if (isAuthenticated) {
+      context.go(AuthRoutes.profile);
+    } else {
+      context.go(AuthRoutes.login);
     }
   }
 
@@ -43,7 +42,6 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Lottie animation (add your animation file)
             SizedBox(
               width: 200,
               height: 200,
@@ -54,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Your App Name',
+              'Park-it',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],

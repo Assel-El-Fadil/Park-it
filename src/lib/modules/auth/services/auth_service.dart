@@ -11,7 +11,9 @@ class AuthService {
         email: email,
         password: password,
       );
-    } on AuthException catch (e) {
+    } on AuthException catch (e, stackTrace) {
+      print('ERROR [AuthService.signUp]: $e');
+      print('STACK [AuthService.signUp]: $stackTrace');
       if (e.message.toLowerCase().contains('already registered') ||
           e.message.toLowerCase().contains('already been registered')) {
         throw AuthException(AppConstants.errorEmailInUse);
@@ -20,9 +22,23 @@ class AuthService {
           e.message.toLowerCase().contains('weak')) {
         throw AuthException(AppConstants.errorWeakPassword);
       }
+      if (e.message.toLowerCase().contains('rate limit') ||
+          e.statusCode == 429 ||
+          e.statusCode?.toString() == '429' ||
+          e.code == 'over_email_send_rate_limit') {
+        throw AuthException(AppConstants.errorRateLimit);
+      }
       throw AuthException(AppConstants.errorGeneric);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('ERROR [AuthService.signUp]: $e');
+      print('STACK [AuthService.signUp]: $stackTrace');
       if (e is AuthException) rethrow;
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('rate limit') ||
+          msg.contains('429') ||
+          msg.contains('over_email_send_rate_limit')) {
+        throw AuthException(AppConstants.errorRateLimit);
+      }
       throw AuthException(AppConstants.errorGeneric);
     }
   }

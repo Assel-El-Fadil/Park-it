@@ -1,9 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-enum UserRole {
-  driver,
-  owner,
-}
+enum UserRole { driver, owner }
 
 class UserModel {
   final String id;
@@ -60,9 +57,9 @@ class UserModel {
     };
   }
 
-  Map<String, dynamic> toProfileRow() {
+  Map<String, dynamic> toUserRow() {
     return <String, dynamic>{
-      'id': id,
+      'id': id.isEmpty ? null : int.tryParse(id),
       'first_name': firstName,
       'last_name': lastName,
       'email': email,
@@ -71,42 +68,42 @@ class UserModel {
       'average_rating': averageRating,
       'total_reviews': totalReviews,
       'fcm_token': fcmToken,
-      'role': role.name,
+      'role': role.name.toUpperCase(),
     };
   }
 
   factory UserModel.fromSupabaseUser(
     User user,
-    Map<String, dynamic> profileData,
+    Map<String, dynamic> userRow,
   ) {
     return UserModel(
-      id: user.id,
-      firstName: (profileData['first_name'] as String?) ?? '',
-      lastName: (profileData['last_name'] as String?) ?? '',
-      email: user.email ?? (profileData['email'] as String? ?? ''),
-      phone: (profileData['phone'] as String?) ?? user.phone,
-      profilePhoto: profileData['profile_photo'] as String?,
+      id: (userRow['id'] ?? '').toString(),
+      firstName: (userRow['first_name'] as String?) ?? '',
+      lastName: (userRow['last_name'] as String?) ?? '',
+      email: (userRow['email'] as String?) ?? (user.email ?? ''),
+      phone: userRow['phone'] as String? ?? user.phone,
+      profilePhoto: userRow['profile_photo'] as String?,
       averageRating:
-          (profileData['average_rating'] as num?)?.toDouble() ?? 0.0,
-      totalReviews: profileData['total_reviews'] as int? ?? 0,
-      fcmToken: profileData['fcm_token'] as String?,
-      role: _roleFromString(profileData['role'] as String?),
+          (userRow['average_rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: userRow['total_reviews'] as int? ?? 0,
+      fcmToken: userRow['fcm_token'] as String?,
+      role: _roleFromString(userRow['role'] as String?),
     );
   }
 
-  factory UserModel.fromProfileRow(Map<String, dynamic> profileData) {
+  factory UserModel.fromUserRow(Map<String, dynamic> data) {
     return UserModel(
-      id: profileData['id'] as String,
-      firstName: (profileData['first_name'] as String?) ?? '',
-      lastName: (profileData['last_name'] as String?) ?? '',
-      email: (profileData['email'] as String?) ?? '',
-      phone: profileData['phone'] as String?,
-      profilePhoto: profileData['profile_photo'] as String?,
+      id: (data['id'] ?? '').toString(),
+      firstName: (data['first_name'] as String?) ?? '',
+      lastName: (data['last_name'] as String?) ?? '',
+      email: (data['email'] as String?) ?? '',
+      phone: data['phone'] as String?,
+      profilePhoto: data['profile_photo'] as String?,
       averageRating:
-          (profileData['average_rating'] as num?)?.toDouble() ?? 0.0,
-      totalReviews: profileData['total_reviews'] as int? ?? 0,
-      fcmToken: profileData['fcm_token'] as String?,
-      role: _roleFromString(profileData['role'] as String?),
+          (data['average_rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: data['total_reviews'] as int? ?? 0,
+      fcmToken: data['fcm_token'] as String?,
+      role: _roleFromString(data['role'] as String?),
     );
   }
 
@@ -138,12 +135,8 @@ class UserModel {
 }
 
 UserRole _roleFromString(String? value) {
-  switch (value) {
-    case 'owner':
-      return UserRole.owner;
-    case 'driver':
-    default:
-      return UserRole.driver;
-  }
+  final normalized = (value ?? '').toUpperCase();
+  if (normalized == 'OWNER') return UserRole.owner;
+  return UserRole.driver;
 }
 

@@ -35,14 +35,14 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   final SessionService _sessionService;
 
   @override
-  String get tableName => 'profiles';
+  String get tableName => 'users';
 
   @override
-  Map<String, dynamic> toJson(UserModel item) => item.toProfileRow();
+  Map<String, dynamic> toJson(UserModel item) => item.toUserRow();
 
   @override
   UserModel fromJson(Map<String, dynamic> json) =>
-      UserModel.fromProfileRow(json);
+      UserModel.fromUserRow(json);
 
   @override
   String getItemKey(UserModel item) => item.id;
@@ -62,38 +62,40 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         throw AppException(AppConstants.errorGeneric);
       }
 
-      await client.from(tableName).insert({
-        'id': user.id,
+      final inserted = await client.from(tableName).insert({
         'first_name': firstName,
         'last_name': lastName,
         'email': email,
         'phone': null,
         'profile_photo': null,
-        'role': role.name,
-      });
+        'average_rating': 0,
+        'total_reviews': 0,
+        'fcm_token': null,
+        'role': role.name.toUpperCase(),
+      }).select().maybeSingle();
 
-      final profile = await client
-          .from(tableName)
-          .select()
-          .eq('id', user.id)
-          .maybeSingle();
-
-      if (profile == null) {
+      if (inserted == null) {
         throw AppException(AppConstants.errorGeneric);
       }
 
       final userModel =
-          UserModel.fromProfileRow(profile as Map<String, dynamic>);
+          UserModel.fromUserRow(inserted as Map<String, dynamic>);
       final token = response.session?.accessToken;
       if (token != null) {
         await _sessionService.saveSession(userModel, token);
       }
       return userModel;
-    } on AuthException catch (e) {
+    } on AuthException catch (e, stackTrace) {
+      print('ERROR [AuthRepositoryImpl.signUp]: $e');
+      print('STACK [AuthRepositoryImpl.signUp]: $stackTrace');
       throw AppException(e.message);
-    } on PostgrestException catch (e) {
+    } on PostgrestException catch (e, stackTrace) {
+      print('ERROR [AuthRepositoryImpl.signUp]: $e');
+      print('STACK [AuthRepositoryImpl.signUp]: $stackTrace');
       throw AppException(e.message);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('ERROR [AuthRepositoryImpl.signUp]: $e');
+      print('STACK [AuthRepositoryImpl.signUp]: $stackTrace');
       throw AppException(AppConstants.errorGeneric);
     }
   }
@@ -107,19 +109,19 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         throw AppException(AppConstants.errorInvalidCredentials);
       }
 
-      final profile = await client
+      final userRow = await client
           .from(tableName)
           .select()
-          .eq('id', user.id)
+          .eq('email', user.email ?? '')
           .maybeSingle();
 
-      if (profile == null) {
+      if (userRow == null) {
         throw AppException(AppConstants.errorUserNotFound);
       }
 
       final userModel = UserModel.fromSupabaseUser(
         user,
-        profile as Map<String, dynamic>,
+        userRow as Map<String, dynamic>,
       );
       final token = response.session?.accessToken;
       if (token != null) {
@@ -161,8 +163,8 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         'average_rating': user.averageRating,
         'total_reviews': user.totalReviews,
         'fcm_token': user.fcmToken,
-        'role': user.role.name,
-      }).eq('id', user.id);
+        'role': user.role.name.toUpperCase(),
+      }).eq('id', int.tryParse(user.id) ?? -1);
     } on PostgrestException catch (e) {
       throw AppException(e.message);
     } catch (e) {
@@ -177,17 +179,17 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       final user = _authService.getCurrentUser();
       if (user == null) return null;
 
-      final profile = await client
+      final userRow = await client
           .from(tableName)
           .select()
-          .eq('id', user.id)
+          .eq('email', user.email ?? '')
           .maybeSingle();
 
-      if (profile == null) return null;
+      if (userRow == null) return null;
 
       return UserModel.fromSupabaseUser(
         user,
-        profile as Map<String, dynamic>,
+        userRow as Map<String, dynamic>,
       );
     } on PostgrestException catch (e) {
       throw AppException(e.message);
@@ -204,17 +206,17 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       if (user == null) return null;
 
       try {
-        final profile = await client
+        final userRow = await client
             .from(tableName)
             .select()
-            .eq('id', user.id)
+            .eq('email', user.email ?? '')
             .maybeSingle();
 
-        if (profile == null) return null;
+        if (userRow == null) return null;
 
         return UserModel.fromSupabaseUser(
           user,
-          profile as Map<String, dynamic>,
+          userRow as Map<String, dynamic>,
         );
       } catch (_) {
         return null;

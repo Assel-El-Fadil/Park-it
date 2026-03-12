@@ -220,6 +220,8 @@ class AppConstants {
   static const String errorBookingConflict =
       'This time slot is already booked.';
   static const String errorPaymentFailed = 'Payment failed. Please try again.';
+  static const String errorRateLimit =
+      'Too many signup attempts. Please wait a few minutes and try again.';
 
   // ===== Success Messages =====
   static const String successLogin = 'Successfully logged in!';

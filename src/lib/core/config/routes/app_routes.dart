@@ -17,6 +17,8 @@ class AppRoutes {
   // Auth
   static const String login = AuthRoutes.login;
   static const String register = AuthRoutes.register;
+  static const String profile = AuthRoutes.profile;
+  static const String vehicles = AuthRoutes.vehicles;
 
   // Paths
   static const String splashPath = '/splash';

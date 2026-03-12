@@ -21,7 +21,7 @@ class ProfileScreen extends ConsumerWidget {
       next.whenOrNull(
         data: (state) {
           if (!state.isAuthenticated) {
-            context.goNamed(AuthRoutes.login);
+            context.go(AuthRoutes.login);
           }
         },
       );
@@ -128,7 +128,7 @@ class _ProfileContentState extends ConsumerState<_ProfileContent> {
   Future<void> _logout() async {
     await ref.read(authNotifierProvider.notifier).signOut();
     if (context.mounted) {
-      context.goNamed(AuthRoutes.login);
+      context.go(AuthRoutes.login);
     }
   }
 
