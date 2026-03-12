@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/providers/theme_provider.dart';
+import 'package:src/shared/widgets/custom_appbar.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   @override
@@ -45,11 +46,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final themeNotifier = ref.watch(themeProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: CustomAppBar(
+        title: 'Settings',
+        automaticallyImplyLeading: true,
+        centerTitle: false,
+        showBottomBorder: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {
+              // Navigate to notification settings
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () {
+              // Navigate to help
+            },
+          ),
+        ],
       ),
       body: ListView(
         children: [
