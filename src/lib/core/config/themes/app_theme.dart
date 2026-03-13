@@ -347,4 +347,6 @@ extension ThemeContextExtension on BuildContext {
       isDarkMode ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
   Color get textSecondary =>
       isDarkMode ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+  Color get textTertiary =>
+      isDarkMode ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 }

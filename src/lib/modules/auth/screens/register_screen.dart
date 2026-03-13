@@ -8,6 +8,7 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/auth/widgets/social_login_buttons.dart';
 
 class RegisterScreen extends ConsumerWidget {
   const RegisterScreen({super.key});
@@ -16,7 +17,7 @@ class RegisterScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
 
-    ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (prev, next) {
+    ref.listen<AsyncValue<AppAuthState>>(authNotifierProvider, (prev, next) {
       next.whenOrNull(
         data: (state) {
           if (state.isAuthenticated) {
@@ -55,6 +56,8 @@ class RegisterScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 32),
               _RegisterForm(authState: authState),
+              const SizedBox(height: 20),
+              const SocialLoginButtons(),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -86,7 +89,7 @@ class RegisterScreen extends ConsumerWidget {
 class _RegisterForm extends ConsumerStatefulWidget {
   const _RegisterForm({required this.authState});
 
-  final AsyncValue<AuthState> authState;
+  final AsyncValue<AppAuthState> authState;
 
   @override
   ConsumerState<_RegisterForm> createState() => _RegisterFormState();

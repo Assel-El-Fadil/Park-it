@@ -3,27 +3,31 @@ import 'package:src/core/errors/app_exception.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/repositories/auth_repository.dart';
 import 'package:src/modules/auth/services/session_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AuthState {
+/// Custom auth state for the app – renamed from [AuthState] to avoid
+/// collision with the [AuthState] type exported by package:gotrue via
+/// package:supabase_flutter.
+class AppAuthState {
   final bool isLoading;
   final UserModel? currentUser;
   final String? errorMessage;
   final bool isAuthenticated;
 
-  const AuthState({
+  const AppAuthState({
     this.isLoading = false,
     this.currentUser,
     this.errorMessage,
     this.isAuthenticated = false,
   });
 
-  AuthState copyWith({
+  AppAuthState copyWith({
     bool? isLoading,
     UserModel? currentUser,
     Object? errorMessage = _sentinel,
     bool? isAuthenticated,
   }) {
-    return AuthState(
+    return AppAuthState(
       isLoading: isLoading ?? this.isLoading,
       currentUser: currentUser ?? this.currentUser,
       errorMessage: errorMessage == _sentinel ? this.errorMessage : errorMessage as String?,
@@ -34,18 +38,18 @@ class AuthState {
 
 const _sentinel = Object();
 
-class AuthNotifier extends AsyncNotifier<AuthState> {
+class AuthNotifier extends AsyncNotifier<AppAuthState> {
   @override
-  Future<AuthState> build() async {
+  Future<AppAuthState> build() async {
     return checkAuthState();
   }
 
-  Future<AuthState> checkAuthState() async {
+  Future<AppAuthState> checkAuthState() async {
     final sessionService = ref.read(sessionServiceProvider);
     final isLoggedIn = await sessionService.isLoggedIn();
 
     if (!isLoggedIn) {
-      return const AuthState();
+      return const AppAuthState();
     }
 
     try {
@@ -53,15 +57,15 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final user = await authRepository.getCurrentUser();
 
       if (user == null) {
-        return const AuthState();
+        return const AppAuthState();
       }
 
-      return AuthState(
+      return AppAuthState(
         currentUser: user,
         isAuthenticated: true,
       );
     } catch (_) {
-      return const AuthState();
+      return const AppAuthState();
     }
   }
 
@@ -74,7 +78,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   ) async {
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
-          const AuthState(isLoading: true),
+          const AppAuthState(isLoading: true),
     );
 
     try {
@@ -87,7 +91,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         role,
       );
 
-      state = AsyncValue.data(AuthState(
+      state = AsyncValue.data(AppAuthState(
         currentUser: user,
         isAuthenticated: true,
         isLoading: false,
@@ -98,14 +102,44 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
-        ) ?? AuthState(isLoading: false, errorMessage: e.message),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
-        ) ?? AuthState(isLoading: false, errorMessage: e.toString()),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+    }
+  }
+
+  Future<void> signInWithOAuth(OAuthProvider provider) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.signInWithOAuth(provider);
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
     }
   }
@@ -113,14 +147,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<void> signIn(String email, String password) async {
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
-          const AuthState(isLoading: true),
+          const AppAuthState(isLoading: true),
     );
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
       final user = await authRepository.signIn(email, password);
 
-      state = AsyncValue.data(AuthState(
+      state = AsyncValue.data(AppAuthState(
         currentUser: user,
         isAuthenticated: true,
         isLoading: false,
@@ -131,14 +165,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
-        ) ?? AuthState(isLoading: false, errorMessage: e.message),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
-        ) ?? AuthState(isLoading: false, errorMessage: e.toString()),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
     }
   }
@@ -146,27 +180,27 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<void> signOut() async {
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
-          const AuthState(isLoading: true),
+          const AppAuthState(isLoading: true),
     );
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
       await authRepository.signOut();
 
-      state = const AsyncValue.data(AuthState());
+      state = const AsyncValue.data(AppAuthState());
     } on AppException catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
-        ) ?? AuthState(isLoading: false, errorMessage: e.message),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
-        ) ?? AuthState(isLoading: false, errorMessage: e.toString()),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
     }
   }
@@ -174,14 +208,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<void> updateProfile(UserModel user) async {
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
-          const AuthState(isLoading: true),
+          const AppAuthState(isLoading: true),
     );
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
       await authRepository.updateProfile(user);
 
-      state = AsyncValue.data(AuthState(
+      state = AsyncValue.data(AppAuthState(
         currentUser: user,
         isAuthenticated: true,
         isLoading: false,
@@ -192,20 +226,20 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         state.value?.copyWith(
           isLoading: false,
           errorMessage: e.message,
-        ) ?? AuthState(isLoading: false, errorMessage: e.message),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
           isLoading: false,
           errorMessage: e.toString(),
-        ) ?? AuthState(isLoading: false, errorMessage: e.toString()),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
     }
   }
 }
 
-final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
+final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AppAuthState>(
   AuthNotifier.new,
 );
 

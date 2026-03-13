@@ -8,6 +8,8 @@ import 'package:src/modules/auth/services/session_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class AuthRepository {
+  Future<bool> signInWithOAuth(OAuthProvider provider);
+
   Future<UserModel> signUp(
     String email,
     String password,
@@ -48,6 +50,60 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   String getItemKey(UserModel item) => item.id;
 
   @override
+  Future<bool> signInWithOAuth(OAuthProvider provider) async {
+    try {
+      await _authService.signInWithOAuth(provider);
+      return true;
+    } on AuthException catch (e) {
+      throw AppException(e.message);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException(AppConstants.errorGeneric);
+    }
+  }
+
+  Future<UserModel?> _upsertOAuthUser(User supabaseUser) async {
+    final email = supabaseUser.email ?? supabaseUser.phone ?? '';
+    if (email.isEmpty) return null;
+
+    final existing = await client
+        .from(tableName)
+        .select()
+        .eq('email', email)
+        .maybeSingle();
+
+    if (existing != null) {
+      return UserModel.fromSupabaseUser(
+        supabaseUser,
+        existing as Map<String, dynamic>,
+      );
+    }
+
+    final metadata = supabaseUser.userMetadata ?? {};
+    final fullName = metadata['full_name'] as String? ??
+        metadata['name'] as String? ??
+        supabaseUser.email ?? '';
+    final parts = fullName.split(RegExp(r'\s+'));
+    final firstName = parts.isNotEmpty ? parts.first : '';
+    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+    final inserted = await client.from(tableName).insert({
+      'first_name': firstName.isNotEmpty ? firstName : 'User',
+      'last_name': lastName.isNotEmpty ? lastName : '',
+      'email': email,
+      'phone': supabaseUser.phone,
+      'profile_photo': metadata['avatar_url'] as String?,
+      'average_rating': 0,
+      'total_reviews': 0,
+      'fcm_token': null,
+      'role': 'DRIVER',
+    }).select().maybeSingle();
+
+    if (inserted == null) return null;
+    return UserModel.fromUserRow(inserted as Map<String, dynamic>);
+  }
+
+  @override
   Future<UserModel> signUp(
     String email,
     String password,
@@ -56,30 +112,30 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     UserRole role,
   ) async {
     try {
-      final response = await _authService.signUp(email, password);
+      // Pass profile fields as auth metadata — no INSERT into users table needed,
+      // so RLS is never triggered.
+      final response = await _authService.signUp(
+        email,
+        password,
+        firstName: firstName,
+        lastName: lastName,
+        role: role.name.toUpperCase(),
+      );
       final user = response.user;
       if (user == null) {
         throw AppException(AppConstants.errorGeneric);
       }
 
-      final inserted = await client.from(tableName).insert({
-        'first_name': firstName,
-        'last_name': lastName,
-        'email': email,
-        'phone': null,
-        'profile_photo': null,
-        'average_rating': 0,
-        'total_reviews': 0,
-        'fcm_token': null,
-        'role': role.name.toUpperCase(),
-      }).select().maybeSingle();
+      // Build the model from auth metadata — no DB read required.
+      final meta = user.userMetadata ?? {};
+      final userModel = UserModel(
+        id: user.id,
+        firstName: meta['first_name'] as String? ?? firstName,
+        lastName: meta['last_name'] as String? ?? lastName,
+        email: user.email ?? email,
+        role: role,
+      );
 
-      if (inserted == null) {
-        throw AppException(AppConstants.errorGeneric);
-      }
-
-      final userModel =
-          UserModel.fromUserRow(inserted as Map<String, dynamic>);
       final token = response.session?.accessToken;
       if (token != null) {
         await _sessionService.saveSession(userModel, token);
@@ -109,28 +165,48 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         throw AppException(AppConstants.errorInvalidCredentials);
       }
 
-      final userRow = await client
-          .from(tableName)
-          .select()
-          .eq('email', user.email ?? '')
-          .maybeSingle();
+      // Try reading from users table first; fall back to auth metadata.
+      UserModel userModel;
+      try {
+        final userRow = await client
+            .from(tableName)
+            .select()
+            .eq('email', user.email ?? '')
+            .maybeSingle();
 
-      if (userRow == null) {
-        throw AppException(AppConstants.errorUserNotFound);
+        if (userRow != null) {
+          userModel = UserModel.fromSupabaseUser(
+            user,
+            userRow as Map<String, dynamic>,
+          );
+        } else {
+          final meta = user.userMetadata ?? {};
+          userModel = UserModel(
+            id: user.id,
+            firstName: meta['first_name'] as String? ?? '',
+            lastName: meta['last_name'] as String? ?? '',
+            email: user.email ?? email,
+            role: _roleFromMeta(meta['role'] as String?),
+          );
+        }
+      } on PostgrestException {
+        // users table unreachable — build from metadata
+        final meta = user.userMetadata ?? {};
+        userModel = UserModel(
+          id: user.id,
+          firstName: meta['first_name'] as String? ?? '',
+          lastName: meta['last_name'] as String? ?? '',
+          email: user.email ?? email,
+          role: _roleFromMeta(meta['role'] as String?),
+        );
       }
 
-      final userModel = UserModel.fromSupabaseUser(
-        user,
-        userRow as Map<String, dynamic>,
-      );
       final token = response.session?.accessToken;
       if (token != null) {
         await _sessionService.saveSession(userModel, token);
       }
       return userModel;
     } on AuthException catch (e) {
-      throw AppException(e.message);
-    } on PostgrestException catch (e) {
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
@@ -179,20 +255,47 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       final user = _authService.getCurrentUser();
       if (user == null) return null;
 
-      final userRow = await client
-          .from(tableName)
-          .select()
-          .eq('email', user.email ?? '')
-          .maybeSingle();
+      // Try users table; gracefully fall back to auth metadata on RLS/error.
+      try {
+        final userRow = await client
+            .from(tableName)
+            .select()
+            .eq('email', user.email ?? user.phone ?? '')
+            .maybeSingle();
 
-      if (userRow == null) return null;
+        if (userRow != null) {
+          final model = UserModel.fromSupabaseUser(
+            user,
+            userRow as Map<String, dynamic>,
+          );
+          final token = _authService.getAccessToken();
+          if (token != null) {
+            await _sessionService.saveSession(model, token);
+          }
+          return model;
+        }
+      } on PostgrestException {
+        // Fall through to metadata fallback
+      }
 
-      return UserModel.fromSupabaseUser(
-        user,
-        userRow as Map<String, dynamic>,
-      );
-    } on PostgrestException catch (e) {
-      throw AppException(e.message);
+      // Build from auth metadata (used when users table row doesn't exist yet)
+      final meta = user.userMetadata ?? {};
+      if (meta.isNotEmpty) {
+        final model = UserModel(
+          id: user.id,
+          firstName: meta['first_name'] as String? ?? '',
+          lastName: meta['last_name'] as String? ?? '',
+          email: user.email ?? '',
+          role: _roleFromMeta(meta['role'] as String?),
+        );
+        final token = _authService.getAccessToken();
+        if (token != null) {
+          await _sessionService.saveSession(model, token);
+        }
+        return model;
+      }
+
+      return null;
     } catch (e) {
       if (e is AppException) rethrow;
       return null;
@@ -222,6 +325,12 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         return null;
       }
     });
+  }
+
+  UserRole _roleFromMeta(String? roleStr) {
+    if (roleStr == null) return UserRole.driver;
+    if (roleStr.toUpperCase() == 'OWNER') return UserRole.owner;
+    return UserRole.driver;
   }
 }
 
