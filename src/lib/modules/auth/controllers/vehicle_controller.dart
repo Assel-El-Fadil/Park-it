@@ -55,7 +55,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       final vehicles = await vehicleRepository.getVehicles(userId);
 
       state = AsyncValue.data(VehicleState(
-        vehicles: vehicles,
+        vehicles: vehicles.cast<VehicleModel>(),
         isLoading: false,
         errorMessage: null,
       ));
@@ -118,7 +118,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
 
       final vehicles = [...(state.value?.vehicles ?? []), vehicle];
       state = AsyncValue.data(VehicleState(
-        vehicles: vehicles,
+        vehicles: (vehicles as List).map((e) => VehicleModel.fromJson(e as Map<String, dynamic>)).toList(),
         isLoading: false,
         errorMessage: null,
       ));

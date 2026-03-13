@@ -184,6 +184,20 @@ class AppConstants {
   static const String languageChinese = 'zh';
   static const String languageJapanese = 'ja';
 
+  static const String languageEnglishString = 'English';
+  static const String languageSpanishString = 'Spanish';
+  static const String languageFrenchString = 'French';
+  static const String languageChineseString = 'Chinese';
+  static const String languageGermanString = 'German';
+
+  static const List<String> supportedLanguagesFull = [
+    languageEnglishString,
+    languageSpanishString,
+    languageFrenchString,
+    languageGermanString,
+    languageChineseString,
+  ];
+
   static const List<String> supportedLanguages = [
     languageEnglish,
     languageSpanish,
@@ -220,6 +234,8 @@ class AppConstants {
   static const String errorBookingConflict =
       'This time slot is already booked.';
   static const String errorPaymentFailed = 'Payment failed. Please try again.';
+  static const String errorRateLimit =
+      'Too many signup attempts. Please wait a few minutes and try again.';
 
   // ===== Success Messages =====
   static const String successLogin = 'Successfully logged in!';

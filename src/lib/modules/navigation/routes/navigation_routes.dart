@@ -1,28 +1,26 @@
 import 'package:go_router/go_router.dart';
+import 'package:src/modules/navigation/screens/parking_navigation_screen.dart';
 
 /// Navigation module route names
 class NavigationRoutes {
-  // Route names
-  static const String mainNav = 'main-navigation';
-  static const String bottomNav = 'bottom-nav';
+  static const String navigation = 'navigation';
 
-  // Paths
-  static const String mainNavPath = '/main';
-  static const String bottomNavPath = '/bottom-nav';
+  static const String navigationPath = '/navigation';
 }
 
 /// Navigation module route configuration
 List<GoRoute> getNavigationRoutes() {
   return [
-    // GoRoute(
-    //   path: NavigationRoutes.mainNavPath,
-    //   name: NavigationRoutes.mainNav,
-    //   builder: (context, state) => const MainNavigationScreen(),
-    // ),
-    // GoRoute(
-    //   path: NavigationRoutes.bottomNavPath,
-    //   name: NavigationRoutes.bottomNav,
-    //   builder: (context, state) => const BottomNavBar(),
-    // ),
+    GoRoute(
+      path: NavigationRoutes.navigationPath,
+      name: NavigationRoutes.navigation,
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        return ParkingNavigationScreen(
+          booking: extra['booking'],
+          parkingLocation: extra['coordinates'],
+        );
+      },
+    ),
   ];
 }

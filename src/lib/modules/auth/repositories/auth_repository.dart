@@ -8,6 +8,8 @@ import 'package:src/modules/auth/services/session_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class AuthRepository {
+  Future<bool> signInWithOAuth(OAuthProvider provider);
+
   Future<UserModel> signUp(
     String email,
     String password,
@@ -35,17 +37,71 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   final SessionService _sessionService;
 
   @override
-  String get tableName => 'profiles';
+  String get tableName => 'users';
 
   @override
-  Map<String, dynamic> toJson(UserModel item) => item.toProfileRow();
+  Map<String, dynamic> toJson(UserModel item) => item.toUserRow();
 
   @override
   UserModel fromJson(Map<String, dynamic> json) =>
-      UserModel.fromProfileRow(json);
+      UserModel.fromUserRow(json);
 
   @override
   String getItemKey(UserModel item) => item.id;
+
+  @override
+  Future<bool> signInWithOAuth(OAuthProvider provider) async {
+    try {
+      await _authService.signInWithOAuth(provider);
+      return true;
+    } on AuthException catch (e) {
+      throw AppException(e.message);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException(AppConstants.errorGeneric);
+    }
+  }
+
+  Future<UserModel?> _upsertOAuthUser(User supabaseUser) async {
+    final email = supabaseUser.email ?? supabaseUser.phone ?? '';
+    if (email.isEmpty) return null;
+
+    final existing = await client
+        .from(tableName)
+        .select()
+        .eq('email', email)
+        .maybeSingle();
+
+    if (existing != null) {
+      return UserModel.fromSupabaseUser(
+        supabaseUser,
+        existing as Map<String, dynamic>,
+      );
+    }
+
+    final metadata = supabaseUser.userMetadata ?? {};
+    final fullName = metadata['full_name'] as String? ??
+        metadata['name'] as String? ??
+        supabaseUser.email ?? '';
+    final parts = fullName.split(RegExp(r'\s+'));
+    final firstName = parts.isNotEmpty ? parts.first : '';
+    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+    final inserted = await client.from(tableName).insert({
+      'first_name': firstName.isNotEmpty ? firstName : 'User',
+      'last_name': lastName.isNotEmpty ? lastName : '',
+      'email': email,
+      'phone': supabaseUser.phone,
+      'profile_photo': metadata['avatar_url'] as String?,
+      'average_rating': 0,
+      'total_reviews': 0,
+      'fcm_token': null,
+      'role': 'DRIVER',
+    }).select().maybeSingle();
+
+    if (inserted == null) return null;
+    return UserModel.fromUserRow(inserted as Map<String, dynamic>);
+  }
 
   @override
   Future<UserModel> signUp(
@@ -56,44 +112,46 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     UserRole role,
   ) async {
     try {
-      final response = await _authService.signUp(email, password);
+      // Pass profile fields as auth metadata — no INSERT into users table needed,
+      // so RLS is never triggered.
+      final response = await _authService.signUp(
+        email,
+        password,
+        firstName: firstName,
+        lastName: lastName,
+        role: role.name.toUpperCase(),
+      );
       final user = response.user;
       if (user == null) {
         throw AppException(AppConstants.errorGeneric);
       }
 
-      await client.from(tableName).insert({
-        'id': user.id,
-        'first_name': firstName,
-        'last_name': lastName,
-        'email': email,
-        'phone': null,
-        'profile_photo': null,
-        'role': role.name,
-      });
+      // Build the model from auth metadata — no DB read required.
+      final meta = user.userMetadata ?? {};
+      final userModel = UserModel(
+        id: user.id,
+        firstName: meta['first_name'] as String? ?? firstName,
+        lastName: meta['last_name'] as String? ?? lastName,
+        email: user.email ?? email,
+        role: role,
+      );
 
-      final profile = await client
-          .from(tableName)
-          .select()
-          .eq('id', user.id)
-          .maybeSingle();
-
-      if (profile == null) {
-        throw AppException(AppConstants.errorGeneric);
-      }
-
-      final userModel =
-          UserModel.fromProfileRow(profile as Map<String, dynamic>);
       final token = response.session?.accessToken;
       if (token != null) {
         await _sessionService.saveSession(userModel, token);
       }
       return userModel;
-    } on AuthException catch (e) {
+    } on AuthException catch (e, stackTrace) {
+      print('ERROR [AuthRepositoryImpl.signUp]: $e');
+      print('STACK [AuthRepositoryImpl.signUp]: $stackTrace');
       throw AppException(e.message);
-    } on PostgrestException catch (e) {
+    } on PostgrestException catch (e, stackTrace) {
+      print('ERROR [AuthRepositoryImpl.signUp]: $e');
+      print('STACK [AuthRepositoryImpl.signUp]: $stackTrace');
       throw AppException(e.message);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('ERROR [AuthRepositoryImpl.signUp]: $e');
+      print('STACK [AuthRepositoryImpl.signUp]: $stackTrace');
       throw AppException(AppConstants.errorGeneric);
     }
   }
@@ -107,28 +165,48 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         throw AppException(AppConstants.errorInvalidCredentials);
       }
 
-      final profile = await client
-          .from(tableName)
-          .select()
-          .eq('id', user.id)
-          .maybeSingle();
+      // Try reading from users table first; fall back to auth metadata.
+      UserModel userModel;
+      try {
+        final userRow = await client
+            .from(tableName)
+            .select()
+            .eq('email', user.email ?? '')
+            .maybeSingle();
 
-      if (profile == null) {
-        throw AppException(AppConstants.errorUserNotFound);
+        if (userRow != null) {
+          userModel = UserModel.fromSupabaseUser(
+            user,
+            userRow as Map<String, dynamic>,
+          );
+        } else {
+          final meta = user.userMetadata ?? {};
+          userModel = UserModel(
+            id: user.id,
+            firstName: meta['first_name'] as String? ?? '',
+            lastName: meta['last_name'] as String? ?? '',
+            email: user.email ?? email,
+            role: _roleFromMeta(meta['role'] as String?),
+          );
+        }
+      } on PostgrestException {
+        // users table unreachable — build from metadata
+        final meta = user.userMetadata ?? {};
+        userModel = UserModel(
+          id: user.id,
+          firstName: meta['first_name'] as String? ?? '',
+          lastName: meta['last_name'] as String? ?? '',
+          email: user.email ?? email,
+          role: _roleFromMeta(meta['role'] as String?),
+        );
       }
 
-      final userModel = UserModel.fromSupabaseUser(
-        user,
-        profile as Map<String, dynamic>,
-      );
       final token = response.session?.accessToken;
       if (token != null) {
         await _sessionService.saveSession(userModel, token);
       }
       return userModel;
     } on AuthException catch (e) {
-      throw AppException(e.message);
-    } on PostgrestException catch (e) {
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
@@ -161,8 +239,8 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         'average_rating': user.averageRating,
         'total_reviews': user.totalReviews,
         'fcm_token': user.fcmToken,
-        'role': user.role.name,
-      }).eq('id', user.id);
+        'role': user.role.name.toUpperCase(),
+      }).eq('id', int.tryParse(user.id) ?? -1);
     } on PostgrestException catch (e) {
       throw AppException(e.message);
     } catch (e) {
@@ -177,20 +255,47 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       final user = _authService.getCurrentUser();
       if (user == null) return null;
 
-      final profile = await client
-          .from(tableName)
-          .select()
-          .eq('id', user.id)
-          .maybeSingle();
+      // Try users table; gracefully fall back to auth metadata on RLS/error.
+      try {
+        final userRow = await client
+            .from(tableName)
+            .select()
+            .eq('email', user.email ?? user.phone ?? '')
+            .maybeSingle();
 
-      if (profile == null) return null;
+        if (userRow != null) {
+          final model = UserModel.fromSupabaseUser(
+            user,
+            userRow as Map<String, dynamic>,
+          );
+          final token = _authService.getAccessToken();
+          if (token != null) {
+            await _sessionService.saveSession(model, token);
+          }
+          return model;
+        }
+      } on PostgrestException {
+        // Fall through to metadata fallback
+      }
 
-      return UserModel.fromSupabaseUser(
-        user,
-        profile as Map<String, dynamic>,
-      );
-    } on PostgrestException catch (e) {
-      throw AppException(e.message);
+      // Build from auth metadata (used when users table row doesn't exist yet)
+      final meta = user.userMetadata ?? {};
+      if (meta.isNotEmpty) {
+        final model = UserModel(
+          id: user.id,
+          firstName: meta['first_name'] as String? ?? '',
+          lastName: meta['last_name'] as String? ?? '',
+          email: user.email ?? '',
+          role: _roleFromMeta(meta['role'] as String?),
+        );
+        final token = _authService.getAccessToken();
+        if (token != null) {
+          await _sessionService.saveSession(model, token);
+        }
+        return model;
+      }
+
+      return null;
     } catch (e) {
       if (e is AppException) rethrow;
       return null;
@@ -204,22 +309,28 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       if (user == null) return null;
 
       try {
-        final profile = await client
+        final userRow = await client
             .from(tableName)
             .select()
-            .eq('id', user.id)
+            .eq('email', user.email ?? '')
             .maybeSingle();
 
-        if (profile == null) return null;
+        if (userRow == null) return null;
 
         return UserModel.fromSupabaseUser(
           user,
-          profile as Map<String, dynamic>,
+          userRow as Map<String, dynamic>,
         );
       } catch (_) {
         return null;
       }
     });
+  }
+
+  UserRole _roleFromMeta(String? roleStr) {
+    if (roleStr == null) return UserRole.driver;
+    if (roleStr.toUpperCase() == 'OWNER') return UserRole.owner;
+    return UserRole.driver;
   }
 }
 

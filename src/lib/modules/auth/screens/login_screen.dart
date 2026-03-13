@@ -7,7 +7,7 @@ import 'package:src/core/config/themes/text_styles.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
-import 'package:src/modules/navigation/routes/navigation_routes.dart';
+import 'package:src/modules/auth/widgets/social_login_buttons.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -16,11 +16,11 @@ class LoginScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
 
-    ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (prev, next) {
+    ref.listen<AsyncValue<AppAuthState>>(authNotifierProvider, (prev, next) {
       next.whenOrNull(
         data: (state) {
           if (state.isAuthenticated) {
-            context.go(NavigationRoutes.mainNavPath);
+            context.go(AuthRoutes.profile);
           }
         },
       );
@@ -50,6 +50,8 @@ class LoginScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 32),
               _LoginForm(authState: authState),
+              const SizedBox(height: 20),
+              const SocialLoginButtons(),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -59,7 +61,7 @@ class LoginScreen extends ConsumerWidget {
                     style: context.textTheme.bodyMedium,
                   ),
                   GestureDetector(
-                    onTap: () => context.goNamed(AuthRoutes.register),
+                    onTap: () => context.go(AuthRoutes.register),
                     child: Text(
                       'Register',
                       style: context.textTheme.bodyMedium?.copyWith(
@@ -81,7 +83,7 @@ class LoginScreen extends ConsumerWidget {
 class _LoginForm extends ConsumerStatefulWidget {
   const _LoginForm({required this.authState});
 
-  final AsyncValue<AuthState> authState;
+  final AsyncValue<AppAuthState> authState;
 
   @override
   ConsumerState<_LoginForm> createState() => _LoginFormState();
