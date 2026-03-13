@@ -8,11 +8,17 @@ import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/reservation/routes/reservation_routes.dart';
 import 'package:src/modules/review/routes/review_routes.dart';
 import 'package:src/modules/user/routes/user_routes.dart';
+import 'package:src/shared/screens/privacy_policy_screen.dart';
+import 'package:src/shared/screens/settings_screen.dart';
 import 'package:src/shared/screens/splash_screen.dart';
+import 'package:src/shared/screens/terms_of_service_screen.dart';
 
 class AppRoutes {
-  // Auth routes
+  // App routes
   static const String splash = 'splash';
+  static const String termsOfService = 'terms';
+  static const String privacyPolicy = 'policy';
+  static const String settings = 'settings';
 
   // Auth
   static const String login = AuthRoutes.login;
@@ -22,6 +28,9 @@ class AppRoutes {
 
   // Paths
   static const String splashPath = '/splash';
+  static const String privacyPolicyPath = '/policy';
+  static const String termsOfServicePath = '/terms';
+  static const String settingsPath = '/settings';
 }
 
 class AppNavigator {
@@ -68,7 +77,7 @@ class AppNavigator {
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: AppNavigator.navigatorKey,
-  initialLocation: AppRoutes.splashPath,
+  initialLocation: AuthRoutes.login,
   debugLogDiagnostics: true,
   routes: [
     // Splash
@@ -78,14 +87,35 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const SplashScreen(),
     ),
 
+    //Privacy Policy
+    GoRoute(
+      path: AppRoutes.privacyPolicyPath,
+      name: AppRoutes.privacyPolicy,
+      builder: (context, state) => const PrivacyPolicyScreen(),
+    ),
+
+    //Terms of Service
+    GoRoute(
+      path: AppRoutes.termsOfServicePath,
+      name: AppRoutes.termsOfService,
+      builder: (context, state) => const TermsOfServiceScreen(),
+    ),
+
+    //Settings
+    GoRoute(
+      path: AppRoutes.settingsPath,
+      name: AppRoutes.settings,
+      builder: (context, state) => SettingsScreen(),
+    ),
+
     // Module Routes
-    ...getAuthRoutes(),
-    ...getNavigationRoutes(),
-    ...getReviewRoutes(),
-    ...getOwnerRoutes(),
-    ...getPaymentRoutes(),
-    ...getUserRoutes(),
-    ...getReservationRoutes(),
-    ...getNotificationRoutes(),
+    if (getAuthRoutes().isNotEmpty) ...getAuthRoutes(),
+    if (getNavigationRoutes().isNotEmpty) ...getNavigationRoutes(),
+    if (getReviewRoutes().isNotEmpty) ...getReviewRoutes(),
+    if (getOwnerRoutes().isNotEmpty) ...getOwnerRoutes(),
+    if (getPaymentRoutes().isNotEmpty) ...getPaymentRoutes(),
+    if (getUserRoutes().isNotEmpty) ...getUserRoutes(),
+    if (getReservationRoutes().isNotEmpty) ...getReservationRoutes(),
+    if (getNotificationRoutes().isNotEmpty) ...getNotificationRoutes(),
   ],
 );

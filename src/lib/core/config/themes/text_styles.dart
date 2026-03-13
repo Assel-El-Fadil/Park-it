@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'color_palette.dart';
 
 class AppTextStyles {
-  // ===== DISPLAY / HEADER STYLES =====
   static const displayLarge = TextStyle(
     fontSize: 48,
-    fontWeight: FontWeight.w600, // Semi-bold for Airbnb's elegant look
+    fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
     height: 1.2,
     color: AppColors.textPrimaryLight,
