@@ -15,11 +15,7 @@ Future<void> main() async {
     anonKey: AppConstants.supabaseAnonKey,
   );
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
@@ -31,12 +27,12 @@ class MyApp extends ConsumerWidget {
 
     return AuthStateListener(
       child: MaterialApp.router(
-      title: AppConstants.appName,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode,
-      routerConfig: appRouter,
-      debugShowCheckedModeBanner: false,
+        title: AppConstants.appName,
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: themeMode,
+        routerConfig: appRouter,
+        debugShowCheckedModeBanner: false,
       ),
     );
   }
