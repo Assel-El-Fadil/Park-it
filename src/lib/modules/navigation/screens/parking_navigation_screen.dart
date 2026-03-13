@@ -259,7 +259,7 @@ class _ParkingNavigationScreenState
                             _buildStatItem(
                               theme,
                               Icons.local_parking_rounded,
-                              'Spot #${widget.booking.id ?? 'A12'}',
+                              "Parking Name",
                               'Parking',
                             ),
                           ],

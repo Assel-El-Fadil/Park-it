@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 import 'package:src/core/config/routes/app_routes.dart';
+import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/notification/routes/notification_routes.dart';
 import 'package:src/providers/theme_provider.dart';
@@ -269,22 +271,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showLogoutDialog() {
+    final navContext = context;
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Log Out'),
           content: const Text('Are you sure you want to log out?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                // Perform logout
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/login');
+                Navigator.pop(dialogContext);
+                navContext.go(AuthRoutes.login);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Log Out'),

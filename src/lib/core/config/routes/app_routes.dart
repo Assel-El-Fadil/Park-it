@@ -23,6 +23,8 @@ class AppRoutes {
   // Auth
   static const String login = AuthRoutes.login;
   static const String register = AuthRoutes.register;
+  static const String profile = AuthRoutes.profile;
+  static const String vehicles = AuthRoutes.vehicles;
 
   // Paths
   static const String splashPath = '/splash';
@@ -75,7 +77,7 @@ class AppNavigator {
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: AppNavigator.navigatorKey,
-  initialLocation: NotificationRoutes.notificationsPath,
+  initialLocation: AuthRoutes.login,
   debugLogDiagnostics: true,
   routes: [
     // Splash

@@ -1,0 +1,142 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+enum UserRole { driver, owner }
+
+class UserModel {
+  final String id;
+  final String firstName;
+  final String lastName;
+  final String email;
+  final String? phone;
+  final String? profilePhoto;
+  final double averageRating;
+  final int totalReviews;
+  final String? fcmToken;
+  final UserRole role;
+
+  const UserModel({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    this.phone,
+    this.profilePhoto,
+    this.averageRating = 0.0,
+    this.totalReviews = 0,
+    this.fcmToken,
+    required this.role,
+  });
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] as String,
+      firstName: json['firstName'] as String,
+      lastName: json['lastName'] as String,
+      email: json['email'] as String,
+      phone: json['phone'] as String?,
+      profilePhoto: json['profilePhoto'] as String?,
+      averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: json['totalReviews'] as int? ?? 0,
+      fcmToken: json['fcmToken'] as String?,
+      role: _roleFromString(json['role'] as String?),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'firstName': firstName,
+      'lastName': lastName,
+      'email': email,
+      'phone': phone,
+      'profilePhoto': profilePhoto,
+      'averageRating': averageRating,
+      'totalReviews': totalReviews,
+      'fcmToken': fcmToken,
+      'role': role.name,
+    };
+  }
+
+  Map<String, dynamic> toUserRow() {
+    return <String, dynamic>{
+      'id': id.isEmpty ? null : int.tryParse(id),
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'phone': phone,
+      'profile_photo': profilePhoto,
+      'average_rating': averageRating,
+      'total_reviews': totalReviews,
+      'fcm_token': fcmToken,
+      'role': role.name.toUpperCase(),
+    };
+  }
+
+  factory UserModel.fromSupabaseUser(
+    User user,
+    Map<String, dynamic> userRow,
+  ) {
+    return UserModel(
+      id: (userRow['id'] ?? '').toString(),
+      firstName: (userRow['first_name'] as String?) ?? '',
+      lastName: (userRow['last_name'] as String?) ?? '',
+      email: (userRow['email'] as String?) ?? (user.email ?? ''),
+      phone: userRow['phone'] as String? ?? user.phone,
+      profilePhoto: userRow['profile_photo'] as String?,
+      averageRating:
+          (userRow['average_rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: userRow['total_reviews'] as int? ?? 0,
+      fcmToken: userRow['fcm_token'] as String?,
+      role: _roleFromString(userRow['role'] as String?),
+    );
+  }
+
+  factory UserModel.fromUserRow(Map<String, dynamic> data) {
+    return UserModel(
+      id: (data['id'] ?? '').toString(),
+      firstName: (data['first_name'] as String?) ?? '',
+      lastName: (data['last_name'] as String?) ?? '',
+      email: (data['email'] as String?) ?? '',
+      phone: data['phone'] as String?,
+      profilePhoto: data['profile_photo'] as String?,
+      averageRating:
+          (data['average_rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: data['total_reviews'] as int? ?? 0,
+      fcmToken: data['fcm_token'] as String?,
+      role: _roleFromString(data['role'] as String?),
+    );
+  }
+
+  UserModel copyWith({
+    String? id,
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+    String? profilePhoto,
+    double? averageRating,
+    int? totalReviews,
+    String? fcmToken,
+    UserRole? role,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      profilePhoto: profilePhoto ?? this.profilePhoto,
+      averageRating: averageRating ?? this.averageRating,
+      totalReviews: totalReviews ?? this.totalReviews,
+      fcmToken: fcmToken ?? this.fcmToken,
+      role: role ?? this.role,
+    );
+  }
+}
+
+UserRole _roleFromString(String? value) {
+  final normalized = (value ?? '').toUpperCase();
+  if (normalized == 'OWNER') return UserRole.owner;
+  return UserRole.driver;
+}
+
