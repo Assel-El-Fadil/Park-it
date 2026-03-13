@@ -27,53 +27,53 @@ class PaymentRoutes {
 /// Payment module route configuration
 List<GoRoute> getPaymentRoutes() {
   return [
-    GoRoute(
-      path: PaymentRoutes.paymentPath,
-      name: PaymentRoutes.payment,
-      builder: (context, state) {
-        final booking = state.extra as ParkingBooking?;
-        if (booking == null) {
-          return const Scaffold(body: Center(child: Text('No booking data')));
-        }
-        return PaymentScreen(booking: booking);
-      },
-    ),
-    GoRoute(
-      path: PaymentRoutes.bookingsPath,
-      name: PaymentRoutes.bookings,
-      builder: (context, state) => const MyBookingsScreen(),
-    ),
-    GoRoute(
-      path: PaymentRoutes.bookingDetailsPath,
-      name: PaymentRoutes.bookingDetails,
-      builder: (context, state) {
-        final bookingId = state.pathParameters['id'] ?? '';
-        final booking = state.extra as ParkingBooking?;
-        return BookingDetailsScreen(bookingId: bookingId, booking: booking);
-      },
-    ),
-    GoRoute(
-      path: PaymentRoutes.bookingConfirmationPath,
-      name: PaymentRoutes.bookingConfirmation,
-      builder: (context, state) {
-        final booking = state.extra as ParkingBooking?;
-        return BookingConfirmationScreen(booking: booking);
-      },
-    ),
-    GoRoute(
-      path: PaymentRoutes.bookingFailurePath,
-      name: PaymentRoutes.bookingFailure,
-      builder: (context, state) {
-        // Extract parameters from extra
-        final extra = state.extra as Map<String, dynamic>?;
+    // GoRoute(
+    //   path: PaymentRoutes.paymentPath,
+    //   name: PaymentRoutes.payment,
+    //   builder: (context, state) {
+    //     final booking = state.extra as ParkingBooking?;
+    //     if (booking == null) {
+    //       return const Scaffold(body: Center(child: Text('No booking data')));
+    //     }
+    //     return PaymentScreen(booking: booking);
+    //   },
+    // ),
+    // GoRoute(
+    //   path: PaymentRoutes.bookingsPath,
+    //   name: PaymentRoutes.bookings,
+    //   builder: (context, state) => const MyBookingsScreen(),
+    // ),
+    // GoRoute(
+    //   path: PaymentRoutes.bookingDetailsPath,
+    //   name: PaymentRoutes.bookingDetails,
+    //   builder: (context, state) {
+    //     final bookingId = state.pathParameters['id'] ?? '';
+    //     final booking = state.extra as ParkingBooking?;
+    //     return BookingDetailsScreen(bookingId: bookingId, booking: booking);
+    //   },
+    // ),
+    // GoRoute(
+    //   path: PaymentRoutes.bookingConfirmationPath,
+    //   name: PaymentRoutes.bookingConfirmation,
+    //   builder: (context, state) {
+    //     final booking = state.extra as ParkingBooking?;
+    //     return BookingConfirmationScreen(booking: booking);
+    //   },
+    // ),
+    // GoRoute(
+    //   path: PaymentRoutes.bookingFailurePath,
+    //   name: PaymentRoutes.bookingFailure,
+    //   builder: (context, state) {
+    //     // Extract parameters from extra
+    //     final extra = state.extra as Map<String, dynamic>?;
 
-        return BookingFailureScreen(
-          failureType: extra?['failureType'] as FailureType?,
-          customMessage: extra?['message'] as String?,
-          booking: extra?['booking'] as ParkingBooking?,
-          errorCode: extra?['errorCode'] as String?,
-        );
-      },
-    ),
+    //     return BookingFailureScreen(
+    //       failureType: extra?['failureType'] as FailureType?,
+    //       customMessage: extra?['message'] as String?,
+    //       booking: extra?['booking'] as ParkingBooking?,
+    //       errorCode: extra?['errorCode'] as String?,
+    //     );
+    //   },
+    // ),
   ];
 }

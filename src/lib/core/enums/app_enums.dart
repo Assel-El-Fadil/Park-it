@@ -1,5 +1,7 @@
 // lib/core/enums/user_enums.dart
 
+import 'package:flutter/material.dart';
+
 enum UserRole {
   driver,
   owner,
@@ -151,20 +153,116 @@ enum PaymentMethod {
 }
 
 enum NotificationType {
-  reservationConfirmed,
-  reservationCancelled,
-  paymentSuccess,
   paymentFailed,
   reviewReceived,
-  expiryReminder,
-  accountVerified,
-  disputeUpdate;
+  bookingConfirmed,
+  bookingReminder,
+  bookingCancelled,
+  paymentReceived,
+  refundProcessed,
+  messageReceived,
+  promotion,
+  system,
+  parkingUnavailable,
+  hostResponse,
+  specialOffer;
 
   static NotificationType fromString(String value) {
     return values.firstWhere(
       (e) => e.name.toUpperCase() == value.toUpperCase(),
-      orElse: () => NotificationType.reservationConfirmed,
+      orElse: () => NotificationType.bookingCancelled,
     );
+  }
+
+  IconData get icon {
+    switch (this) {
+      case NotificationType.bookingConfirmed:
+        return Icons.check_circle_rounded;
+      case NotificationType.bookingReminder:
+        return Icons.alarm_rounded;
+      case NotificationType.bookingCancelled:
+        return Icons.cancel_rounded;
+      case NotificationType.paymentReceived:
+        return Icons.payment_rounded;
+      case NotificationType.paymentFailed:
+        return Icons.error_rounded;
+      case NotificationType.refundProcessed:
+        return Icons.currency_exchange_rounded;
+      case NotificationType.reviewReceived:
+        return Icons.star_rounded;
+      case NotificationType.messageReceived:
+        return Icons.message_rounded;
+      case NotificationType.promotion:
+        return Icons.local_offer_rounded;
+      case NotificationType.system:
+        return Icons.settings_rounded;
+      case NotificationType.parkingUnavailable:
+        return Icons.local_parking_rounded;
+      case NotificationType.hostResponse:
+        return Icons.person_rounded;
+      case NotificationType.specialOffer:
+        return Icons.card_giftcard_rounded;
+    }
+  }
+
+  // Get color for each type
+  Color get color {
+    switch (this) {
+      case NotificationType.bookingConfirmed:
+      case NotificationType.paymentReceived:
+      case NotificationType.refundProcessed:
+        return Colors.green;
+      case NotificationType.bookingReminder:
+        return Colors.orange;
+      case NotificationType.bookingCancelled:
+      case NotificationType.paymentFailed:
+        return Colors.red;
+      case NotificationType.reviewReceived:
+        return Colors.amber;
+      case NotificationType.messageReceived:
+        return Colors.blue;
+      case NotificationType.promotion:
+      case NotificationType.specialOffer:
+        return Colors.purple;
+      case NotificationType.system:
+        return Colors.grey;
+      case NotificationType.parkingUnavailable:
+        return Colors.red.shade700;
+      case NotificationType.hostResponse:
+        return Colors.teal;
+    }
+  }
+
+  // Get title prefix
+  String get titlePrefix {
+    switch (this) {
+      case NotificationType.bookingConfirmed:
+        return 'Booking Confirmed';
+      case NotificationType.bookingReminder:
+        return 'Reminder';
+      case NotificationType.bookingCancelled:
+        return 'Booking Cancelled';
+      case NotificationType.paymentReceived:
+        return 'Payment Received';
+      case NotificationType.paymentFailed:
+        return 'Payment Failed';
+      case NotificationType.refundProcessed:
+        return 'Refund Processed';
+      case NotificationType.reviewReceived:
+        return 'New Review';
+      case NotificationType.messageReceived:
+        return 'New Message';
+      case NotificationType.promotion:
+        return 'Special Offer';
+      case NotificationType.system:
+        return 'System Update';
+      case NotificationType.parkingUnavailable:
+        return 'Parking Unavailable';
+      case NotificationType.hostResponse:
+        return 'Host Response';
+      case NotificationType.specialOffer:
+        return 'Exclusive Offer';
+    }
   }
 
   String toJson() => name.toUpperCase();

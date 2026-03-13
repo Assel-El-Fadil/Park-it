@@ -11,16 +11,16 @@ class NavigationRoutes {
 /// Navigation module route configuration
 List<GoRoute> getNavigationRoutes() {
   return [
-    GoRoute(
-      path: NavigationRoutes.navigationPath,
-      name: NavigationRoutes.navigation,
-      builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>;
-        return ParkingNavigationScreen(
-          booking: extra['booking'],
-          parkingLocation: extra['coordinates'],
-        );
-      },
-    ),
+    // GoRoute(
+    //   path: NavigationRoutes.navigationPath,
+    //   name: NavigationRoutes.navigation,
+    //   builder: (context, state) {
+    //     final extra = state.extra as Map<String, dynamic>;
+    //     return ParkingNavigationScreen(
+    //       booking: extra['booking'],
+    //       parkingLocation: extra['coordinates'],
+    //     );
+    //   },
+    // ),
   ];
 }
