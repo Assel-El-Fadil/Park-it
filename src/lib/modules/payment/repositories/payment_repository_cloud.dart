@@ -24,10 +24,6 @@ class PaymentRepositoryCloud extends SupabaseRepository<ParkingBooking> {
   }
 
   @override
-  // TODO: implement tableName
-  String get tableName => throw UnimplementedError();
-
-  @override
   Map<String, dynamic> toJson(ParkingBooking item) {
     // TODO: implement toJson
     throw UnimplementedError();

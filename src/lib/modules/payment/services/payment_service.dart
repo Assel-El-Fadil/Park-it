@@ -3,7 +3,7 @@ import 'package:src/modules/payment/models/payment_model.dart';
 class PaymentService {
   Future<void> processPayment(
     ParkingBooking booking,
-    PaymentMethod method,
+    StoredPaymentMethod method,
   ) async {
     try {
       // Simulate payment processing

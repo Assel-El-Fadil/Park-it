@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:src/modules/payment/models/payment_model.dart';
 
 class PaymentMethodTile extends StatelessWidget {
-  final PaymentMethod paymentMethod;
+  final StoredPaymentMethod paymentMethod;
   final bool isSelected;
   final VoidCallback onTap;
 

@@ -17,13 +17,13 @@ class PaymentScreen extends ConsumerStatefulWidget {
 }
 
 class _PaymentScreenState extends ConsumerState<PaymentScreen> {
-  PaymentMethod? _selectedPaymentMethod;
+  StoredPaymentMethod? _selectedPaymentMethod;
   bool _isProcessing = false;
   bool _savePaymentMethod = false;
 
   // Mock payment methods - replace with actual data from your backend
-  final List<PaymentMethod> _paymentMethods = [
-    PaymentMethod(
+  final List<StoredPaymentMethod> _paymentMethods = [
+    StoredPaymentMethod(
       id: '1',
       type: 'Visa',
       last4: '4242',
@@ -31,7 +31,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       cardHolderName: 'John Doe',
       isDefault: true,
     ),
-    PaymentMethod(
+    StoredPaymentMethod(
       id: '2',
       type: 'Mastercard',
       last4: '8888',
@@ -39,7 +39,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       cardHolderName: 'John Doe',
       isDefault: false,
     ),
-    PaymentMethod(
+    StoredPaymentMethod(
       id: '3',
       type: 'PayPal',
       last4: 'user@email.com',

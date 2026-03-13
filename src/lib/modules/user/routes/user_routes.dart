@@ -29,12 +29,7 @@ class UserRoutes {
 /// User module route configuration
 List<GoRoute> getUserRoutes() {
   return [
-    // Profile
-    // GoRoute(
-    //   path: UserRoutes.profilePath,
-    //   name: UserRoutes.profile,
-    //   builder: (context, state) => const ProfileScreen(),
-    // ),
+    // Profile and Vehicles moved to auth_routes
     // GoRoute(
     //   path: UserRoutes.editProfilePath,
     //   name: UserRoutes.editProfile,
@@ -65,12 +60,7 @@ List<GoRoute> getUserRoutes() {
     //   builder: (context, state) => const FavoriteSpacesScreen(),
     // ),
 
-    // // Vehicles
-    // GoRoute(
-    //   path: UserRoutes.userVehiclesPath,
-    //   name: UserRoutes.userVehicles,
-    //   builder: (context, state) => const UserVehiclesScreen(),
-    // ),
+    // Vehicles - defined in auth_routes
     // GoRoute(
     //   path: UserRoutes.addVehiclePath,
     //   name: UserRoutes.addVehicle,

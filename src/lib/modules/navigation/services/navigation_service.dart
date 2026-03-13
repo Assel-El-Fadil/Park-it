@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:map_launcher/map_launcher.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class NavigationService {
   // Get current location
@@ -81,7 +82,7 @@ class NavigationService {
               ),
               ...availableMaps.map((map) {
                 return ListTile(
-                  leading: Image.memory(map.icon, width: 32, height: 32),
+                  leading: const Icon(Icons.map),
                   title: Text(map.mapName),
                   onTap: () {
                     Navigator.pop(context);

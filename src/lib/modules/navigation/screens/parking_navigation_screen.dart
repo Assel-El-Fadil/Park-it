@@ -233,7 +233,7 @@ class _ParkingNavigationScreenState
                           children: [
                             _buildStatItem(
                               theme,
-                              Icons.distance_rounded,
+                              Icons.straighten,
                               '${_distanceKm.toStringAsFixed(1)} km',
                               'Distance',
                             ),
@@ -258,7 +258,7 @@ class _ParkingNavigationScreenState
                             _buildStatItem(
                               theme,
                               Icons.local_parking_rounded,
-                              'Spot #${widget.booking.id ?? 'A12'}',
+                              widget.booking.parkingName,
                               'Parking',
                             ),
                           ],

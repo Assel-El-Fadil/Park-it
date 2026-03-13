@@ -32,7 +32,7 @@ class ParkingBooking {
   double get total => subtotal + serviceFee;
 }
 
-class PaymentMethod {
+class StoredPaymentMethod {
   final String id;
   final String type;
   final String last4;
@@ -40,7 +40,7 @@ class PaymentMethod {
   final String cardHolderName;
   final bool isDefault;
 
-  PaymentMethod({
+  StoredPaymentMethod({
     required this.id,
     required this.type,
     required this.last4,
