@@ -1,4 +1,6 @@
 import 'package:go_router/go_router.dart';
+import 'package:src/modules/review/screens/review_detail_screen.dart';
+import 'package:src/modules/review/screens/reviews_screen.dart';
 
 /// Review module route names
 class ReviewRoutes {
@@ -19,11 +21,11 @@ class ReviewRoutes {
 List<GoRoute> getReviewRoutes() {
   return [
     // List all reviews
-    // GoRoute(
-    //   path: ReviewRoutes.reviewsPath,
-    //   name: ReviewRoutes.reviews,
-    //   builder: (context, state) => const ReviewsScreen(),
-    // ),
+    GoRoute(
+      path: ReviewRoutes.reviewsPath,
+      name: ReviewRoutes.reviews,
+      builder: (context, state) => const ReviewsScreen(),
+    ),
 
     // // Add new review
     // GoRoute(
@@ -41,15 +43,15 @@ List<GoRoute> getReviewRoutes() {
     //   },
     // ),
 
-    // // Review detail
-    // GoRoute(
-    //   path: ReviewRoutes.reviewDetailPath,
-    //   name: ReviewRoutes.reviewDetail,
-    //   builder: (context, state) {
-    //     final reviewId = state.pathParameters['id'] ?? '';
-    //     return ReviewDetailScreen(reviewId: reviewId);
-    //   },
-    // ),
+    // Review detail (owner can reply from here)
+    GoRoute(
+      path: ReviewRoutes.reviewDetailPath,
+      name: ReviewRoutes.reviewDetail,
+      builder: (context, state) {
+        final reviewId = state.pathParameters['id'] ?? '';
+        return ReviewDetailScreen(reviewId: reviewId);
+      },
+    ),
 
     // // Review photos
     // GoRoute(

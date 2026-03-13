@@ -1,4 +1,8 @@
 import 'package:go_router/go_router.dart';
+import 'package:src/modules/owner/screens/add_parking_space_screen.dart';
+import 'package:src/modules/owner/screens/edit_parking_space_screen.dart';
+import 'package:src/modules/owner/screens/owner_parking_space_detail_screen.dart';
+import 'package:src/modules/owner/screens/owner_shell_screen.dart';
 
 /// Owner module route names
 class OwnerRoutes {
@@ -28,65 +32,34 @@ class OwnerRoutes {
 /// Owner module route configuration
 List<GoRoute> getOwnerRoutes() {
   return [
-    // Owner Dashboard
-    // GoRoute(
-    //   path: OwnerRoutes.ownerDashboardPath,
-    //   name: OwnerRoutes.ownerDashboard,
-    //   builder: (context, state) => const OwnerDashboardScreen(),
-    // ),
+    // Owner shell (dashboard / spots / reviews / reports)
+    GoRoute(
+      path: OwnerRoutes.ownerDashboardPath,
+      name: OwnerRoutes.ownerDashboard,
+      builder: (context, state) => const OwnerShellScreen(),
+    ),
 
-    // // Parking Spaces Management
-    // GoRoute(
-    //   path: OwnerRoutes.parkingSpacesPath,
-    //   name: OwnerRoutes.parkingSpaces,
-    //   builder: (context, state) => const ParkingSpacesScreen(),
-    // ),
-    // GoRoute(
-    //   path: OwnerRoutes.addParkingSpacePath,
-    //   name: OwnerRoutes.addParkingSpace,
-    //   builder: (context, state) => const AddParkingSpaceScreen(),
-    // ),
-    // GoRoute(
-    //   path: OwnerRoutes.editParkingSpacePath,
-    //   name: OwnerRoutes.editParkingSpace,
-    //   builder: (context, state) {
-    //     final spaceId = state.pathParameters['id'] ?? '';
-    //     return EditParkingSpaceScreen(parkingSpaceId: spaceId);
-    //   },
-    // ),
-    // GoRoute(
-    //   path: OwnerRoutes.parkingSpaceDetailPath,
-    //   name: OwnerRoutes.parkingSpaceDetail,
-    //   builder: (context, state) {
-    //     final spaceId = state.pathParameters['id'] ?? '';
-    //     return ParkingSpaceDetailScreen(parkingSpaceId: spaceId, isOwner: true);
-    //   },
-    // ),
-
-    // // Owner Bookings
-    // GoRoute(
-    //   path: OwnerRoutes.ownerBookingsPath,
-    //   name: OwnerRoutes.ownerBookings,
-    //   builder: (context, state) => const OwnerBookingsScreen(),
-    // ),
-
-    // // Owner Earnings
-    // GoRoute(
-    //   path: OwnerRoutes.ownerEarningsPath,
-    //   name: OwnerRoutes.ownerEarnings,
-    //   builder: (context, state) => const OwnerEarningsScreen(),
-    // ),
-
-    // // Owner Profile & Settings
-    // GoRoute(
-    //   path: OwnerRoutes.ownerProfilePath,
-    //   name: OwnerRoutes.ownerProfile,
-    //   builder: (context, state) => const OwnerProfileScreen(),
-    // ),
-    // GoRoute(
-    //   path: OwnerRoutes.ownerSettingsPath,
-    //   name: OwnerRoutes.ownerSettings,
-    //   builder: (context, state) => const OwnerSettingsScreen(),
-    // ),
+    // Spots CRUD
+    GoRoute(
+      path: OwnerRoutes.addParkingSpacePath,
+      name: OwnerRoutes.addParkingSpace,
+      builder: (context, state) => const AddParkingSpaceScreen(),
+    ),
+    GoRoute(
+      path: OwnerRoutes.editParkingSpacePath,
+      name: OwnerRoutes.editParkingSpace,
+      builder: (context, state) {
+        final spaceId = state.pathParameters['id'] ?? '';
+        return EditParkingSpaceScreen(parkingSpaceId: spaceId);
+      },
+    ),
+    GoRoute(
+      path: OwnerRoutes.parkingSpaceDetailPath,
+      name: OwnerRoutes.parkingSpaceDetail,
+      builder: (context, state) {
+        final spaceId = state.pathParameters['id'] ?? '';
+        return OwnerParkingSpaceDetailScreen(parkingSpaceId: spaceId);
+      },
+    ),
   ];
 }
