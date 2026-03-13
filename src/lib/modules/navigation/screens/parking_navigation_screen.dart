@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:src/modules/navigation/services/navigation_service.dart';
-import 'package:src/modules/payment/models/payment_model.dart';
+import 'package:src/modules/reservation/models/reservation_model.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 
 class ParkingNavigationScreen extends ConsumerStatefulWidget {
-  final ParkingBooking booking;
+  final ReservationModel booking;
   final LatLng parkingLocation;
 
   const ParkingNavigationScreen({
@@ -103,7 +103,8 @@ class _ParkingNavigationScreenState
             BitmapDescriptor.hueGreen,
           ),
           infoWindow: InfoWindow(
-            title: widget.booking.parkingName,
+            // Get Parking name
+            title: "Parking Name",
             snippet: _parkingAddress,
           ),
         ),
@@ -209,7 +210,7 @@ class _ParkingNavigationScreenState
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    widget.booking.parkingName,
+                                    "Parking Name",
                                     style: theme.textTheme.titleMedium
                                         ?.copyWith(fontWeight: FontWeight.bold),
                                   ),
@@ -233,7 +234,7 @@ class _ParkingNavigationScreenState
                           children: [
                             _buildStatItem(
                               theme,
-                              Icons.straighten,
+                              Icons.social_distance_outlined,
                               '${_distanceKm.toStringAsFixed(1)} km',
                               'Distance',
                             ),
@@ -258,7 +259,7 @@ class _ParkingNavigationScreenState
                             _buildStatItem(
                               theme,
                               Icons.local_parking_rounded,
-                              widget.booking.parkingName,
+                              "Parking Name",
                               'Parking',
                             ),
                           ],
@@ -337,7 +338,8 @@ class _ParkingNavigationScreenState
       context,
       widget.parkingLocation.latitude,
       widget.parkingLocation.longitude,
-      widget.booking.parkingName,
+      // TODO: Get parking name
+      "Parking Name",
     );
   }
 }

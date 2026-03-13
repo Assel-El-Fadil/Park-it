@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:src/modules/navigation/screens/parking_navigation_screen.dart';
-import 'package:src/modules/payment/models/payment_model.dart';
+import 'package:src/modules/reservation/models/reservation_model.dart';
 
 class BookingDetailsScreen extends StatelessWidget {
   final String bookingId;
-  final ParkingBooking? booking;
+  final ReservationModel? booking;
 
   const BookingDetailsScreen({
     super.key,
@@ -26,9 +25,10 @@ class BookingDetailsScreen extends StatelessWidget {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
+            //get parking name and location from reservation module
             if (booking != null) ...[
-              _buildDetailRow('Parking', booking!.parkingName),
-              _buildDetailRow('Location', booking!.location),
+              _buildDetailRow('Parking', "Parking Name"),
+              _buildDetailRow('Location', "Parking Location"),
               _buildDetailRow(
                 'Date',
                 '${booking!.startTime.toLocal()}'.split(' ')[0],
@@ -39,7 +39,7 @@ class BookingDetailsScreen extends StatelessWidget {
               ),
               _buildDetailRow(
                 'Total',
-                '\$${booking!.total.toStringAsFixed(2)}',
+                '\$${booking!.totalPrice.toStringAsFixed(2)}',
               ),
             ],
             const Spacer(),

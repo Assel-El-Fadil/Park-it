@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:src/modules/payment/models/payment_model.dart';
 import 'package:src/modules/payment/screens/booking_confirmation_screen.dart';
 import 'package:src/modules/payment/screens/booking_details_screen.dart';
 import 'package:src/modules/payment/screens/booking_failure_screen.dart';
-import 'package:src/modules/payment/screens/my_bookings_screen.dart';
 import 'package:src/modules/payment/screens/payment_screen.dart';
+import 'package:src/modules/reservation/models/reservation_model.dart';
 
 /// Payment module route names
 class PaymentRoutes {
@@ -31,32 +30,19 @@ List<GoRoute> getPaymentRoutes() {
       path: PaymentRoutes.paymentPath,
       name: PaymentRoutes.payment,
       builder: (context, state) {
-        final booking = state.extra as ParkingBooking?;
+        final booking = state.extra as ReservationModel?;
         if (booking == null) {
           return const Scaffold(body: Center(child: Text('No booking data')));
         }
         return PaymentScreen(booking: booking);
       },
     ),
-    GoRoute(
-      path: PaymentRoutes.bookingsPath,
-      name: PaymentRoutes.bookings,
-      builder: (context, state) => const MyBookingsScreen(),
-    ),
-    GoRoute(
-      path: PaymentRoutes.bookingDetailsPath,
-      name: PaymentRoutes.bookingDetails,
-      builder: (context, state) {
-        final bookingId = state.pathParameters['id'] ?? '';
-        final booking = state.extra as ParkingBooking?;
-        return BookingDetailsScreen(bookingId: bookingId, booking: booking);
-      },
-    ),
+
     GoRoute(
       path: PaymentRoutes.bookingConfirmationPath,
       name: PaymentRoutes.bookingConfirmation,
       builder: (context, state) {
-        final booking = state.extra as ParkingBooking?;
+        final booking = state.extra as ReservationModel?;
         return BookingConfirmationScreen(booking: booking);
       },
     ),
@@ -70,9 +56,18 @@ List<GoRoute> getPaymentRoutes() {
         return BookingFailureScreen(
           failureType: extra?['failureType'] as FailureType?,
           customMessage: extra?['message'] as String?,
-          booking: extra?['booking'] as ParkingBooking?,
+          booking: extra?['booking'] as ReservationModel?,
           errorCode: extra?['errorCode'] as String?,
         );
+      },
+    ),
+    GoRoute(
+      path: PaymentRoutes.bookingDetailsPath,
+      name: PaymentRoutes.bookingDetails,
+      builder: (context, state) {
+        final bookingId = state.pathParameters['id'] ?? '';
+        final booking = state.extra as ReservationModel?;
+        return BookingDetailsScreen(bookingId: bookingId, booking: booking);
       },
     ),
   ];

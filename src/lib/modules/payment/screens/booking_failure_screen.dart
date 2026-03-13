@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/core/config/routes/app_routes.dart';
-import 'package:src/modules/payment/models/payment_model.dart';
 import 'package:src/modules/payment/routes/payment_routes.dart';
+import 'package:src/modules/reservation/models/reservation_model.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 
 enum FailureType {
@@ -19,16 +19,16 @@ enum FailureType {
 class BookingFailureScreen extends ConsumerWidget {
   final FailureType? failureType;
   final String? customMessage;
-  final ParkingBooking? booking;
+  final ReservationModel? booking;
   final String? errorCode;
 
   const BookingFailureScreen({
-    Key? key,
+    super.key,
     this.failureType,
     this.customMessage,
     this.booking,
     this.errorCode,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

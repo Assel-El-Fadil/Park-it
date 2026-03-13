@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:src/modules/payment/models/payment_model.dart';
+import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/payment/widgets/add_payment_method_bottom_sheet.dart';
 import 'package:src/modules/payment/widgets/payment_method_tile.dart';
 import 'package:src/modules/payment/widgets/price_breakdown.dart';
+import 'package:src/modules/reservation/models/reservation_model.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
-  final ParkingBooking booking;
+  final ReservationModel booking;
 
   const PaymentScreen({super.key, required this.booking});
 
@@ -17,46 +18,21 @@ class PaymentScreen extends ConsumerStatefulWidget {
 }
 
 class _PaymentScreenState extends ConsumerState<PaymentScreen> {
-  StoredPaymentMethod? _selectedPaymentMethod;
+  PaymentMethod? _selectedPaymentMethod;
   bool _isProcessing = false;
   bool _savePaymentMethod = false;
 
-  // Mock payment methods - replace with actual data from your backend
-  final List<StoredPaymentMethod> _paymentMethods = [
-    StoredPaymentMethod(
-      id: '1',
-      type: 'Visa',
-      last4: '4242',
-      expiryDate: '12/25',
-      cardHolderName: 'John Doe',
-      isDefault: true,
-    ),
-    StoredPaymentMethod(
-      id: '2',
-      type: 'Mastercard',
-      last4: '8888',
-      expiryDate: '08/24',
-      cardHolderName: 'John Doe',
-      isDefault: false,
-    ),
-    StoredPaymentMethod(
-      id: '3',
-      type: 'PayPal',
-      last4: 'user@email.com',
-      expiryDate: '',
-      cardHolderName: 'John Doe',
-      isDefault: false,
-    ),
+  final List<PaymentMethod> _paymentMethods = [
+    PaymentMethod.card,
+    PaymentMethod.googlePay,
+    PaymentMethod.applePay,
   ];
 
   @override
   void initState() {
     super.initState();
     // Select default payment method
-    _selectedPaymentMethod = _paymentMethods.firstWhere(
-      (method) => method.isDefault,
-      orElse: () => _paymentMethods.first,
-    );
+    _selectedPaymentMethod = _paymentMethods.first;
   }
 
   @override
@@ -108,9 +84,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
           // Price Breakdown
           PriceBreakdown(
-            subtotal: widget.booking.subtotal,
-            serviceFee: widget.booking.serviceFee,
-            total: widget.booking.total,
+            subtotal: widget.booking.totalPrice - widget.booking.platformFee,
+            serviceFee: widget.booking.platformFee,
+            total: widget.booking.totalPrice,
             formatter: formatter,
           ),
 
@@ -151,12 +127,11 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               height: 100,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: widget.booking.parkingImage != null
-                      ? NetworkImage(widget.booking.parkingImage!)
-                      : const AssetImage(
-                              'assets/images/parking_placeholder.jpg',
-                            )
-                            as ImageProvider,
+                  //Get spot image using booking.spotId from reservation service which
+                  //communicates with reservation repo
+                  image:
+                      const AssetImage('assets/images/parking_placeholder.jpg')
+                          as ImageProvider,
                   fit: BoxFit.cover,
                 ),
               ),
@@ -168,8 +143,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    //Get spot name using booking.spotId from reservation service which
+                    //communicates with reservation repo
                     Text(
-                      widget.booking.parkingName,
+                      "Parking Name",
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -185,9 +162,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                           color: Colors.grey[600],
                         ),
                         const SizedBox(width: 4),
+
+                        // //Get location name using booking.spotId from reservation service which
+                        //communicates with reservation repo
                         Expanded(
                           child: Text(
-                            widget.booking.location,
+                            "Location",
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.grey[600],
                             ),
@@ -212,7 +192,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.booking.hostName,
+                                "Owner Name",
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -226,7 +206,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                                   ),
                                   const SizedBox(width: 2),
                                   Text(
-                                    widget.booking.hostRating.toString(),
+                                    "Host Rating",
                                     style: theme.textTheme.bodySmall,
                                   ),
                                 ],
@@ -292,7 +272,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             children: [
               Text('Total Duration', style: theme.textTheme.bodyMedium),
               Text(
-                '${widget.booking.totalHours.toStringAsFixed(1)} hours',
+                '${(widget.booking.endTime.difference(widget.booking.startTime)).inHours.toStringAsFixed(1)} hours',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -366,7 +346,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             final method = _paymentMethods[index];
             return PaymentMethodTile(
               paymentMethod: method,
-              isSelected: _selectedPaymentMethod?.id == method.id,
+              isSelected: _selectedPaymentMethod == method,
               onTap: () {
                 setState(() {
                   _selectedPaymentMethod = method;
@@ -530,7 +510,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                       ),
                     ),
                     Text(
-                      formatter.format(widget.booking.total),
+                      formatter.format(widget.booking.totalPrice),
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.primaryColor,

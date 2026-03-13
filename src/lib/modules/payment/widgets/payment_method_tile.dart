@@ -1,18 +1,18 @@
 // lib/modules/payment/widgets/payment_method_tile.dart
 import 'package:flutter/material.dart';
-import 'package:src/modules/payment/models/payment_model.dart';
+import 'package:src/core/enums/app_enums.dart';
 
 class PaymentMethodTile extends StatelessWidget {
-  final StoredPaymentMethod paymentMethod;
+  final PaymentMethod paymentMethod;
   final bool isSelected;
   final VoidCallback onTap;
 
   const PaymentMethodTile({
-    Key? key,
+    super.key,
     required this.paymentMethod,
     required this.isSelected,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -96,23 +96,23 @@ class PaymentMethodTile extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    paymentMethod.type == 'PayPal'
-                        ? paymentMethod.last4
-                        : '**** **** **** ${paymentMethod.last4}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  if (paymentMethod.expiryDate.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      'Expires: ${paymentMethod.expiryDate}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
+                  // Text(
+                  //   paymentMethod.type == 'PayPal'
+                  //       ? paymentMethod.last4
+                  //       : '**** **** **** ${paymentMethod.last4}',
+                  //   style: theme.textTheme.bodyMedium?.copyWith(
+                  //     color: Colors.grey[600],
+                  //   ),
+                  // ),
+                  // if (paymentMethod.expiryDate.isNotEmpty) ...[
+                  //   const SizedBox(height: 2),
+                  //   Text(
+                  //     'Expires: ${paymentMethod.expiryDate}',
+                  //     style: theme.textTheme.bodySmall?.copyWith(
+                  //       color: Colors.grey[500],
+                  //     ),
+                  //   ),
+                  // ],
                 ],
               ),
             ),

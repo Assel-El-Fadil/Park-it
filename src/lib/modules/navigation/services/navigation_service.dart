@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:map_launcher/map_launcher.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -82,7 +86,11 @@ class NavigationService {
               ),
               ...availableMaps.map((map) {
                 return ListTile(
-                  leading: const Icon(Icons.map),
+                  leading: Image.memory(
+                    base64Decode(map.icon),
+                    width: 32,
+                    height: 32,
+                  ),
                   title: Text(map.mapName),
                   onTap: () {
                     Navigator.pop(context);

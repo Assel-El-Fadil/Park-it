@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/modules/notification/routes/notification_routes.dart';
 import 'package:src/providers/theme_provider.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 
@@ -58,6 +59,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
               // Navigate to notification settings
+              AppNavigator.pushNamed(
+                context,
+                NotificationRoutes.notificationSettings,
+              );
             },
           ),
           IconButton(

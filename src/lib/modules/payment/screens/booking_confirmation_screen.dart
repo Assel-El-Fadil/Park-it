@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:src/modules/payment/models/payment_model.dart';
+import 'package:src/modules/reservation/models/reservation_model.dart';
 
 class BookingConfirmationScreen extends StatelessWidget {
-  final ParkingBooking? booking;
+  final ReservationModel? booking;
 
   const BookingConfirmationScreen({super.key, this.booking});
 
@@ -35,8 +35,9 @@ class BookingConfirmationScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
+                //get parking name
                 booking != null
-                    ? 'Your parking at ${booking!.parkingName} is confirmed'
+                    ? 'Your parking at ${"Parking Name"} is confirmed'
                     : 'Your booking has been confirmed',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, color: Colors.grey),
