@@ -150,6 +150,30 @@ enum PaymentMethod {
   }
 
   String toJson() => name.toUpperCase();
+
+  IconData get icon {
+    switch (this) {
+      case PaymentMethod.card:
+        return Icons.credit_card;
+      case PaymentMethod.applePay:
+        return Icons.apple;
+      case PaymentMethod.googlePay:
+        return Icons.account_balance_wallet;
+    }
+  }
+
+  String get type {
+    switch (this) {
+      case PaymentMethod.card:
+        return 'Card';
+      case PaymentMethod.applePay:
+        return 'Digital Wallet';
+      case PaymentMethod.googlePay:
+        return 'Digital Wallet';
+    }
+  }
+
+  bool get isDefault => this == PaymentMethod.card;
 }
 
 enum NotificationType {
