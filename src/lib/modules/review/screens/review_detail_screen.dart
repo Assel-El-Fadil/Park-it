@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:src/shared/widgets/app_card.dart';
-import 'package:src/shared/widgets/app_layout.dart';
-import 'package:src/shared/widgets/primary_button.dart';
-import 'package:src/shared/widgets/rating_stars.dart';
-import 'package:src/shared/widgets/section_header.dart';
+import 'package:src/core/config/themes/app_theme.dart';
+import 'package:src/core/config/themes/color_palette.dart';
+import 'package:src/core/constants/constants.dart';
 
 class ReviewDetailScreen extends StatefulWidget {
   const ReviewDetailScreen({super.key, required this.reviewId});
@@ -16,6 +14,7 @@ class ReviewDetailScreen extends StatefulWidget {
 
 class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
   final _replyCtrl = TextEditingController();
+  bool _hasReply = false;
 
   @override
   void dispose() {
@@ -25,78 +24,115 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return SafeArea(
       child: Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          title: Text('Review', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-        ),
+        appBar: AppBar(title: const Text('Review')),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: AppLayout(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 16),
-                AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SectionHeader(title: 'Customer feedback'),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'JD',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('John Doe', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Downtown Central Plaza • 2 days ago',
-                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      const RatingStars(rating: 5, size: 16),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Very easy to find and the security guard was very helpful. Would definitely park here again!',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.4),
-                      ),
-                    ],
-                  ),
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Customer feedback',
+                style: context.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: context.colorScheme.textPrimary,
                 ),
-                const SizedBox(height: 12),
-                AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SectionHeader(title: 'Your reply'),
-                      const SizedBox(height: 10),
+              ),
+              const SizedBox(height: 12),
+              _Card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: AppColors.primaryContainer,
+                          child: Text(
+                            'JD',
+                            style: context.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'John Doe',
+                                style: context.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: context.colorScheme.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Spot: Downtown Central Plaza • 2 days ago',
+                                style: context.textTheme.bodyMedium?.copyWith(
+                                  color: context.colorScheme.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: List.generate(
+                            5,
+                            (i) => Icon(
+                              i < 5 ? Icons.star : Icons.star_border,
+                              size: 16,
+                              color: context.colorScheme.tertiary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Very easy to find and the security guard was very helpful. Would definitely park here again!',
+                      style: context.textTheme.bodyLarge?.copyWith(
+                        color: context.colorScheme.textPrimary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Owner reply',
+                style: context.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: context.colorScheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _Card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_hasReply) ...[
+                      Text(
+                        _replyCtrl.text,
+                        style: context.textTheme.bodyLarge?.copyWith(
+                          color: context.colorScheme.textPrimary,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 56,
+                        child: OutlinedButton.icon(
+                          onPressed: () => setState(() => _hasReply = false),
+                          icon: const Icon(Icons.edit_outlined),
+                          label: const Text('Edit reply'),
+                        ),
+                      ),
+                    ] else ...[
                       TextField(
                         controller: _replyCtrl,
                         maxLines: 4,
@@ -105,16 +141,19 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      PrimaryButton(
-                        label: 'Post reply',
-                        icon: Icons.send_rounded,
-                        onPressed: () => Navigator.of(context).maybePop(),
+                      SizedBox(
+                        height: 56,
+                        child: ElevatedButton.icon(
+                          onPressed: () => setState(() => _hasReply = true),
+                          icon: const Icon(Icons.send),
+                          label: const Text('Post reply'),
+                        ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -122,3 +161,21 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
   }
 }
 
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: child,
+    );
+  }
+}

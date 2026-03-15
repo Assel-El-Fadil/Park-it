@@ -77,7 +77,7 @@ class AppNavigator {
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: AppNavigator.navigatorKey,
-  initialLocation: AuthRoutes.login,
+  initialLocation: OwnerRoutes.ownerDashboardPath,
   debugLogDiagnostics: true,
   routes: [
     // Splash
