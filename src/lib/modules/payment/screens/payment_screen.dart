@@ -32,11 +32,7 @@ class PaymentScreen extends ConsumerWidget {
     required ReservationModel booking,
     String currency = 'MAD',
   }) async {
-    AppNavigator.pushNamed(
-      context,
-      PaymentRoutes.payment,
-      extra: {booking: booking},
-    );
+    AppNavigator.pushNamed(context, PaymentRoutes.payment, extra: booking);
   }
 
   @override
