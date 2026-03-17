@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:src/core/config/routes/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/constants/constants.dart';
-import 'package:src/providers/auth_state_listener.dart';
 import 'package:src/providers/theme_provider.dart';
-import 'package:src/shared/screens/landing_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,20 +31,13 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
 
-    return AuthStateListener(
-      child: MaterialApp(
-        title: AppConstants.appName,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: themeMode,
-        debugShowCheckedModeBanner: false,
-        initialRoute: '/',
-        routes: {
-          '/': (context) => const LandingPage(),
-          '/login': (context) => const LoginPage(),
-          '/register': (context) => const RegisterPage(),
-        },
-      ),
+    return MaterialApp.router(
+      title: AppConstants.appName,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
+      routerConfig: appRouter,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

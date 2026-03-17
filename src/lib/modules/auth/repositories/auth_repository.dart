@@ -43,8 +43,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   Map<String, dynamic> toJson(UserModel item) => item.toUserRow();
 
   @override
-  UserModel fromJson(Map<String, dynamic> json) =>
-      UserModel.fromUserRow(json);
+  UserModel fromJson(Map<String, dynamic> json) => UserModel.fromUserRow(json);
 
   @override
   String getItemKey(UserModel item) => item.id;
@@ -73,34 +72,37 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         .maybeSingle();
 
     if (existing != null) {
-      return UserModel.fromSupabaseUser(
-        supabaseUser,
-        existing as Map<String, dynamic>,
-      );
+      return UserModel.fromSupabaseUser(supabaseUser, existing);
     }
 
     final metadata = supabaseUser.userMetadata ?? {};
-    final fullName = metadata['full_name'] as String? ??
+    final fullName =
+        metadata['full_name'] as String? ??
         metadata['name'] as String? ??
-        supabaseUser.email ?? '';
+        supabaseUser.email ??
+        '';
     final parts = fullName.split(RegExp(r'\s+'));
     final firstName = parts.isNotEmpty ? parts.first : '';
     final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
 
-    final inserted = await client.from(tableName).insert({
-      'first_name': firstName.isNotEmpty ? firstName : 'User',
-      'last_name': lastName.isNotEmpty ? lastName : '',
-      'email': email,
-      'phone': supabaseUser.phone,
-      'profile_photo': metadata['avatar_url'] as String?,
-      'average_rating': 0,
-      'total_reviews': 0,
-      'fcm_token': null,
-      'role': 'DRIVER',
-    }).select().maybeSingle();
+    final inserted = await client
+        .from(tableName)
+        .insert({
+          'first_name': firstName.isNotEmpty ? firstName : 'User',
+          'last_name': lastName.isNotEmpty ? lastName : '',
+          'email': email,
+          'phone': supabaseUser.phone,
+          'profile_photo': metadata['avatar_url'] as String?,
+          'average_rating': 0,
+          'total_reviews': 0,
+          'fcm_token': null,
+          'role': 'DRIVER',
+        })
+        .select()
+        .maybeSingle();
 
     if (inserted == null) return null;
-    return UserModel.fromUserRow(inserted as Map<String, dynamic>);
+    return UserModel.fromUserRow(inserted);
   }
 
   @override
@@ -175,10 +177,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
             .maybeSingle();
 
         if (userRow != null) {
-          userModel = UserModel.fromSupabaseUser(
-            user,
-            userRow as Map<String, dynamic>,
-          );
+          userModel = UserModel.fromSupabaseUser(user, userRow);
         } else {
           final meta = user.userMetadata ?? {};
           userModel = UserModel(
@@ -230,17 +229,20 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   @override
   Future<void> updateProfile(UserModel user) async {
     try {
-      await client.from(tableName).update({
-        'first_name': user.firstName,
-        'last_name': user.lastName,
-        'email': user.email,
-        'phone': user.phone,
-        'profile_photo': user.profilePhoto,
-        'average_rating': user.averageRating,
-        'total_reviews': user.totalReviews,
-        'fcm_token': user.fcmToken,
-        'role': user.role.name.toUpperCase(),
-      }).eq('id', int.tryParse(user.id) ?? -1);
+      await client
+          .from(tableName)
+          .update({
+            'first_name': user.firstName,
+            'last_name': user.lastName,
+            'email': user.email,
+            'phone': user.phone,
+            'profile_photo': user.profilePhoto,
+            'average_rating': user.averageRating,
+            'total_reviews': user.totalReviews,
+            'fcm_token': user.fcmToken,
+            'role': user.role.name.toUpperCase(),
+          })
+          .eq('id', int.tryParse(user.id) ?? -1);
     } on PostgrestException catch (e) {
       throw AppException(e.message);
     } catch (e) {
@@ -264,10 +266,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
             .maybeSingle();
 
         if (userRow != null) {
-          final model = UserModel.fromSupabaseUser(
-            user,
-            userRow as Map<String, dynamic>,
-          );
+          final model = UserModel.fromSupabaseUser(user, userRow);
           final token = _authService.getAccessToken();
           if (token != null) {
             await _sessionService.saveSession(model, token);
@@ -317,10 +316,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
 
         if (userRow == null) return null;
 
-        return UserModel.fromSupabaseUser(
-          user,
-          userRow as Map<String, dynamic>,
-        );
+        return UserModel.fromSupabaseUser(user, userRow);
       } catch (_) {
         return null;
       }

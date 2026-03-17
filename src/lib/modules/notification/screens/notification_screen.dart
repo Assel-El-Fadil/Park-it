@@ -247,7 +247,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                   });
                 },
               );
-            }).toList(),
+            }),
           ],
         );
       },

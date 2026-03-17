@@ -9,8 +9,6 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
-import 'package:src/modules/payment/routes/payment_routes.dart';
-import 'package:src/shared/screens/settings_screen.dart';
 
 // TODO: REMOVE FOR PRODUCTION — dev-only mock user for frontend testing
 const _kDevMockUser = UserModel(
