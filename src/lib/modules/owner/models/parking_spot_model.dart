@@ -1,4 +1,5 @@
 import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/navigation/models/spot_model.dart';
 
 class ParkingSpotModel {
   final int id;
@@ -102,6 +103,16 @@ class ParkingSpotModel {
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
+
+  SpotModel toSpotModel() => SpotModel(
+    id: id.toString(),
+    name: title,
+    latitude: latitude!,
+    longitude: longitude!,
+    imageUrl: photos?.firstOrNull,
+    description: description,
+    category: spotType.toJson(),
+  );
 
   Map<String, dynamic> toJson() {
     return {
