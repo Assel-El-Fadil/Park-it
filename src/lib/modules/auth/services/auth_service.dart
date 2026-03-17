@@ -18,11 +18,7 @@ class AuthService {
       return await _client.auth.signUp(
         email: email,
         password: password,
-        data: {
-          'first_name': firstName,
-          'last_name': lastName,
-          'role': role,
-        },
+        data: {'first_name': firstName, 'last_name': lastName, 'role': role},
       );
     } on AuthException catch (e, stackTrace) {
       print('ERROR [AuthService.signUp]: $e');
@@ -60,8 +56,9 @@ class AuthService {
     try {
       await _client.auth.signInWithOAuth(
         provider,
-        authScreenLaunchMode:
-            kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+        authScreenLaunchMode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
       );
       return true;
     } on AuthException catch (e) {
@@ -93,7 +90,7 @@ class AuthService {
   Future<void> signOut() async {
     try {
       await _client.auth.signOut();
-    } on AuthException catch (e) {
+    } on AuthException {
       throw AuthException(AppConstants.errorGeneric);
     } catch (e) {
       if (e is AuthException) rethrow;
@@ -104,7 +101,7 @@ class AuthService {
   Future<void> updateProfile(Map<String, dynamic> data) async {
     try {
       await _client.auth.updateUser(UserAttributes(data: data));
-    } on AuthException catch (e) {
+    } on AuthException {
       throw AuthException(AppConstants.errorGeneric);
     } catch (e) {
       if (e is AuthException) rethrow;

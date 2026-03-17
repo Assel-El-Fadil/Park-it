@@ -72,6 +72,9 @@ enum SpotType {
 enum SpotStatus {
   available,
   archived,
+  occupied,
+  reserved,
+  maintenance,
   suspended;
 
   static SpotStatus fromString(String value) {

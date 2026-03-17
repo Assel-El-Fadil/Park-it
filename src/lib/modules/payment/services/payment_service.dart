@@ -124,7 +124,7 @@ class PaymentService {
       // Return final model
       final completed = await _repo.getById(paymentId.toString());
       return completed!;
-    } on StripeException catch (e) {
+    } on StripeException {
       await _repo.incrementRetryCount(paymentId);
       rethrow;
     } catch (e) {
