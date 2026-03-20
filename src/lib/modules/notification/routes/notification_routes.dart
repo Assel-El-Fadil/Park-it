@@ -1,4 +1,8 @@
 import 'package:go_router/go_router.dart';
+import 'package:src/modules/notification/models/notification_model.dart';
+import 'package:src/modules/notification/screens/notification_detail_screen.dart';
+import 'package:src/modules/notification/screens/notification_screen.dart';
+import 'package:src/modules/notification/screens/notification_settings_screen.dart';
 
 /// Notification module route names
 class NotificationRoutes {
@@ -17,31 +21,37 @@ class NotificationRoutes {
 List<GoRoute> getNotificationRoutes() {
   return [
     // Notifications list
-    // GoRoute(
-    //   path: NotificationRoutes.notificationsPath,
-    //   name: NotificationRoutes.notifications,
-    //   builder: (context, state) {
-    //     // Optional filter parameter
-    //     final filter = state.uri.queryParameters['filter'];
-    //     return NotificationsScreen(filter: filter);
-    //   },
-    // ),
+    GoRoute(
+      path: NotificationRoutes.notificationsPath,
+      name: NotificationRoutes.notifications,
+      builder: (context, state) {
+        return NotificationScreen();
+      },
+    ),
+
+    GoRoute(
+      path: NotificationRoutes.notificationSettingsPath,
+      name: NotificationRoutes.notificationSettings,
+      builder: (context, state) => const NotificationSettingsScreen(),
+    ),
 
     // // Notification detail
-    // GoRoute(
-    //   path: NotificationRoutes.notificationDetailPath,
-    //   name: NotificationRoutes.notificationDetail,
-    //   builder: (context, state) {
-    //     final notificationId = state.pathParameters['id'] ?? '';
-    //     return NotificationDetailScreen(notificationId: notificationId);
-    //   },
-    // ),
+    GoRoute(
+      path: NotificationRoutes.notificationDetailPath,
+      name: NotificationRoutes.notificationDetail,
+      builder: (context, state) {
+        final notificationId = int.parse(state.pathParameters['id'] ?? '0');
+        final notification = state.extra as NotificationModel?;
 
-    // // Notification settings
-    // GoRoute(
-    //   path: NotificationRoutes.notificationSettingsPath,
-    //   name: NotificationRoutes.notificationSettings,
-    //   builder: (context, state) => const NotificationSettingsScreen(),
-    // ),
+        return NotificationDetailScreen(
+          notificationId: notificationId,
+          notification: notification,
+        );
+      },
+    ),
+
+    // Notification settings
   ];
 }
+
+class NotificationsScreen {}

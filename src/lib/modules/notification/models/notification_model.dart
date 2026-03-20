@@ -1,15 +1,15 @@
 import 'package:src/core/enums/app_enums.dart';
 
 class NotificationModel {
-  final int id;
-  final int userId;
-  final NotificationType type;
+  final int id; //notification id
+  final int userId; // target user
+  final NotificationType type; //paymentFailed, paymentReceived e.t.c
   final String title;
   final String content;
-  final int? referenceId;
+  final int? referenceId; // issue: booking, payment
   final String? referenceType;
   final bool isRead;
-  final NotificationChannel channel;
+  final NotificationChannel channel; //inApp, push or email notification
   final DateTime? sentAt;
   final DateTime createdAt;
 
@@ -59,5 +59,22 @@ class NotificationModel {
       'sent_at': sentAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
     };
+  }
+
+  String get timeAgo {
+    final now = DateTime.now();
+    final difference = now.difference(createdAt);
+
+    if (difference.inDays > 7) {
+      return '${(difference.inDays / 7).floor()}w ago';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
   }
 }

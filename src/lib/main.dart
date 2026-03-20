@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:src/core/config/routes/app_routes.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/constants/constants.dart';
-import 'package:src/providers/auth_state_listener.dart';
 import 'package:src/providers/theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await dotenv.load(fileName: "lib/.env");
+
+  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
+  await Stripe.instance.applySettings();
+
   await Supabase.initialize(
-    url: AppConstants.supabaseUrl,
-    anonKey: AppConstants.supabaseAnonKey,
+    url: dotenv.env['SUPABASE_URL'] ?? AppConstants.supabaseUrl,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(const ProviderScope(child: MyApp()));
@@ -25,15 +31,13 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
 
-    return AuthStateListener(
-      child: MaterialApp.router(
-        title: AppConstants.appName,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: themeMode,
-        routerConfig: appRouter,
-        debugShowCheckedModeBanner: false,
-      ),
+    return MaterialApp.router(
+      title: AppConstants.appName,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
+      routerConfig: appRouter,
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -120,6 +124,30 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class LoginPage extends StatelessWidget {
+  const LoginPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Login Page')),
+      body: const Center(child: Text('Login Screen Stub')),
+    );
+  }
+}
+
+class RegisterPage extends StatelessWidget {
+  const RegisterPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Register Page')),
+      body: const Center(child: Text('Register Screen Stub')),
     );
   }
 }

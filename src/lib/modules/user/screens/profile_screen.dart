@@ -9,8 +9,6 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
-import 'package:src/modules/payment/routes/payment_routes.dart';
-import 'package:src/shared/screens/settings_screen.dart';
 
 // TODO: REMOVE FOR PRODUCTION — dev-only mock user for frontend testing
 const _kDevMockUser = UserModel(
@@ -50,10 +48,7 @@ class ProfileScreen extends ConsumerWidget {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text(
-                'Loading profile...',
-                style: context.textTheme.bodyMedium,
-              ),
+              Text('Loading profile...', style: context.textTheme.bodyMedium),
             ],
           ),
         ),
@@ -85,7 +80,9 @@ class ProfileScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.defaultPadding,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -99,7 +96,9 @@ class ProfileScreen extends ConsumerWidget {
                 onTap: () {
                   // TODO: Navigate to edit profile
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Personal Information coming soon')),
+                    const SnackBar(
+                      content: Text('Personal Information coming soon'),
+                    ),
                   );
                 },
               ),
@@ -110,7 +109,9 @@ class ProfileScreen extends ConsumerWidget {
                 onTap: () {
                   // TODO: Navigate to payment methods
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Payment Methods coming soon')),
+                    const SnackBar(
+                      content: Text('Payment Methods coming soon'),
+                    ),
                   );
                 },
               ),
@@ -120,7 +121,9 @@ class ProfileScreen extends ConsumerWidget {
                 title: 'Saved Locations',
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Saved Locations coming soon')),
+                    const SnackBar(
+                      content: Text('Saved Locations coming soon'),
+                    ),
                   );
                 },
               ),
@@ -164,7 +167,7 @@ class ProfileScreen extends ConsumerWidget {
       bottomNavigationBar: _ProfileBottomNav(
         currentIndex: 3,
         onExplore: () => _navigatePlaceholder(context, 'Explore'),
-        onBookings: () => context.pushNamed(PaymentRoutes.bookings),
+        onBookings: () {},
         onWallet: () => _navigatePlaceholder(context, 'Wallet'),
         onProfile: () {},
       ),
@@ -172,9 +175,9 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   void _navigatePlaceholder(BuildContext context, String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label coming soon')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$label coming soon')));
   }
 }
 
@@ -193,7 +196,8 @@ class _ProfileHeader extends StatelessWidget {
             CircleAvatar(
               radius: 56,
               backgroundColor: context.surfaceColor,
-              backgroundImage: user.profilePhoto != null && user.profilePhoto!.isNotEmpty
+              backgroundImage:
+                  user.profilePhoto != null && user.profilePhoto!.isNotEmpty
                   ? NetworkImage(user.profilePhoto!)
                   : null,
               child: user.profilePhoto == null || user.profilePhoto!.isEmpty
@@ -223,11 +227,7 @@ class _ProfileHeader extends StatelessWidget {
                       width: 2,
                     ),
                   ),
-                  child: const Icon(
-                    Icons.edit,
-                    size: 16,
-                    color: Colors.white,
-                  ),
+                  child: const Icon(Icons.edit, size: 16, color: Colors.white),
                 ),
               ),
             ),
@@ -250,7 +250,9 @@ class _ProfileHeader extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.secondaryContainer,
-                borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius * 2),
+                borderRadius: BorderRadius.circular(
+                  AppConstants.defaultBorderRadius * 2,
+                ),
               ),
               child: Text(
                 'Pro Member',
@@ -452,7 +454,9 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.secondary : context.colorScheme.textSecondary;
+    final color = isSelected
+        ? AppColors.secondary
+        : context.colorScheme.textSecondary;
 
     return InkWell(
       onTap: onTap,
@@ -462,11 +466,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: color,
-            ),
+            Icon(icon, size: 24, color: color),
             const SizedBox(height: 4),
             Text(
               label,

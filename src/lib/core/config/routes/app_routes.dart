@@ -8,6 +8,7 @@ import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/reservation/routes/reservation_routes.dart';
 import 'package:src/modules/review/routes/review_routes.dart';
 import 'package:src/modules/user/routes/user_routes.dart';
+import 'package:src/shared/screens/landing_page.dart';
 import 'package:src/shared/screens/privacy_policy_screen.dart';
 import 'package:src/shared/screens/settings_screen.dart';
 import 'package:src/shared/screens/splash_screen.dart';
@@ -20,11 +21,11 @@ class AppRoutes {
   static const String privacyPolicy = 'policy';
   static const String settings = 'settings';
 
-  // Auth
-  static const String login = AuthRoutes.login;
-  static const String register = AuthRoutes.register;
-  static const String profile = AuthRoutes.profile;
-  static const String vehicles = AuthRoutes.vehicles;
+  static const String landing = '/';
+  static const String login = '/login';
+  static const String register = '/register';
+  static const String profile = '/profile';
+  static const String vehicles = '/vehicles';
 
   // Paths
   static const String splashPath = '/splash';
@@ -80,6 +81,12 @@ final GoRouter appRouter = GoRouter(
   initialLocation: OwnerRoutes.ownerDashboardPath,
   debugLogDiagnostics: true,
   routes: [
+    // Landing Page
+    GoRoute(
+      path: '/',
+      name: 'landing',
+      builder: (context, state) => const LandingPage(),
+    ),
     // Splash
     GoRoute(
       path: AppRoutes.splashPath,
