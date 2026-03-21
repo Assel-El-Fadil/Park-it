@@ -87,10 +87,28 @@ class _ParkingMapPageState extends ConsumerState<ParkingMapScreen> {
     ).whenComplete(() => setState(() => _selectedSpot = null));
   }
 
-  void _recenter() {
+  Future<void> _recenter() async {
+    final locationState = ref.read(locationProvider);
+    
+    if (locationState.isLoading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Locating you...'), duration: Duration(seconds: 1)),
+      );
+      return;
+    }
+
+    if (locationState.hasError || locationState.value == null) {
+      await ref.read(locationProvider.notifier).getCurrentLocation();
+    }
+
     final loc = ref.read(locationProvider).value;
-    if (loc == null) return;
-    _mapController.move(LatLng(loc.latitude, loc.longitude), 14);
+    if (loc != null) {
+      _mapController.move(LatLng(loc.latitude, loc.longitude), 14);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to get location. Please check your settings.')),
+      );
+    }
   }
 
   @override
