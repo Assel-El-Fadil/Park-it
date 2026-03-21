@@ -4,6 +4,7 @@ import 'package:src/modules/navigation/screens/location_screen.dart';
 import 'package:src/modules/navigation/screens/navigation_screen.dart';
 import 'package:src/modules/navigation/screens/parking_map_screen.dart';
 import 'package:src/modules/navigation/screens/parking_map_test_screen.dart';
+import 'package:src/modules/navigation/screens/parking_results_screen.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
 
 class NavigationRoutes {
@@ -11,11 +12,13 @@ class NavigationRoutes {
   static const String location = 'location-test';
   static const String parkingMap = 'parking-map';
   static const String parkingMapTest = 'test-parking-map';
+  static const String parkingResults = 'parking-results';
 
   static const String navigationPath = '/navigation';
   static const String locationPath = '/location-test';
   static const String parkingMapPath = '/parking-map';
   static const String parkingMapTestPath = '/test-parking-map';
+  static const String parkingResultsPath = '/parking-results';
 }
 
 List<GoRoute> getNavigationRoutes() {
@@ -54,6 +57,14 @@ List<GoRoute> getNavigationRoutes() {
       name: NavigationRoutes.parkingMapTest,
       builder: (context, state) {
         return ParkingMapTestScreen();
+      },
+    ),
+    GoRoute(
+      path: NavigationRoutes.parkingResultsPath,
+      name: NavigationRoutes.parkingResults,
+      builder: (context, state) {
+        final cityQuery = state.extra as String;
+        return ParkingResultsScreen(cityQuery: cityQuery);
       },
     ),
   ];
