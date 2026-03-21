@@ -9,7 +9,12 @@ import 'package:src/providers/booking_time_provider.dart';
 
 final parkingSearchResultsProvider = FutureProvider.family<List<ParkingSpotModel>, String>((ref, cityQuery) async {
   final repo = ref.read(parkingSpotRepositoryProvider);
-  return repo.searchByCity(cityQuery);
+  final bookingTime = ref.watch(bookingTimeProvider);
+  return repo.searchAvailableByCity(
+    cityQuery,
+    bookingTime.arriveTime,
+    bookingTime.exitTime,
+  );
 });
 
 class ParkingResultsScreen extends ConsumerWidget {

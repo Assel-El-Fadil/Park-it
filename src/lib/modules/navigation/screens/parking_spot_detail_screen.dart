@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
+import 'package:src/modules/owner/models/availability_model.dart';
 import 'package:src/modules/owner/repositories/parking_spot_repository.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/app_layout.dart';
@@ -12,6 +13,11 @@ import 'package:src/providers/booking_time_provider.dart';
 final parkingSpotDetailProvider = FutureProvider.family<ParkingSpotModel?, String>((ref, id) {
   final repo = ref.read(parkingSpotRepositoryProvider);
   return repo.getById(id);
+});
+
+final parkingSpotAvailabilityProvider = FutureProvider.family<List<AvailabilityModel>, int>((ref, spotId) {
+  final repo = ref.read(parkingSpotRepositoryProvider);
+  return repo.getAvailabilities(spotId);
 });
 
 class ParkingSpotDetailScreen extends ConsumerWidget {
@@ -175,6 +181,8 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        _AvailabilitySection(spotId: spot.id),
                       ],
                     ),
                   ),
@@ -243,6 +251,59 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+class _AvailabilitySection extends ConsumerWidget {
+  const _AvailabilitySection({required this.spotId});
+
+  final int spotId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final availabilityAsync = ref.watch(parkingSpotAvailabilityProvider(spotId));
+
+    return availabilityAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (err, stack) => const SizedBox.shrink(),
+      data: (availabilities) {
+        if (availabilities.isEmpty) return const SizedBox.shrink();
+
+        return AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SectionHeader(title: 'Opening Hours'),
+              const SizedBox(height: 12),
+              ...availabilities.map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      a.dayName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      a.isBlocked ? 'Closed' : a.timeRange,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: a.isBlocked 
+                            ? theme.colorScheme.error 
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: a.isBlocked ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+            ],
+          ),
+        );
+      },
     );
   }
 }
