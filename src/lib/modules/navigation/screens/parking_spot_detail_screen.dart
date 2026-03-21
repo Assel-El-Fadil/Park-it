@@ -7,6 +7,7 @@ import 'package:src/shared/widgets/app_layout.dart';
 import 'package:src/shared/widgets/frosted_bar.dart';
 import 'package:src/shared/widgets/rating_stars.dart';
 import 'package:src/shared/widgets/section_header.dart';
+import 'package:src/providers/booking_time_provider.dart';
 
 final parkingSpotDetailProvider = FutureProvider.family<ParkingSpotModel?, String>((ref, id) {
   final repo = ref.read(parkingSpotRepositoryProvider);
@@ -22,6 +23,7 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final spotAsyncValue = ref.watch(parkingSpotDetailProvider(spotId));
+    final duration = ref.watch(bookingTimeProvider).durationHours;
 
     return SafeArea(
       child: Scaffold(
@@ -200,14 +202,14 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '\$${spot.pricePerHour.toStringAsFixed(2)}',
+                                '\$${(spot.pricePerHour * duration).toStringAsFixed(2)}',
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.w900,
                                   color: theme.colorScheme.primary,
                                 ),
                               ),
                               Text(
-                                'per hour',
+                                'total for $duration hours',
                                 style: theme.textTheme.labelMedium?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
