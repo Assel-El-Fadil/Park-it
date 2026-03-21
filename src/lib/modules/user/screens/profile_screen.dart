@@ -166,7 +166,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: _ProfileBottomNav(
         currentIndex: 3,
-        onExplore: () => _navigatePlaceholder(context, 'Explore'),
+        onExplore: () => context.go(AppRoutes.landing),
         onBookings: () {},
         onWallet: () => _navigatePlaceholder(context, 'Wallet'),
         onProfile: () {},

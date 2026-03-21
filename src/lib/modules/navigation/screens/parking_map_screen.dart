@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:src/core/config/routes/app_routes.dart';
@@ -45,14 +46,14 @@ class _ParkingMapPageState extends ConsumerState<ParkingMapScreen> {
   }
 
   LatLng get _initialCenter {
-    final loc = ref.read(locationProvider).value;
-    if (loc != null) return LatLng(loc.latitude, loc.longitude);
     if (_mappableSpots.isNotEmpty) {
       return LatLng(
         _mappableSpots.first.latitude!,
         _mappableSpots.first.longitude!,
       );
     }
+    final loc = ref.read(locationProvider).value;
+    if (loc != null) return LatLng(loc.latitude, loc.longitude);
     return const LatLng(31.6295, -7.9811); // Marrakesh fallback
   }
 
@@ -78,19 +79,36 @@ class _ParkingMapPageState extends ConsumerState<ParkingMapScreen> {
       imageUrl: navSpot.imageUrl,
       onGo: () {
         AppNavigator.pop(context);
-        AppNavigator.pushNamed(
-          context,
-          NavigationRoutes.navigation,
-          extra: navSpot,
+        GoRouter.of(context).pushNamed(
+          NavigationRoutes.parkingSpotDetail,
+          pathParameters: {'id': spot.id.toString()},
         );
       },
     ).whenComplete(() => setState(() => _selectedSpot = null));
   }
 
-  void _recenter() {
+  Future<void> _recenter() async {
+    final locationState = ref.read(locationProvider);
+    
+    if (locationState.isLoading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Locating you...'), duration: Duration(seconds: 1)),
+      );
+      return;
+    }
+
+    if (locationState.hasError || locationState.value == null) {
+      await ref.read(locationProvider.notifier).getCurrentLocation();
+    }
+
     final loc = ref.read(locationProvider).value;
-    if (loc == null) return;
-    _mapController.move(LatLng(loc.latitude, loc.longitude), 14);
+    if (loc != null) {
+      _mapController.move(LatLng(loc.latitude, loc.longitude), 14);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to get location. Please check your settings.')),
+      );
+    }
   }
 
   @override
