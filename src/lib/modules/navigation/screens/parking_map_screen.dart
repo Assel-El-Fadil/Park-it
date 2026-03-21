@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:src/core/config/routes/app_routes.dart';
@@ -45,14 +46,14 @@ class _ParkingMapPageState extends ConsumerState<ParkingMapScreen> {
   }
 
   LatLng get _initialCenter {
-    final loc = ref.read(locationProvider).value;
-    if (loc != null) return LatLng(loc.latitude, loc.longitude);
     if (_mappableSpots.isNotEmpty) {
       return LatLng(
         _mappableSpots.first.latitude!,
         _mappableSpots.first.longitude!,
       );
     }
+    final loc = ref.read(locationProvider).value;
+    if (loc != null) return LatLng(loc.latitude, loc.longitude);
     return const LatLng(31.6295, -7.9811); // Marrakesh fallback
   }
 
@@ -78,10 +79,9 @@ class _ParkingMapPageState extends ConsumerState<ParkingMapScreen> {
       imageUrl: navSpot.imageUrl,
       onGo: () {
         AppNavigator.pop(context);
-        AppNavigator.pushNamed(
-          context,
-          NavigationRoutes.navigation,
-          extra: navSpot,
+        GoRouter.of(context).pushNamed(
+          NavigationRoutes.parkingSpotDetail,
+          pathParameters: {'id': spot.id.toString()},
         );
       },
     ).whenComplete(() => setState(() => _selectedSpot = null));
