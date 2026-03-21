@@ -43,30 +43,6 @@ class _NotificationDetailScreenState
         widget.notification ??
         notifications.firstWhere((n) => n.id == widget.notificationId);
 
-    if (notification == null) {
-      return Scaffold(
-        appBar: CustomAppBar(
-          title: 'Notification',
-          automaticallyImplyLeading: true,
-          centerTitle: true,
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.notifications_off_rounded,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text('Notification not found', style: theme.textTheme.titleLarge),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: CustomAppBar(

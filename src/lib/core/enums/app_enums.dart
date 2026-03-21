@@ -72,6 +72,9 @@ enum SpotType {
 enum SpotStatus {
   available,
   archived,
+  occupied,
+  reserved,
+  maintenance,
   suspended;
 
   static SpotStatus fromString(String value) {
@@ -122,7 +125,10 @@ enum ReservationStatus {
 }
 
 enum PaymentStatus {
+  idle,
+  loading,
   pending,
+  cancelled,
   succeeded,
   failed,
   refunded;
@@ -352,4 +358,152 @@ enum ReportStatus {
   }
 
   String toJson() => name.toUpperCase();
+}
+
+// lib/services/navigation_service.dart (or create a separate file)
+
+/// Error types for navigation operations
+enum NavigationError {
+  /// Location services are disabled on the device
+  locationServicesDisabled,
+
+  /// User denied location permission
+  permissionDenied,
+
+  /// User permanently denied location permission
+  permissionDeniedForever,
+
+  /// Could not get current location
+  locationNotFound,
+
+  /// No map applications are installed on the device
+  mapsNotAvailable,
+
+  /// Network connectivity issues
+  networkError,
+
+  /// Invalid coordinates provided
+  invalidCoordinates,
+
+  /// Navigation not available for this reservation (too early/late)
+  navigationNotAvailable,
+
+  /// Timeout while getting location
+  locationTimeout,
+
+  /// Unknown error occurred
+  unknown,
+}
+
+// Extension for user-friendly error messages
+extension NavigationErrorExtension on NavigationError {
+  String get userMessage {
+    switch (this) {
+      case NavigationError.locationServicesDisabled:
+        return 'Location services are disabled. Please enable them to navigate.';
+      case NavigationError.permissionDenied:
+        return 'Location permission is needed to show directions.';
+      case NavigationError.permissionDeniedForever:
+        return 'Location permission is permanently denied. Please enable it in app settings.';
+      case NavigationError.locationNotFound:
+        return 'Could not get your current location. Please try again.';
+      case NavigationError.mapsNotAvailable:
+        return 'No map applications found on your device.';
+      case NavigationError.networkError:
+        return 'Network error. Please check your internet connection.';
+      case NavigationError.invalidCoordinates:
+        return 'Invalid parking spot coordinates.';
+      case NavigationError.navigationNotAvailable:
+        return 'Navigation is not available for this reservation at this time.';
+      case NavigationError.locationTimeout:
+        return 'Location request timed out. Please try again.';
+      case NavigationError.unknown:
+        return 'An unknown error occurred. Please try again.';
+    }
+  }
+
+  // Get error title for dialogs
+  String get title {
+    switch (this) {
+      case NavigationError.locationServicesDisabled:
+        return 'Location Services Disabled';
+      case NavigationError.permissionDenied:
+      case NavigationError.permissionDeniedForever:
+        return 'Location Permission Required';
+      case NavigationError.locationNotFound:
+        return 'Location Not Found';
+      case NavigationError.mapsNotAvailable:
+        return 'No Maps Available';
+      case NavigationError.networkError:
+        return 'Network Error';
+      case NavigationError.invalidCoordinates:
+        return 'Invalid Location';
+      case NavigationError.navigationNotAvailable:
+        return 'Navigation Unavailable';
+      case NavigationError.locationTimeout:
+        return 'Location Timeout';
+      case NavigationError.unknown:
+        return 'Error';
+    }
+  }
+
+  // Get icon for error
+  IconData get icon {
+    switch (this) {
+      case NavigationError.locationServicesDisabled:
+      case NavigationError.permissionDenied:
+      case NavigationError.permissionDeniedForever:
+        return Icons.location_off;
+      case NavigationError.locationNotFound:
+        return Icons.location_searching;
+      case NavigationError.mapsNotAvailable:
+        return Icons.map;
+      case NavigationError.networkError:
+        return Icons.wifi_off;
+      case NavigationError.invalidCoordinates:
+        return Icons.location_disabled;
+      case NavigationError.navigationNotAvailable:
+        return Icons.timer_off;
+      case NavigationError.locationTimeout:
+        return Icons.timer_off;
+      case NavigationError.unknown:
+        return Icons.error_outline;
+    }
+  }
+
+  // Check if error is recoverable
+  bool get isRecoverable {
+    switch (this) {
+      case NavigationError.locationServicesDisabled:
+      case NavigationError.permissionDenied:
+      case NavigationError.permissionDeniedForever:
+      case NavigationError.networkError:
+      case NavigationError.locationTimeout:
+        return true;
+      case NavigationError.locationNotFound:
+      case NavigationError.mapsNotAvailable:
+      case NavigationError.invalidCoordinates:
+      case NavigationError.navigationNotAvailable:
+      case NavigationError.unknown:
+        return false;
+    }
+  }
+
+  // Get suggested action for user
+  String? get suggestedAction {
+    switch (this) {
+      case NavigationError.locationServicesDisabled:
+        return 'Open Settings';
+      case NavigationError.permissionDenied:
+        return 'Request Permission';
+      case NavigationError.permissionDeniedForever:
+        return 'Open App Settings';
+      case NavigationError.networkError:
+        return 'Retry';
+      case NavigationError.locationTimeout:
+        return 'Try Again';
+      default:
+        return null;
+    }
+  }
 }

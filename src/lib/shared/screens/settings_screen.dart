@@ -10,6 +10,8 @@ import 'package:src/providers/theme_provider.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key});
+
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }

@@ -4,6 +4,8 @@ import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/config/themes/text_styles.dart';
 
 class ForgotPasswordScreen extends StatelessWidget {
+  const ForgotPasswordScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Card(
