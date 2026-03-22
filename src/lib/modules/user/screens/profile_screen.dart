@@ -104,6 +104,14 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               _ProfileTile(
+                icon: Icons.directions_car_outlined,
+                title: 'My Vehicles',
+                onTap: () {
+                  context.push(AuthRoutes.vehicles);
+                },
+              ),
+              const SizedBox(height: 8),
+              _ProfileTile(
                 icon: Icons.credit_card_outlined,
                 title: 'Payment Methods',
                 onTap: () {
