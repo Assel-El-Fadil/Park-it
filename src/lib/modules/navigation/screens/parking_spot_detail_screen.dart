@@ -9,13 +9,19 @@ import 'package:src/shared/widgets/frosted_bar.dart';
 import 'package:src/shared/widgets/rating_stars.dart';
 import 'package:src/shared/widgets/section_header.dart';
 import 'package:src/providers/booking_time_provider.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/auth/controllers/vehicle_controller.dart';
+import 'package:src/modules/reservation/repositories/reservation_repository.dart';
+import 'package:src/modules/payment/routes/payment_routes.dart';
+import 'package:src/core/config/routes/app_routes.dart';
 
 final parkingSpotDetailProvider = FutureProvider.family<ParkingSpotModel?, String>((ref, id) {
   final repo = ref.read(parkingSpotRepositoryProvider);
   return repo.getById(id);
 });
 
-final parkingSpotAvailabilityProvider = FutureProvider.family<List<AvailabilityModel>, int>((ref, spotId) {
+
+final parkingSpotAvailabilityProvider = FutureProvider.family<List<AvailabilityModel>, int>((ref, spotId) async {
   final repo = ref.read(parkingSpotRepositoryProvider);
   return repo.getAvailabilities(spotId);
 });
@@ -227,10 +233,60 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                           const SizedBox(width: 24),
                           Expanded(
                             child: FilledButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Booking flow coming soon.')),
+                              onPressed: () async {
+                                final currentUser = ref.read(currentUserProvider);
+                                if (currentUser == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please login to book a spot.')),
+                                  );
+                                  return;
+                                }
+
+                                final vehicleState = ref.read(vehicleNotifierProvider).value;
+                                if (vehicleState == null || vehicleState.vehicles.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please add a vehicle in your profile first.')),
+                                  );
+                                  return;
+                                }
+
+                                final defaultVehicle = vehicleState.vehicles.firstWhere(
+                                  (v) => v.isDefault,
+                                  orElse: () => vehicleState.vehicles.first,
                                 );
+
+                                try {
+                                  // Show loading
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Preparing your booking...'), duration: Duration(seconds: 1)),
+                                  );
+
+                                  final bookingTime = ref.read(bookingTimeProvider);
+                                  final reservationRepo = ref.read(reservationRepositoryProvider);
+
+                                  final reservation = await reservationRepo.createReservation(
+                                    driverId: int.parse(currentUser.id),
+                                    spotId: spot.id,
+                                    vehicleId: int.parse(defaultVehicle.id),
+                                    startTime: bookingTime.arriveTime,
+                                    endTime: bookingTime.exitTime,
+                                    totalPrice: spot.pricePerHour * duration,
+                                  );
+
+                                  if (context.mounted) {
+                                    AppNavigator.pushNamed(
+                                      context,
+                                      PaymentRoutes.payment,
+                                      extra: reservation,
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error creating reservation: $e')),
+                                    );
+                                  }
+                                }
                               },
                               style: FilledButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 16),

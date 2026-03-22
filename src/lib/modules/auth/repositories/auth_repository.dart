@@ -61,10 +61,10 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     }
   }
 
-  Future<UserModel?> _upsertOAuthUser(User supabaseUser) async {
+  Future<UserModel> _getOrCreateUser(User supabaseUser) async {
     final email = supabaseUser.email ?? supabaseUser.phone ?? '';
-    if (email.isEmpty) return null;
-
+    
+    // 1. Try to find existing
     final existing = await client
         .from(tableName)
         .select()
@@ -75,33 +75,29 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       return UserModel.fromSupabaseUser(supabaseUser, existing);
     }
 
+    // 2. Create if missing
     final metadata = supabaseUser.userMetadata ?? {};
     final fullName =
         metadata['full_name'] as String? ??
         metadata['name'] as String? ??
-        supabaseUser.email ??
-        '';
-    final parts = fullName.split(RegExp(r'\s+'));
-    final firstName = parts.isNotEmpty ? parts.first : '';
-    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-
+        metadata['first_name'] as String? ??
+        'User';
+    
     final inserted = await client
         .from(tableName)
         .insert({
-          'first_name': firstName.isNotEmpty ? firstName : 'User',
-          'last_name': lastName.isNotEmpty ? lastName : '',
+          'first_name': metadata['first_name'] as String? ?? fullName.split(' ').first,
+          'last_name': metadata['last_name'] as String? ?? (fullName.contains(' ') ? fullName.split(' ').sublist(1).join(' ') : ''),
           'email': email,
-          'phone': supabaseUser.phone,
-          'profile_photo': metadata['avatar_url'] as String?,
+          'role': (metadata['role'] as String?)?.toUpperCase() ?? 'DRIVER',
           'average_rating': 0,
           'total_reviews': 0,
-          'fcm_token': null,
-          'role': 'DRIVER',
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
         })
         .select()
-        .maybeSingle();
+        .single();
 
-    if (inserted == null) return null;
     return UserModel.fromUserRow(inserted);
   }
 
@@ -114,8 +110,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     UserRole role,
   ) async {
     try {
-      // Pass profile fields as auth metadata — no INSERT into users table needed,
-      // so RLS is never triggered.
+      // 1. Create the Auth User
       final response = await _authService.signUp(
         email,
         password,
@@ -128,15 +123,23 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         throw AppException(AppConstants.errorGeneric);
       }
 
-      // Build the model from auth metadata — no DB read required.
-      final meta = user.userMetadata ?? {};
-      final userModel = UserModel(
-        id: user.id,
-        firstName: meta['first_name'] as String? ?? firstName,
-        lastName: meta['last_name'] as String? ?? lastName,
-        email: user.email ?? email,
-        role: role,
-      );
+      // 2. Insert into public.users table to get an integer ID
+      final userRow = await client
+          .from('users')
+          .insert({
+            'first_name': firstName,
+            'last_name': lastName,
+            'email': email,
+            'role': role.name.toUpperCase(),
+            'average_rating': 0,
+            'total_reviews': 0,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .select()
+          .single();
+
+      final userModel = UserModel.fromSupabaseUser(user, userRow);
 
       final token = response.session?.accessToken;
       if (token != null) {
@@ -167,38 +170,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         throw AppException(AppConstants.errorInvalidCredentials);
       }
 
-      // Try reading from users table first; fall back to auth metadata.
-      UserModel userModel;
-      try {
-        final userRow = await client
-            .from(tableName)
-            .select()
-            .eq('email', user.email ?? '')
-            .maybeSingle();
-
-        if (userRow != null) {
-          userModel = UserModel.fromSupabaseUser(user, userRow);
-        } else {
-          final meta = user.userMetadata ?? {};
-          userModel = UserModel(
-            id: user.id,
-            firstName: meta['first_name'] as String? ?? '',
-            lastName: meta['last_name'] as String? ?? '',
-            email: user.email ?? email,
-            role: _roleFromMeta(meta['role'] as String?),
-          );
-        }
-      } on PostgrestException {
-        // users table unreachable — build from metadata
-        final meta = user.userMetadata ?? {};
-        userModel = UserModel(
-          id: user.id,
-          firstName: meta['first_name'] as String? ?? '',
-          lastName: meta['last_name'] as String? ?? '',
-          email: user.email ?? email,
-          role: _roleFromMeta(meta['role'] as String?),
-        );
-      }
+      final userModel = await _getOrCreateUser(user);
 
       final token = response.session?.accessToken;
       if (token != null) {
@@ -257,44 +229,13 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       final user = _authService.getCurrentUser();
       if (user == null) return null;
 
-      // Try users table; gracefully fall back to auth metadata on RLS/error.
-      try {
-        final userRow = await client
-            .from(tableName)
-            .select()
-            .eq('email', user.email ?? user.phone ?? '')
-            .maybeSingle();
-
-        if (userRow != null) {
-          final model = UserModel.fromSupabaseUser(user, userRow);
-          final token = _authService.getAccessToken();
-          if (token != null) {
-            await _sessionService.saveSession(model, token);
-          }
-          return model;
-        }
-      } on PostgrestException {
-        // Fall through to metadata fallback
+      final userModel = await _getOrCreateUser(user);
+      
+      final token = _authService.getAccessToken();
+      if (token != null) {
+        await _sessionService.saveSession(userModel, token);
       }
-
-      // Build from auth metadata (used when users table row doesn't exist yet)
-      final meta = user.userMetadata ?? {};
-      if (meta.isNotEmpty) {
-        final model = UserModel(
-          id: user.id,
-          firstName: meta['first_name'] as String? ?? '',
-          lastName: meta['last_name'] as String? ?? '',
-          email: user.email ?? '',
-          role: _roleFromMeta(meta['role'] as String?),
-        );
-        final token = _authService.getAccessToken();
-        if (token != null) {
-          await _sessionService.saveSession(model, token);
-        }
-        return model;
-      }
-
-      return null;
+      return userModel;
     } catch (e) {
       if (e is AppException) rethrow;
       return null;

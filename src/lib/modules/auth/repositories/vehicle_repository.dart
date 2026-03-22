@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 abstract class VehicleRepository {
   Future<List<VehicleModel>> getVehicles(String userId);
 
-  Future<void> addVehicle(VehicleModel vehicle);
+  Future<VehicleModel> addVehicle(VehicleModel vehicle);
 
   Future<void> updateVehicle(VehicleModel vehicle);
 
@@ -36,9 +36,10 @@ class VehicleRepositoryImpl implements VehicleRepository {
   }
 
   @override
-  Future<void> addVehicle(VehicleModel vehicle) async {
+  Future<VehicleModel> addVehicle(VehicleModel vehicle) async {
     try {
-      await _vehicleService.addVehicle(vehicle.toVehicleRow());
+      final row = await _vehicleService.addVehicle(vehicle.toVehicleRow());
+      return VehicleModel.fromVehicleRow(row);
     } on PostgrestException catch (e) {
       throw AppException(e.message);
     } catch (e) {
