@@ -47,4 +47,24 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
 
     return fromJson(response);
   }
+
+  Future<List<Map<String, dynamic>>> getReservationsWithSpots(int driverId) async {
+    final response = await client
+        .from(tableName)
+        .select('*, parking_spots(*)')
+        .eq('driver_id', driverId)
+        .order('created_at', ascending: false);
+    
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<Map<String, dynamic>> getReservationWithDetails(int reservationId) async {
+    final response = await client
+        .from(tableName)
+        .select('*, parking_spots(*), vehicles(*)')
+        .eq('id', reservationId)
+        .single();
+    
+    return response as Map<String, dynamic>;
+  }
 }
