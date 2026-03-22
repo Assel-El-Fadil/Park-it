@@ -18,7 +18,7 @@ class BookingTimeNotifier extends Notifier<BookingTimeState> {
     final now = DateTime.now();
     // Default arrive: Next full hour
     final arrive = DateTime(now.year, now.month, now.day, now.hour + 1);
-    final exit = arrive.add(const Duration(hours: 2));
+    final exit = arrive.add(const Duration(hours: 1));
     return BookingTimeState(arriveTime: arrive, exitTime: exit);
   }
 
