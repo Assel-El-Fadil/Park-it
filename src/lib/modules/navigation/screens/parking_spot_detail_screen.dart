@@ -13,6 +13,8 @@ import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/controllers/vehicle_controller.dart';
 import 'package:src/modules/reservation/repositories/reservation_repository.dart';
 import 'package:src/modules/payment/routes/payment_routes.dart';
+import 'package:src/modules/navigation/routes/navigation_routes.dart';
+import 'package:src/shared/widgets/photo_carousel.dart';
 import 'package:src/core/config/routes/app_routes.dart';
 
 final parkingSpotDetailProvider = FutureProvider.family<ParkingSpotModel?, String>((ref, id) {
@@ -81,7 +83,7 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _HeroImage(theme: theme, imageUrl: spot.photos?.firstOrNull),
+                        _PhotoCarousel(theme: theme, photos: spot.photos),
                         const SizedBox(height: 12),
                         AppCard(
                           child: Column(
@@ -151,6 +153,31 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                                   ),
                                 ],
                               ),
+                              if (spot.lotId != null) ...[
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton.icon(
+                                    onPressed: () {
+                                      AppNavigator.pushNamed(
+                                        context,
+                                        NavigationRoutes.parkingLotDetail,
+                                        pathParameters: {'id': spot.lotId.toString()},
+                                      );
+                                    },
+                                    icon: const Icon(Icons.business_outlined, size: 20),
+                                    label: const Text('View Parking Lot Details'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: theme.colorScheme.primary,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -333,7 +360,7 @@ class _AvailabilitySection extends ConsumerWidget {
             children: [
               const SectionHeader(title: 'Opening Hours'),
               const SizedBox(height: 12),
-              ...availabilities.map((a) => Padding(
+              ...availabilities.where((a) => a.dayOfWeek != null).map((a) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -364,28 +391,15 @@ class _AvailabilitySection extends ConsumerWidget {
   }
 }
 
-class _HeroImage extends StatelessWidget {
-  const _HeroImage({required this.theme, this.imageUrl});
+class _PhotoCarousel extends StatelessWidget {
+  const _PhotoCarousel({required this.theme, this.photos});
 
   final ThemeData theme;
-  final String? imageUrl;
+  final List<String>? photos;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Container(
-          color: theme.colorScheme.surfaceContainerHighest,
-          child: imageUrl != null
-              ? Image.network(imageUrl!, fit: BoxFit.cover)
-              : const Center(
-                  child: Icon(Icons.local_parking, size: 40),
-                ),
-        ),
-      ),
-    );
+    return PhotoCarousel(photos: photos ?? []);
   }
 }
 
