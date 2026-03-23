@@ -114,9 +114,9 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
         color: color.isEmpty ? null : color,
       );
 
-      await vehicleRepository.addVehicle(vehicle);
+      final addedVehicle = await vehicleRepository.addVehicle(vehicle);
 
-      final vehicles = [...(state.value?.vehicles ?? []), vehicle];
+      final vehicles = [...(state.value?.vehicles ?? []), addedVehicle];
       state = AsyncValue.data(VehicleState(
         vehicles: (vehicles as List).map((e) => VehicleModel.fromJson(e as Map<String, dynamic>)).toList(),
         isLoading: false,

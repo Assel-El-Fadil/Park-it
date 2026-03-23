@@ -276,8 +276,8 @@ class LocationStatsSheet extends ConsumerWidget {
                     flex: 2,
                     child: FilledButton.icon(
                       onPressed: onGo,
-                      icon: const Icon(Icons.directions_rounded),
-                      label: const Text('Go'),
+                      icon: const Icon(Icons.info_outline_rounded),
+                      label: const Text('Details'),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(

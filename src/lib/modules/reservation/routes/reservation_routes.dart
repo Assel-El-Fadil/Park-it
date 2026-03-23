@@ -1,4 +1,6 @@
 import 'package:go_router/go_router.dart';
+import 'package:src/modules/reservation/screens/reservations_screen.dart';
+import 'package:src/modules/reservation/screens/reservation_detail_screen.dart';
 
 /// Reservation module route names
 class ReservationRoutes {
@@ -28,11 +30,11 @@ class ReservationRoutes {
 List<GoRoute> getReservationRoutes() {
   return [
     // Main reservations list
-    // GoRoute(
-    //   path: ReservationRoutes.reservationsPath,
-    //   name: ReservationRoutes.reservations,
-    //   builder: (context, state) => const ReservationsScreen(),
-    // ),
+    GoRoute(
+      path: ReservationRoutes.reservationsPath,
+      name: ReservationRoutes.reservations,
+      builder: (context, state) => const ReservationsScreen(),
+    ),
 
     // // Filtered reservations
     // GoRoute(
@@ -78,15 +80,15 @@ List<GoRoute> getReservationRoutes() {
     //   },
     // ),
 
-    // // Reservation detail
-    // GoRoute(
-    //   path: ReservationRoutes.reservationDetailPath,
-    //   name: ReservationRoutes.reservationDetail,
-    //   builder: (context, state) {
-    //     final reservationId = state.pathParameters['id'] ?? '';
-    //     return ReservationDetailScreen(reservationId: reservationId);
-    //   },
-    // ),
+    // Reservation detail
+    GoRoute(
+      path: ReservationRoutes.reservationDetailPath,
+      name: ReservationRoutes.reservationDetail,
+      builder: (context, state) {
+        final reservationId = state.pathParameters['id'] ?? '';
+        return ReservationDetailScreen(reservationId: reservationId);
+      },
+    ),
 
     // // Reservation map view
     // GoRoute(
