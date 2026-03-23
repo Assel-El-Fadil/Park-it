@@ -63,6 +63,7 @@ class AuthService {
     try {
       await _client.auth.signInWithOAuth(
         provider,
+        redirectTo: kIsWeb ? null : 'io.supabase.flutter://login-callback/',
         authScreenLaunchMode: kIsWeb
             ? LaunchMode.platformDefault
             : LaunchMode.externalApplication,
