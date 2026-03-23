@@ -60,19 +60,21 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
         return const AppAuthState();
       }
 
-      // 1. Role Verification for Google Auth
-      // If the user signed in with Google, but their role is Admin or Super Admin,
-      // we must block them from using Google Auth to meet business requirements.
+      // 1. Role Verification for Social Auth (Google / Instagram)
+      // If the user signed in with Google/Instagram, but their role is Admin or Super Admin,
+      // we must block them from using Social Auth to meet business requirements.
       final sbUser = Supabase.instance.client.auth.currentUser;
-      final isGoogle = sbUser?.appMetadata['provider'] == 'google';
+      final provider = sbUser?.appMetadata['provider'];
+      final restrictedProviders = ['google', 'instagram'];
+      final isRestrictedAuth = restrictedProviders.contains(provider);
       final isAdmin = userModel.role == UserRole.admin || userModel.role == UserRole.superAdmin;
 
-      if (isGoogle && isAdmin) {
+      if (isRestrictedAuth && isAdmin) {
         // Block the session and force sign out
         await authRepository.signOut();
         return const AppAuthState(
           isAuthenticated: false,
-          errorMessage: 'La connexion via Google est bloquée pour les administrateurs.',
+          errorMessage: 'La connexion via les réseaux sociaux est bloquée pour les administrateurs.',
         );
       }
 

@@ -55,15 +55,9 @@ class SocialLoginButtons extends ConsumerWidget {
                 icon: Icons.camera_alt_outlined,
                 onTap: isLoading
                     ? null
-                    : () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Instagram sign-in is not available. Use Facebook or Google.',
-                            ),
-                          ),
-                        );
-                      },
+                    : () => ref.read(authNotifierProvider.notifier).signInWithOAuth(
+                          OAuthProvider.instagram,
+                        ),
               ),
             ),
           ],
