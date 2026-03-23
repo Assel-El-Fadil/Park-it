@@ -1,22 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/owner/data/owner_store.dart';
 import 'package:src/modules/owner/routes/owner_routes.dart';
 
-class OwnerDashboardScreen extends StatelessWidget {
+class OwnerDashboardScreen extends ConsumerWidget {
   const OwnerDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Mock values aligned with park-it.sql fields:
-    // - parking_spots.total_bookings, average_rating, total_reviews, status, is_dynamic_pricing
-    const totalSpots = 2;
-    const totalBookings = 31;
-    const averageRating = 4.7;
-    const totalReviews = 18;
-    const dynamicPricingEnabled = true;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentUser = ref.watch(currentUserProvider);
+    final ownerId = int.tryParse(currentUser?.id ?? '') ?? 1;
+
+    final spots = ref.watch(
+      ownerStoreProvider.select(
+        (s) => s.spots.where((p) => p.ownerId == ownerId).toList(),
+      ),
+    );
+
+    final totalSpots = spots.length;
+    final totalBookings = spots.fold<int>(0, (sum, s) => sum + s.totalBookings);
+    final totalReviews = spots.fold<int>(0, (sum, s) => sum + s.totalReviews);
+    final averageRating = spots.isEmpty
+        ? 0.0
+        : spots.fold<double>(0, (sum, s) => sum + s.averageRating) /
+              spots.length;
+    final dynamicPricingEnabled = spots.any((s) => s.isDynamicPricing);
 
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +37,9 @@ class OwnerDashboardScreen extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'Notifications',
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No new notifications.')),
+            ),
             icon: const Icon(Icons.notifications_outlined),
           ),
         ],
@@ -89,16 +104,25 @@ class OwnerDashboardScreen extends StatelessWidget {
                   onPressed: () =>
                       context.pushNamed(OwnerRoutes.addParkingSpace),
                   icon: const Icon(Icons.add),
-                  label: const Text('Add a parking spot'),
+                  label: const Text('Add spot or lot'),
                 ),
               ),
               const SizedBox(height: 12),
               SizedBox(
                 height: 56,
                 child: OutlinedButton.icon(
-                  onPressed: () => context.pushNamed(OwnerRoutes.parkingSpaces),
-                  icon: const Icon(Icons.list_alt_outlined),
-                  label: const Text('View my spots'),
+                  onPressed: () => context.pushNamed(OwnerRoutes.ownerBookings),
+                  icon: const Icon(Icons.event_available_outlined),
+                  label: const Text('Bookings'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 56,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.pushNamed(OwnerRoutes.ownerEarnings),
+                  icon: const Icon(Icons.account_balance_wallet_outlined),
+                  label: const Text('Earnings'),
                 ),
               ),
             ],

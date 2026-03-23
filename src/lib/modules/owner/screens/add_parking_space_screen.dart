@@ -1,45 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:src/core/constants/constants.dart';
+import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/owner/data/owner_store.dart';
+import 'package:src/modules/owner/models/parking_lot_model.dart';
+import 'package:src/modules/owner/models/parking_spot_model.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/app_layout.dart';
 import 'package:src/shared/widgets/frosted_bar.dart';
 import 'package:src/shared/widgets/primary_button.dart';
 import 'package:src/shared/widgets/section_header.dart';
 
-/// Owner flow: create a parking spot listing.
-///
-/// UI-only. Hook form to your domain layer later.
-class AddParkingSpaceScreen extends StatefulWidget {
+class AddParkingSpaceScreen extends ConsumerStatefulWidget {
   const AddParkingSpaceScreen({super.key});
 
   @override
-  State<AddParkingSpaceScreen> createState() => _AddParkingSpaceScreenState();
+  ConsumerState<AddParkingSpaceScreen> createState() =>
+      _AddParkingSpaceScreenState();
 }
 
-class _AddParkingSpaceScreenState extends State<AddParkingSpaceScreen> {
-  final _nameCtrl = TextEditingController(text: '');
-  final _addressCtrl = TextEditingController(text: '');
-  final _descCtrl = TextEditingController(text: '');
-  final _priceCtrl = TextEditingController(text: '5');
+class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
+  final _nameCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  final _streetCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _countryCtrl = TextEditingController(text: 'MOROCCO');
+  final _postalCodeCtrl = TextEditingController();
+  final _priceHourCtrl = TextEditingController(text: '5');
+  final _priceDayCtrl = TextEditingController();
+  final _totalSpotsCtrl = TextEditingController();
+  final _latCtrl = TextEditingController(
+    text: AppConstants.defaultMapLatitude.toString(),
+  );
+  final _lngCtrl = TextEditingController(
+    text: AppConstants.defaultMapLongitude.toString(),
+  );
+
+  bool _isLotMode = false;
+  int? _lotId;
+  SpotType _spotType = SpotType.outdoor;
+  SpotStatus _status = SpotStatus.available;
+  bool _dynamicPricing = false;
 
   final _amenities = <String, bool>{
-    'Covered': true,
-    'EV Charging': false,
-    '24/7 Security': true,
-    'ADA': false,
+    'CCTV': true,
+    'LIGHTING': true,
+    'EV_CHARGER': false,
+    'WHEELCHAIR': false,
+    'GUARD': true,
+    'CAR_WASH': false,
+  };
+
+  final _vehicles = <String, bool>{
+    'CAR': true,
+    'MOTORCYCLE': false,
+    'VAN': false,
+    'TRUCK': false,
+    'ELECTRIC': false,
   };
 
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _addressCtrl.dispose();
     _descCtrl.dispose();
-    _priceCtrl.dispose();
+    _streetCtrl.dispose();
+    _cityCtrl.dispose();
+    _countryCtrl.dispose();
+    _postalCodeCtrl.dispose();
+    _priceHourCtrl.dispose();
+    _priceDayCtrl.dispose();
+    _totalSpotsCtrl.dispose();
+    _latCtrl.dispose();
+    _lngCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final lots = ref.watch(ownerStoreProvider.select((s) => s.lots));
 
     return SafeArea(
       child: Scaffold(
@@ -52,17 +92,22 @@ class _AddParkingSpaceScreenState extends State<AddParkingSpaceScreen> {
                 const SizedBox(height: 12),
                 FrostedBar(
                   borderRadius: BorderRadius.circular(16),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   child: Row(
                     children: [
                       IconButton(
                         onPressed: () => Navigator.of(context).maybePop(),
-                        icon: Icon(Icons.arrow_back, color: theme.colorScheme.primary),
+                        icon: Icon(
+                          Icons.arrow_back,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
-                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'Add Parking Spot',
+                          _isLotMode ? 'Add Parking Lot' : 'Add Parking Spot',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w900,
@@ -79,33 +124,24 @@ class _AddParkingSpaceScreenState extends State<AddParkingSpaceScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SectionHeader(title: 'Listing details'),
+                      const SectionHeader(title: 'Listing type'),
                       const SizedBox(height: 12),
-                      TextField(
-                        controller: _nameCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Spot name',
-                          hintText: 'Downtown Central Plaza',
-                          prefixIcon: Icon(Icons.local_parking_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _addressCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Address',
-                          hintText: '123 Main St, City Center',
-                          prefixIcon: Icon(Icons.location_on_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _descCtrl,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          hintText: 'Tell drivers what to expect…',
-                        ),
+                      SegmentedButton<bool>(
+                        segments: const [
+                          ButtonSegment(
+                            value: false,
+                            icon: Icon(Icons.local_parking_outlined),
+                            label: Text('Spot'),
+                          ),
+                          ButtonSegment(
+                            value: true,
+                            icon: Icon(Icons.garage_outlined),
+                            label: Text('Lot'),
+                          ),
+                        ],
+                        selected: {_isLotMode},
+                        onSelectionChanged: (v) =>
+                            setState(() => _isLotMode = v.first),
                       ),
                     ],
                   ),
@@ -115,33 +151,92 @@ class _AddParkingSpaceScreenState extends State<AddParkingSpaceScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SectionHeader(title: 'Pricing & availability'),
+                      const SectionHeader(title: 'Main details'),
                       const SizedBox(height: 12),
                       TextField(
-                        controller: _priceCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Hourly rate',
-                          prefixText: '\$ ',
-                          suffixText: '/hr',
+                        controller: _nameCtrl,
+                        decoration: InputDecoration(
+                          labelText: _isLotMode ? 'Lot name' : 'Spot title',
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _descCtrl,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                        ),
+                      ),
+                      if (_isLotMode) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _totalSpotsCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Total spots',
+                            hintText: 'e.g. 50',
+                          ),
+                        ),
+                      ],
+                      if (!_isLotMode && lots.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int?>(
+                          initialValue: _lotId,
+                          decoration: const InputDecoration(
+                            labelText: 'Parent lot (optional)',
+                          ),
+                          items: [
+                            const DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text('No lot'),
+                            ),
+                            ...lots.map(
+                              (lot) => DropdownMenuItem<int?>(
+                                value: lot.id,
+                                child: Text(lot.name),
+                              ),
+                            ),
+                          ],
+                          onChanged: (v) => setState(() => _lotId = v),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SectionHeader(title: 'Address'),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _streetCtrl,
+                        decoration: const InputDecoration(labelText: 'Street'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _cityCtrl,
+                        decoration: const InputDecoration(labelText: 'City'),
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
-                            child: _SmallInfoChip(
-                              icon: Icons.event_available_outlined,
-                              title: 'Availability',
-                              value: '12 spots',
+                            child: TextField(
+                              controller: _countryCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Country',
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: _SmallInfoChip(
-                              icon: Icons.schedule_outlined,
-                              title: 'Schedule',
-                              value: 'Always open',
+                            child: TextField(
+                              controller: _postalCodeCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Postal code',
+                              ),
                             ),
                           ),
                         ],
@@ -149,6 +244,104 @@ class _AddParkingSpaceScreenState extends State<AddParkingSpaceScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
+                if (!_isLotMode)
+                  AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SectionHeader(title: 'Spot setup'),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<SpotType>(
+                          value: _spotType,
+                          decoration: const InputDecoration(
+                            labelText: 'Spot type',
+                          ),
+                          items: SpotType.values
+                              .map(
+                                (e) => DropdownMenuItem(
+                                  value: e,
+                                  child: Text(e.toJson()),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _spotType = v ?? _spotType),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<SpotStatus>(
+                          value: _status,
+                          decoration: const InputDecoration(
+                            labelText: 'Status',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: SpotStatus.available,
+                              child: Text('AVAILABLE'),
+                            ),
+                            DropdownMenuItem(
+                              value: SpotStatus.archived,
+                              child: Text('ARCHIVED'),
+                            ),
+                            DropdownMenuItem(
+                              value: SpotStatus.suspended,
+                              child: Text('SUSPENDED'),
+                            ),
+                          ],
+                          onChanged: (v) =>
+                              setState(() => _status = v ?? _status),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _priceHourCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Price per hour',
+                            suffixText: '/h',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _priceDayCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Price per day (optional)',
+                            suffixText: '/day',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Dynamic pricing'),
+                          value: _dynamicPricing,
+                          onChanged: (v) => setState(() => _dynamicPricing = v),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (!_isLotMode) const SizedBox(height: 12),
+                if (!_isLotMode)
+                  AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SectionHeader(title: 'Vehicle types'),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _vehicles.entries.map((e) {
+                            return FilterChip(
+                              label: Text(e.key),
+                              selected: e.value,
+                              onSelected: (value) =>
+                                  setState(() => _vehicles[e.key] = value),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 AppCard(
                   child: Column(
@@ -163,53 +356,124 @@ class _AddParkingSpaceScreenState extends State<AddParkingSpaceScreen> {
                           return FilterChip(
                             label: Text(e.key),
                             selected: e.value,
-                            onSelected: (value) => setState(() => _amenities[e.key] = value),
-                            selectedColor: theme.colorScheme.primary.withValues(alpha: 0.14),
-                            showCheckmark: false,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            onSelected: (value) =>
+                                setState(() => _amenities[e.key] = value),
                           );
                         }).toList(),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SectionHeader(title: 'Photos'),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _PhotoPlaceholder(
-                              label: 'Cover',
-                              onTap: () {},
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _PhotoPlaceholder(
-                              label: 'Add',
-                              onTap: () {},
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Add at least 3 photos for better conversion.',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                ),
                 const SizedBox(height: 16),
                 PrimaryButton(
-                  label: 'Publish spot',
+                  label: _isLotMode ? 'Create lot' : 'Publish spot',
                   icon: Icons.check_circle_outline_rounded,
-                  onPressed: () => Navigator.of(context).maybePop(),
+                  onPressed: () async {
+                    final currentUser = ref.read(currentUserProvider);
+                    final ownerId = int.tryParse(currentUser?.id ?? '');
+                    final lat = double.tryParse(_latCtrl.text.trim());
+                    final lng = double.tryParse(_lngCtrl.text.trim());
+
+                    if (ownerId == null || lat == null || lng == null) return;
+
+                    final name = _nameCtrl.text.trim();
+                    final street = _streetCtrl.text.trim();
+                    final city = _cityCtrl.text.trim();
+                    final country = _countryCtrl.text.trim();
+                    final postal = _postalCodeCtrl.text.trim();
+                    final desc = _descCtrl.text.trim();
+                    final totalSpots =
+                        int.tryParse(_totalSpotsCtrl.text.trim()) ?? 1;
+                    if (_isLotMode && (totalSpots == null || totalSpots <= 0)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a valid number of spots'),
+                        ),
+                      );
+                      return;
+                    }
+                    if (name.isEmpty ||
+                        street.isEmpty ||
+                        city.isEmpty ||
+                        country.isEmpty ||
+                        postal.isEmpty) {
+                      return;
+                    }
+
+                    final amenities = _amenities.entries
+                        .where((e) => e.value)
+                        .map((e) => Amenity.fromString(e.key))
+                        .toList();
+
+                    if (_isLotMode) {
+                      await ref
+                          .read(ownerStoreProvider.notifier)
+                          .addLot(
+                            lot: ParkingLotModel(
+                              id: 0,
+                              ownerId: ownerId,
+                              name: name,
+                              description: desc.isEmpty ? null : desc,
+                              latitude: lat,
+                              longitude: lng,
+                              altitude: null,
+                              street: street,
+                              city: city,
+                              country: country,
+                              postalCode: postal,
+                              photos: const [],
+                              amenities: amenities.isEmpty ? null : amenities,
+                              totalSpots: totalSpots,
+                              createdAt: DateTime.now(),
+                              updatedAt: DateTime.now(),
+                            ),
+                          );
+                    } else {
+                      final priceHour =
+                          double.tryParse(_priceHourCtrl.text.trim()) ?? 0;
+                      if (priceHour <= 0) return;
+                      final priceDay = double.tryParse(
+                        _priceDayCtrl.text.trim(),
+                      );
+                      final vehicles = _vehicles.entries
+                          .where((e) => e.value)
+                          .map((e) => VehicleType.fromString(e.key))
+                          .toList();
+                      await ref
+                          .read(ownerStoreProvider.notifier)
+                          .addSpot(
+                            spot: ParkingSpotModel(
+                              id: 0,
+                              ownerId: ownerId,
+                              lotId: _lotId,
+                              title: name,
+                              description: desc.isEmpty ? null : desc,
+                              latitude: lat,
+                              longitude: lng,
+                              altitude: null,
+                              street: street,
+                              city: city,
+                              country: country,
+                              postalCode: postal,
+                              photos: const [],
+                              pricePerHour: priceHour,
+                              pricePerDay: priceDay,
+                              spotType: _spotType,
+                              vehicleTypes: vehicles.isEmpty ? null : vehicles,
+                              amenities: amenities.isEmpty ? null : amenities,
+                              status: _status,
+                              averageRating: 0,
+                              totalReviews: 0,
+                              totalBookings: 0,
+                              isDynamicPricing: _dynamicPricing,
+                              createdAt: DateTime.now(),
+                              updatedAt: DateTime.now(),
+                            ),
+                          );
+                    }
+                    if (!mounted) return;
+                    Navigator.of(context).maybePop();
+                  },
                 ),
               ],
             ),
@@ -219,85 +483,3 @@ class _AddParkingSpaceScreenState extends State<AddParkingSpaceScreen> {
     );
   }
 }
-
-class _SmallInfoChip extends StatelessWidget {
-  const _SmallInfoChip({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String title;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: theme.colorScheme.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title.toUpperCase(),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(value, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PhotoPlaceholder extends StatelessWidget {
-  const _PhotoPlaceholder({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        height: 110,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7)),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.add_a_photo_outlined, color: theme.colorScheme.primary),
-              const SizedBox(height: 6),
-              Text(label, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-

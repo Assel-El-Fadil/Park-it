@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/modules/owner/data/owner_store.dart';
+import 'package:src/modules/owner/models/parking_spot_model.dart';
+import 'package:src/modules/review/models/review_model.dart';
 
-class ReviewDetailScreen extends StatefulWidget {
+class ReviewDetailScreen extends ConsumerStatefulWidget {
   const ReviewDetailScreen({super.key, required this.reviewId});
 
   final String reviewId;
 
   @override
-  State<ReviewDetailScreen> createState() => _ReviewDetailScreenState();
+  ConsumerState<ReviewDetailScreen> createState() => _ReviewDetailScreenState();
 }
 
-class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
+class _ReviewDetailScreenState extends ConsumerState<ReviewDetailScreen> {
   final _replyCtrl = TextEditingController();
   bool _hasReply = false;
+  int? _loadedReviewId;
 
   @override
   void dispose() {
@@ -24,6 +29,32 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final reviewId = int.tryParse(widget.reviewId) ?? -1;
+
+    final review = ref.watch(
+      ownerStoreProvider.select((s) {
+        return s.reviewsBySpotId.values
+            .expand((list) => list)
+            .where((r) => r.id == reviewId)
+            .firstOrNull;
+      }),
+    );
+
+    // Only initialize when switching to a different review.
+    if (review != null && _loadedReviewId != review.id) {
+      _loadedReviewId = review.id;
+      final reply = review.ownerReply ?? '';
+      _replyCtrl.text = reply;
+      _hasReply = reply.trim().isNotEmpty;
+    }
+
+    final rating = review?.rating ?? 0;
+    final comment = review?.comment ?? '';
+    final initials = (review?.reviewerId ?? 0)
+        .toString()
+        .padLeft(2, '0')
+        .substring(0, 2);
+
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(title: const Text('Review')),
@@ -50,7 +81,7 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
                           radius: 22,
                           backgroundColor: AppColors.primaryContainer,
                           child: Text(
-                            'JD',
+                            initials,
                             style: context.textTheme.labelLarge?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: AppColors.primary,
@@ -63,7 +94,7 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'John Doe',
+                                'Reviewer',
                                 style: context.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: context.colorScheme.textPrimary,
@@ -71,7 +102,7 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Spot: Downtown Central Plaza • 2 days ago',
+                                'Spot ID: ${review?.spotId ?? '-'}',
                                 style: context.textTheme.bodyMedium?.copyWith(
                                   color: context.colorScheme.textSecondary,
                                 ),
@@ -83,7 +114,7 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
                           children: List.generate(
                             5,
                             (i) => Icon(
-                              i < 5 ? Icons.star : Icons.star_border,
+                              i < rating ? Icons.star : Icons.star_border,
                               size: 16,
                               color: context.colorScheme.tertiary,
                             ),
@@ -93,7 +124,7 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Very easy to find and the security guard was very helpful. Would definitely park here again!',
+                      comment,
                       style: context.textTheme.bodyLarge?.copyWith(
                         color: context.colorScheme.textPrimary,
                         height: 1.4,
@@ -144,7 +175,20 @@ class _ReviewDetailScreenState extends State<ReviewDetailScreen> {
                       SizedBox(
                         height: 56,
                         child: ElevatedButton.icon(
-                          onPressed: () => setState(() => _hasReply = true),
+                          onPressed: () {
+                            final text = _replyCtrl.text.trim();
+                            if (text.isEmpty) return;
+                            if (review == null) return;
+
+                            ref
+                                .read(ownerStoreProvider.notifier)
+                                .updateReviewOwnerReply(
+                                  reviewId: review.id,
+                                  ownerReply: text,
+                                );
+
+                            setState(() => _hasReply = true);
+                          },
                           icon: const Icon(Icons.send),
                           label: const Text('Post reply'),
                         ),

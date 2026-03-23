@@ -9,7 +9,6 @@ class VehicleDTO {
   final String? color;
   final String plateNumber;
   final bool isDefault;
-  final bool active;
 
   const VehicleDTO({
     required this.id,
@@ -20,7 +19,6 @@ class VehicleDTO {
     this.color,
     required this.plateNumber,
     this.isDefault = false,
-    this.active = true,
   });
 
   factory VehicleDTO.fromJson(Map<String, dynamic> json) {
@@ -32,8 +30,7 @@ class VehicleDTO {
       model: json['model'] as String,
       color: json['color'] as String?,
       plateNumber: json['plateNumber'] as String,
-      isDefault: json['default'] as bool? ?? false,
-      active: json['active'] as bool? ?? true,
+      isDefault: json['is_default'] as bool? ?? json['default'] as bool? ?? false,
     );
   }
 
@@ -46,8 +43,7 @@ class VehicleDTO {
       'model': model,
       'color': color,
       'plateNumber': plateNumber,
-      'default': isDefault,
-      'active': active,
+      'is_default': isDefault,
     };
   }
 
@@ -61,7 +57,6 @@ class VehicleDTO {
       color: color,
       plateNumber: plateNumber,
       isDefault: isDefault,
-      active: active,
     );
   }
 
@@ -75,7 +70,6 @@ class VehicleDTO {
       color: model.color,
       plateNumber: model.plateNumber,
       isDefault: model.isDefault,
-      active: model.active,
     );
   }
 }

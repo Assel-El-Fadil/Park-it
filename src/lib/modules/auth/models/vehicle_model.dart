@@ -15,7 +15,6 @@ class VehicleModel {
   final String? color;
   final String plateNumber;
   final bool isDefault;
-  final bool active;
 
   const VehicleModel({
     required this.id,
@@ -26,7 +25,6 @@ class VehicleModel {
     this.color,
     required this.plateNumber,
     this.isDefault = false,
-    this.active = true,
   });
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
@@ -38,8 +36,7 @@ class VehicleModel {
       model: json['model'] as String,
       color: json['color'] as String?,
       plateNumber: json['plateNumber'] as String,
-      isDefault: json['default'] as bool? ?? false,
-      active: json['active'] as bool? ?? true,
+      isDefault: json['is_default'] as bool? ?? json['default'] as bool? ?? false,
     );
   }
 
@@ -52,36 +49,32 @@ class VehicleModel {
       'model': model,
       'color': color,
       'plateNumber': plateNumber,
-      'default': isDefault,
-      'active': active,
+      'is_default': isDefault,
     };
   }
 
   Map<String, dynamic> toVehicleRow() {
     return <String, dynamic>{
-      'id': id,
-      'owner_id': ownerId,
-      'type': type.name,
+      'owner_id': int.tryParse(ownerId) ?? ownerId,
+      'type': type.name.toUpperCase(),
       'brand': brand,
       'model': model,
-      'color': color,
+      'color': color ?? '',
       'plate_number': plateNumber,
-      'default': isDefault,
-      'active': active,
+      'is_default': isDefault,
     };
   }
 
   factory VehicleModel.fromVehicleRow(Map<String, dynamic> row) {
     return VehicleModel(
-      id: row['id'] as String,
-      ownerId: row['owner_id'] as String,
+      id: row['id'].toString(),
+      ownerId: row['owner_id'].toString(),
       type: _typeFromString(row['type'] as String?),
       brand: row['brand'] as String,
       model: row['model'] as String,
       color: row['color'] as String?,
       plateNumber: row['plate_number'] as String,
-      isDefault: row['default'] as bool? ?? false,
-      active: row['active'] as bool? ?? true,
+      isDefault: row['is_default'] as bool? ?? false,
     );
   }
 
@@ -94,7 +87,6 @@ class VehicleModel {
     String? color,
     String? plateNumber,
     bool? isDefault,
-    bool? active,
   }) {
     return VehicleModel(
       id: id ?? this.id,
@@ -105,7 +97,6 @@ class VehicleModel {
       color: color ?? this.color,
       plateNumber: plateNumber ?? this.plateNumber,
       isDefault: isDefault ?? this.isDefault,
-      active: active ?? this.active,
     );
   }
 }

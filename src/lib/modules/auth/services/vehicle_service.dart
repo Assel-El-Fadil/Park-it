@@ -11,13 +11,14 @@ class VehicleService {
         .from(_tableName)
         .select()
         .eq('owner_id', userId)
-        .order('default', ascending: false);
+        .order('is_default', ascending: false);
 
     return List<Map<String, dynamic>>.from(response as List);
   }
 
-  Future<void> addVehicle(Map<String, dynamic> data) async {
-    await _client.from(_tableName).insert(data);
+  Future<Map<String, dynamic>> addVehicle(Map<String, dynamic> data) async {
+    final response = await _client.from(_tableName).insert(data).select().single();
+    return response as Map<String, dynamic>;
   }
 
   Future<void> updateVehicle(String id, Map<String, dynamic> data) async {
@@ -31,9 +32,9 @@ class VehicleService {
   Future<void> setDefaultVehicle(String id, String userId) async {
     await _client
         .from(_tableName)
-        .update({'default': false})
+        .update({'is_default': false})
         .eq('owner_id', userId);
-    await _client.from(_tableName).update({'default': true}).eq('id', id);
+    await _client.from(_tableName).update({'is_default': true}).eq('id', id);
   }
 }
 

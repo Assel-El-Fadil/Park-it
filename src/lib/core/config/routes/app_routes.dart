@@ -50,8 +50,15 @@ class AppNavigator {
     BuildContext context,
     String routeName, {
     Object? extra,
+    Map<String, String> pathParameters = const <String, String>{},
+    Map<String, dynamic> queryParameters = const <String, dynamic>{},
   }) {
-    return GoRouter.of(context).pushNamed(routeName, extra: extra);
+    return GoRouter.of(context).pushNamed(
+      routeName,
+      extra: extra,
+      pathParameters: pathParameters,
+      queryParameters: queryParameters,
+    );
   }
 
   // Go to named routes

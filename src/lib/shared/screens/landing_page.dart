@@ -1,7 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:src/core/config/routes/app_routes.dart';
+import 'package:src/modules/navigation/routes/navigation_routes.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
+
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearch() {
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      AppNavigator.pushNamed(context, NavigationRoutes.parkingResults, extra: query);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,8 +90,6 @@ class LandingPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 48),
 
-                            // No tabs as requested
-
                             // Search Bar Row
                             Container(
                               height: 60,
@@ -93,9 +113,11 @@ class LandingPage extends StatelessWidget {
                                       size: 28,
                                     ),
                                   ),
-                                  const Expanded(
+                                  Expanded(
                                     child: TextField(
-                                      decoration: InputDecoration(
+                                      controller: _searchController,
+                                      onSubmitted: (_) => _onSearch(),
+                                      decoration: const InputDecoration(
                                         hintText:
                                             'Search Address, Place or Event',
                                         hintStyle: TextStyle(
@@ -120,7 +142,7 @@ class LandingPage extends StatelessWidget {
                                     child: Material(
                                       color: Colors.transparent,
                                       child: InkWell(
-                                        onTap: () {},
+                                        onTap: _onSearch,
                                         borderRadius:
                                             const BorderRadius.horizontal(
                                               right: Radius.circular(4),

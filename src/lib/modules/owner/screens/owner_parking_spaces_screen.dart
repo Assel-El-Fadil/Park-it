@@ -1,50 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/core/config/themes/color_palette.dart';
+import 'package:src/core/config/themes/app_theme.dart';
+import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/owner/data/owner_store.dart';
+import 'package:src/modules/owner/models/parking_spot_model.dart';
 import 'package:src/modules/owner/routes/owner_routes.dart';
 import 'package:src/shared/widgets/empty_state.dart';
 
-class OwnerParkingSpacesScreen extends StatelessWidget {
+class OwnerParkingSpacesScreen extends ConsumerWidget {
   const OwnerParkingSpacesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final spots = <_OwnerSpotCardModel>[
-      const _OwnerSpotCardModel(
-        id: '42',
-        title: 'Downtown Central Plaza',
-        street: '123 Main St',
-        city: 'Rabat',
-        country: 'MA',
-        postalCode: '10000',
-        spotType: 'COVERED',
-        status: 'AVAILABLE',
-        pricePerHour: 25,
-        pricePerDay: 150,
-        averageRating: 4.8,
-        totalReviews: 250,
-        totalBookings: 18,
-        isDynamicPricing: true,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentUser = ref.watch(currentUserProvider);
+    final ownerId = int.tryParse(currentUser?.id ?? '') ?? 1;
+
+    final spots = ref.watch(
+      ownerStoreProvider.select(
+        (s) => s.spots.where((p) => p.ownerId == ownerId).toList(),
       ),
-      const _OwnerSpotCardModel(
-        id: '07',
-        title: 'Harbor View Garage',
-        street: '456 Waterfront Ave',
-        city: 'Casablanca',
-        country: 'MA',
-        postalCode: '20000',
-        spotType: 'GARAGE',
-        status: 'SUSPENDED',
-        pricePerHour: 30,
-        pricePerDay: null,
-        averageRating: 4.6,
-        totalReviews: 44,
-        totalBookings: 13,
-        isDynamicPricing: false,
-      ),
-    ];
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -52,7 +31,11 @@ class OwnerParkingSpacesScreen extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'Search',
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Use the list below and tap a spot to open it.'),
+              ),
+            ),
             icon: const Icon(Icons.search),
           ),
         ],
@@ -73,7 +56,8 @@ class OwnerParkingSpacesScreen extends StatelessWidget {
                 action: SizedBox(
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () => context.pushNamed(OwnerRoutes.addParkingSpace),
+                    onPressed: () =>
+                        context.pushNamed(OwnerRoutes.addParkingSpace),
                     child: const Text('Add parking spot'),
                   ),
                 ),
@@ -86,11 +70,11 @@ class OwnerParkingSpacesScreen extends StatelessWidget {
                     spot: spot,
                     onTap: () => context.pushNamed(
                       OwnerRoutes.parkingSpaceDetail,
-                      pathParameters: {'id': spot.id},
+                      pathParameters: {'id': spot.id.toString()},
                     ),
                     onEdit: () => context.pushNamed(
                       OwnerRoutes.editParkingSpace,
-                      pathParameters: {'id': spot.id},
+                      pathParameters: {'id': spot.id.toString()},
                     ),
                   ),
                 ),
@@ -102,40 +86,6 @@ class OwnerParkingSpacesScreen extends StatelessWidget {
   }
 }
 
-class _OwnerSpotCardModel {
-  const _OwnerSpotCardModel({
-    required this.id,
-    required this.title,
-    required this.street,
-    required this.city,
-    required this.country,
-    required this.postalCode,
-    required this.spotType,
-    required this.status,
-    required this.pricePerHour,
-    required this.pricePerDay,
-    required this.averageRating,
-    required this.totalReviews,
-    required this.totalBookings,
-    required this.isDynamicPricing,
-  });
-
-  final String id;
-  final String title;
-  final String street;
-  final String city;
-  final String country;
-  final String postalCode;
-  final String spotType;
-  final String status;
-  final double pricePerHour;
-  final double? pricePerDay;
-  final double averageRating;
-  final int totalReviews;
-  final int totalBookings;
-  final bool isDynamicPricing;
-}
-
 class _OwnerSpotCard extends StatelessWidget {
   const _OwnerSpotCard({
     required this.spot,
@@ -143,18 +93,22 @@ class _OwnerSpotCard extends StatelessWidget {
     required this.onEdit,
   });
 
-  final _OwnerSpotCardModel spot;
+  final ParkingSpotModel spot;
   final VoidCallback onTap;
   final VoidCallback onEdit;
 
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = switch (spot.status) {
-      'AVAILABLE' => AppColors.success,
-      'ARCHIVED' => AppColors.textTertiaryLight,
-      'SUSPENDED' => AppColors.error,
+  Color _statusColor(BuildContext context) {
+    return switch (spot.status) {
+      SpotStatus.available => AppColors.success,
+      SpotStatus.archived => AppColors.textTertiaryLight,
+      SpotStatus.suspended => AppColors.error,
       _ => context.colorScheme.textSecondary,
     };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _statusColor(context);
 
     return InkWell(
       onTap: onTap,
@@ -167,76 +121,77 @@ class _OwnerSpotCard extends StatelessWidget {
           border: Border.all(color: AppColors.border),
         ),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      spot.title,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: context.colorScheme.textPrimary,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        spot.title,
+                        style: context.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.colorScheme.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${spot.street}, ${spot.city} • ${spot.country} ${spot.postalCode}',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.colorScheme.textSecondary,
+                      const SizedBox(height: 6),
+                      Text(
+                        '${spot.street ?? ''}, ${spot.city ?? ''} • ${spot.country ?? ''} ${spot.postalCode ?? ''}'.trim(),
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.colorScheme.textSecondary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                tooltip: 'Edit',
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_outlined),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _Badge(
-                icon: Icons.category_outlined,
-                label: spot.spotType,
-              ),
-              _Badge(
-                icon: Icons.circle,
-                label: spot.status,
-                color: statusColor,
-              ),
-              _Badge(
-                icon: Icons.attach_money,
-                label: '${spot.pricePerHour.toStringAsFixed(0)} /h',
-              ),
-              if (spot.pricePerDay != null)
+                const SizedBox(width: 12),
+                IconButton(
+                  tooltip: 'Edit',
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
                 _Badge(
-                  icon: Icons.calendar_today_outlined,
-                  label: '${spot.pricePerDay!.toStringAsFixed(0)} /day',
+                  icon: Icons.category_outlined,
+                  label: spot.spotType.toJson(),
                 ),
-              _Badge(
-                icon: Icons.star,
-                label:
-                    '${spot.averageRating.toStringAsFixed(1)} (${spot.totalReviews})',
-              ),
-              _Badge(
-                icon: Icons.bookmark_added_outlined,
-                label: '${spot.totalBookings} bookings',
-              ),
-              if (spot.isDynamicPricing) const _Badge(icon: Icons.bolt, label: 'Dynamic'),
-            ],
-          ),
-        ],
+                _Badge(
+                  icon: Icons.circle,
+                  label: spot.status.toJson(),
+                  color: statusColor,
+                ),
+                _Badge(
+                  icon: Icons.attach_money,
+                  label: '${spot.pricePerHour.toStringAsFixed(0)} /h',
+                ),
+                if (spot.pricePerDay != null)
+                  _Badge(
+                    icon: Icons.calendar_today_outlined,
+                    label: '${spot.pricePerDay!.toStringAsFixed(0)} /day',
+                  ),
+                _Badge(
+                  icon: Icons.star,
+                  label:
+                      '${spot.averageRating.toStringAsFixed(1)} (${spot.totalReviews})',
+                ),
+                _Badge(
+                  icon: Icons.bookmark_added_outlined,
+                  label: '${spot.totalBookings} bookings',
+                ),
+                if (spot.isDynamicPricing)
+                  const _Badge(icon: Icons.bolt, label: 'Dynamic'),
+              ],
+            ),
+          ],
         ),
       ),
     );

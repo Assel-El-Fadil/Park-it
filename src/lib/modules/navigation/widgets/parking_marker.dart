@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
+import 'package:src/providers/booking_time_provider.dart';
 
-class ParkingMarker extends StatelessWidget {
+class ParkingMarker extends ConsumerWidget {
   const ParkingMarker({
     super.key,
     required this.spot,
@@ -25,9 +27,12 @@ class ParkingMarker extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = _markerColor;
     final size = isSelected ? 52.0 : 44.0;
+    
+    final duration = ref.watch(bookingTimeProvider).durationHours;
+    final total = spot.pricePerHour * duration;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -57,7 +62,7 @@ class ParkingMarker extends StatelessWidget {
             size: isSelected ? 22 : 18,
           ),
           Text(
-            '\$${spot.pricePerHour.toStringAsFixed(0)}/h',
+            '\$${total.toStringAsFixed(0)}',
             style: TextStyle(
               color: Colors.white,
               fontSize: isSelected ? 9 : 8,

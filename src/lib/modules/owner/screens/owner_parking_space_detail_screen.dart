@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/owner/data/owner_store.dart';
+import 'package:src/modules/owner/models/parking_spot_model.dart';
 import 'package:src/modules/owner/routes/owner_routes.dart';
+import 'package:src/modules/review/models/review_model.dart';
 import 'package:src/modules/review/routes/review_routes.dart';
 
-class OwnerParkingSpaceDetailScreen extends StatelessWidget {
+class OwnerParkingSpaceDetailScreen extends ConsumerWidget {
   const OwnerParkingSpaceDetailScreen({
     super.key,
     required this.parkingSpaceId,
@@ -15,27 +20,33 @@ class OwnerParkingSpaceDetailScreen extends StatelessWidget {
   final String parkingSpaceId;
 
   @override
-  Widget build(BuildContext context) {
-    // Mocked spot aligned with park-it.sql columns (parking_spots).
-    const spot = _SpotDetailModel(
-      title: 'Downtown Central Plaza',
-      description:
-          'Premium parking located near the city center. Well-lit, easy entry.',
-      street: '123 Main St',
-      city: 'Rabat',
-      country: 'MA',
-      postalCode: '10000',
-      spotType: 'COVERED',
-      status: 'AVAILABLE',
-      pricePerHour: 25,
-      pricePerDay: 150,
-      amenities: ['CCTV', 'LIGHTING', 'EV_CHARGER', 'GUARD', 'WHEELCHAIR'],
-      vehicleTypes: ['CAR', 'MOTORCYCLE', 'ELECTRIC'],
-      averageRating: 4.8,
-      totalReviews: 250,
-      totalBookings: 18,
-      isDynamicPricing: true,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final spotId = int.tryParse(parkingSpaceId) ?? -1;
+
+    final spot = ref.watch(
+      ownerStoreProvider.select(
+        (s) => s.spots.where((p) => p.id == spotId).firstOrNull,
+      ),
     );
+
+    final reviews = ref.watch(
+      ownerStoreProvider.select((s) => s.reviewsBySpotId[spotId] ?? const []),
+    );
+
+    if (spot == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Parking spot not found.'),
+        ),
+      );
+    }
+
+    final statusColor = switch (spot.status) {
+      SpotStatus.available => AppColors.success,
+      SpotStatus.archived => AppColors.textTertiaryLight,
+      SpotStatus.suspended => AppColors.error,
+      _ => context.colorScheme.textSecondary,
+    };
 
     return SafeArea(
       child: Scaffold(
@@ -70,7 +81,7 @@ class OwnerParkingSpaceDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${spot.street}, ${spot.city} • ${spot.country} ${spot.postalCode}',
+                      '${spot.street ?? ''}, ${spot.city ?? ''} • ${spot.country ?? ''} ${spot.postalCode ?? ''}'.trim(),
                       style: context.textTheme.bodyLarge?.copyWith(
                         color: context.colorScheme.textSecondary,
                       ),
@@ -81,18 +92,17 @@ class OwnerParkingSpaceDetailScreen extends StatelessWidget {
                       runSpacing: 8,
                       children: [
                         _Chip(
-                          label: spot.spotType,
+                          label: spot.spotType.toJson(),
                           icon: Icons.category_outlined,
                         ),
                         _Chip(
-                          label: spot.status,
+                          label: spot.status.toJson(),
                           icon: Icons.circle,
-                          color: spot.status == 'AVAILABLE'
-                              ? AppColors.success
-                              : AppColors.error,
+                          color: statusColor,
                         ),
                         _Chip(
-                          label: '${spot.pricePerHour.toStringAsFixed(0)} /h',
+                          label:
+                              '${spot.pricePerHour.toStringAsFixed(0)} /h',
                           icon: Icons.attach_money,
                         ),
                         if (spot.pricePerDay != null)
@@ -120,11 +130,37 @@ class OwnerParkingSpaceDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      spot.description,
+                      spot.description ?? '',
                       style: context.textTheme.bodyLarge?.copyWith(
                         color: context.colorScheme.textPrimary,
                         height: 1.4,
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.pushNamed(
+                              OwnerRoutes.ownerAvailability,
+                              pathParameters: {'id': parkingSpaceId},
+                            ),
+                            icon: const Icon(Icons.event_available_outlined),
+                            label: const Text('Availability'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.pushNamed(
+                              OwnerRoutes.ownerDynamicPricing,
+                              pathParameters: {'id': parkingSpaceId},
+                            ),
+                            icon: const Icon(Icons.bolt_outlined),
+                            label: const Text('Pricing'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -145,8 +181,8 @@ class OwnerParkingSpaceDetailScreen extends StatelessWidget {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: spot.amenities
-                          .map((a) => _Chip(label: a, icon: Icons.check))
+                      children: (spot.amenities ?? const [])
+                          .map((a) => _Chip(label: a.toJson(), icon: Icons.check))
                           .toList(),
                     ),
                     const SizedBox(height: 16),
@@ -161,10 +197,11 @@ class OwnerParkingSpaceDetailScreen extends StatelessWidget {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: spot.vehicleTypes
-                          .map(
-                            (v) => _Chip(label: v, icon: Icons.directions_car),
-                          )
+                      children: (spot.vehicleTypes ?? const [])
+                          .map((v) => _Chip(
+                                label: v.toJson(),
+                                icon: Icons.directions_car,
+                              ))
                           .toList(),
                     ),
                   ],
@@ -183,27 +220,26 @@ class OwnerParkingSpaceDetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _ReviewRow(
-                      initials: 'JD',
-                      name: 'John Doe',
-                      rating: 5,
-                      comment: 'Easy to find, great security.',
-                      onTap: () => context.pushNamed(
-                        ReviewRoutes.reviewDetail,
-                        pathParameters: {'id': 'r1'},
+                    if (reviews.isEmpty)
+                      Text(
+                        'No reviews yet.',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.colorScheme.textSecondary,
+                        ),
+                      )
+                    else
+                      ...reviews.take(5).map(
+                        (r) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _ReviewRow(
+                            review: r,
+                            onTap: () => context.pushNamed(
+                              ReviewRoutes.reviewDetail,
+                              pathParameters: {'id': r.id.toString()},
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    _ReviewRow(
-                      initials: 'MS',
-                      name: 'Mina S.',
-                      rating: 4,
-                      comment: 'Great location. Signage could be clearer.',
-                      onTap: () => context.pushNamed(
-                        ReviewRoutes.reviewDetail,
-                        pathParameters: {'id': 'r2'},
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -213,44 +249,6 @@ class OwnerParkingSpaceDetailScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class _SpotDetailModel {
-  const _SpotDetailModel({
-    required this.title,
-    required this.description,
-    required this.street,
-    required this.city,
-    required this.country,
-    required this.postalCode,
-    required this.spotType,
-    required this.status,
-    required this.pricePerHour,
-    required this.pricePerDay,
-    required this.amenities,
-    required this.vehicleTypes,
-    required this.averageRating,
-    required this.totalReviews,
-    required this.totalBookings,
-    required this.isDynamicPricing,
-  });
-
-  final String title;
-  final String description;
-  final String street;
-  final String city;
-  final String country;
-  final String postalCode;
-  final String spotType;
-  final String status;
-  final double pricePerHour;
-  final double? pricePerDay;
-  final List<String> amenities;
-  final List<String> vehicleTypes;
-  final double averageRating;
-  final int totalReviews;
-  final int totalBookings;
-  final bool isDynamicPricing;
 }
 
 class _SectionCard extends StatelessWidget {
@@ -308,21 +306,16 @@ class _Chip extends StatelessWidget {
 
 class _ReviewRow extends StatelessWidget {
   const _ReviewRow({
-    required this.initials,
-    required this.name,
-    required this.rating,
-    required this.comment,
+    required this.review,
     required this.onTap,
   });
 
-  final String initials;
-  final String name;
-  final int rating;
-  final String comment;
+  final ReviewModel review;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final initials = (review.reviewerId).toString().padLeft(2, '0').substring(0, 2);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
@@ -355,7 +348,7 @@ class _ReviewRow extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          name,
+                          'Reviewer',
                           style: context.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: context.colorScheme.textPrimary,
@@ -366,7 +359,9 @@ class _ReviewRow extends StatelessWidget {
                         children: List.generate(
                           5,
                           (i) => Icon(
-                            i < rating ? Icons.star : Icons.star_border,
+                            i < review.rating
+                                ? Icons.star
+                                : Icons.star_border,
                             size: 14,
                             color: AppColors.accentDark,
                           ),
@@ -376,11 +371,20 @@ class _ReviewRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    comment,
+                    review.comment ?? '',
                     style: context.textTheme.bodyMedium?.copyWith(
                       color: context.colorScheme.textSecondary,
                     ),
                   ),
+                  if ((review.ownerReply ?? '').trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Owner: ${review.ownerReply!}',
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: context.colorScheme.primary,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

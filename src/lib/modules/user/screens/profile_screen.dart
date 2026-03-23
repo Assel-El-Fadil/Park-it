@@ -9,17 +9,9 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/shared/widgets/common_bottom_nav.dart';
 
-// TODO: REMOVE FOR PRODUCTION — dev-only mock user for frontend testing
-const _kDevMockUser = UserModel(
-  id: '1',
-  firstName: 'Jane',
-  lastName: 'Doe',
-  email: 'jane.doe@example.com',
-  averageRating: 4.8,
-  totalReviews: 23,
-  role: UserRole.driver,
-);
+// Redacted: mock user removed
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -27,8 +19,13 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
-    // TODO: REMOVE FOR PRODUCTION — bypass auth guard for frontend testing
-    final user = authState.value?.currentUser ?? _kDevMockUser;
+    final user = authState.value?.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     // ref.listen<AsyncValue<AppAuthState>>(authNotifierProvider, (prev, next) {
     //   next.whenOrNull(
@@ -104,6 +101,14 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               _ProfileTile(
+                icon: Icons.directions_car_outlined,
+                title: 'My Vehicles',
+                onTap: () {
+                  context.push(AuthRoutes.vehicles);
+                },
+              ),
+              const SizedBox(height: 8),
+              _ProfileTile(
                 icon: Icons.credit_card_outlined,
                 title: 'Payment Methods',
                 onTap: () {
@@ -164,13 +169,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: _ProfileBottomNav(
-        currentIndex: 3,
-        onExplore: () => _navigatePlaceholder(context, 'Explore'),
-        onBookings: () {},
-        onWallet: () => _navigatePlaceholder(context, 'Wallet'),
-        onProfile: () {},
-      ),
+      bottomNavigationBar: const CommonBottomNav(currentIndex: 3),
     );
   }
 
@@ -242,7 +241,6 @@ class _ProfileHeader extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -255,20 +253,25 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'Pro Member',
+                user.role == UserRole.owner ? 'Parking Owner' : 'Driver',
                 style: AppTextStyles.labelMedium.copyWith(
                   color: AppColors.secondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              'Since 2022',
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.textSecondary,
+            if (user.averageRating != null) ...[
+              const SizedBox(width: 12),
+              Icon(Icons.star, size: 16, color: Colors.amber),
+              const SizedBox(width: 4),
+              Text(
+                user.averageRating!.toStringAsFixed(1),
+                style: context.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: context.colorScheme.textPrimary,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ],
@@ -375,109 +378,3 @@ class _LogoutButton extends ConsumerWidget {
   }
 }
 
-class _ProfileBottomNav extends StatelessWidget {
-  const _ProfileBottomNav({
-    required this.currentIndex,
-    required this.onExplore,
-    required this.onBookings,
-    required this.onWallet,
-    required this.onProfile,
-  });
-
-  final int currentIndex;
-  final VoidCallback onExplore;
-  final VoidCallback onBookings;
-  final VoidCallback onWallet;
-  final VoidCallback onProfile;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: context.backgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(
-              icon: Icons.search,
-              label: 'Explore',
-              isSelected: currentIndex == 0,
-              onTap: onExplore,
-            ),
-            _NavItem(
-              icon: Icons.calendar_today_outlined,
-              label: 'Bookings',
-              isSelected: currentIndex == 1,
-              onTap: onBookings,
-            ),
-            _NavItem(
-              icon: Icons.account_balance_wallet_outlined,
-              label: 'Wallet',
-              isSelected: currentIndex == 2,
-              onTap: onWallet,
-            ),
-            _NavItem(
-              icon: Icons.person_outline,
-              label: 'Profile',
-              isSelected: currentIndex == 3,
-              onTap: onProfile,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isSelected
-        ? AppColors.secondary
-        : context.colorScheme.textSecondary;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 24, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: color,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
