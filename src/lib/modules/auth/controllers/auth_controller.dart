@@ -54,14 +54,30 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
-      final user = await authRepository.getCurrentUser();
+      final userModel = await authRepository.getCurrentUser();
 
-      if (user == null) {
+      if (userModel == null) {
         return const AppAuthState();
       }
 
+      // 1. Role Verification for Google Auth
+      // If the user signed in with Google, but their role is Admin or Super Admin,
+      // we must block them from using Google Auth to meet business requirements.
+      final sbUser = Supabase.instance.client.auth.currentUser;
+      final isGoogle = sbUser?.appMetadata['provider'] == 'google';
+      final isAdmin = userModel.role == UserRole.admin || userModel.role == UserRole.superAdmin;
+
+      if (isGoogle && isAdmin) {
+        // Block the session and force sign out
+        await authRepository.signOut();
+        return const AppAuthState(
+          isAuthenticated: false,
+          errorMessage: 'La connexion via Google est bloquée pour les administrateurs.',
+        );
+      }
+
       return AppAuthState(
-        currentUser: user,
+        currentUser: userModel,
         isAuthenticated: true,
       );
     } catch (_) {
