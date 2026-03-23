@@ -9,6 +9,7 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/repositories/auth_repository.dart';
+import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -169,15 +170,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                   validator: (value) => value == null || value.trim().isEmpty ? 'Last Name is required' : null,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(
-                     labelText: 'Phone Number',
-                     prefixIcon: Icon(Icons.phone_outlined),
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
                 const SizedBox(height: 32),
                 SizedBox(
                   height: 56,
@@ -214,6 +206,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showUpdateDialog(context, 'password'),
                 ),
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.phone_outlined),
+                  title: const Text('Change Phone Number'),
+                  subtitle: Text(user?.phone ?? 'No phone number set'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showUpdateDialog(context, 'phone'),
+                ),
                 const SizedBox(height: 24),
               ],
             ),
@@ -225,10 +226,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   void _showUpdateDialog(BuildContext context, String type) {
     bool isPassword = type == 'password';
-    final controller = TextEditingController();         // used for 'new email' OR 'new password'
+    bool isPhone = type == 'phone';
+    final controller = TextEditingController();         // used for 'new email' OR 'new password' OR 'new phone'
     final oldPasswordController = TextEditingController(); // used only if isPassword
     final confirmController = TextEditingController();  // used only if isPassword
     final formKey = GlobalKey<FormState>();
+
+    String dialogTitle = isPassword ? 'Update Password' : (isPhone ? 'Update Phone Number' : 'Update Email');
+    String labelText = isPassword ? 'New Password' : (isPhone ? 'New Phone Number' : 'New Email Address');
+    String hintText = isPassword ? 'Enter new password' : (isPhone ? 'Enter new phone' : 'Enter new email');
+    TextInputType keyboardType = isPassword ? TextInputType.text : (isPhone ? TextInputType.phone : TextInputType.emailAddress);
 
     // We can't use a StatefulBuilder easily without breaking Riverpod mounts, 
     // but simple forms are fine. To toggle visibility inside dialog, it's better 
@@ -238,7 +245,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isPassword ? 'Update Password' : 'Update Email'),
+        title: Text(dialogTitle),
         content: Form(
           key: formKey,
           child: Column(
@@ -259,18 +266,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               TextFormField(
                 controller: controller,
                 obscureText: isPassword,
-                keyboardType: isPassword ? TextInputType.text : TextInputType.emailAddress,
+                keyboardType: keyboardType,
                 decoration: InputDecoration(
-                  labelText: isPassword ? 'New Password' : 'New Email Address',
-                  hintText: isPassword ? 'Enter new password' : 'Enter new email',
+                  labelText: labelText,
+                  hintText: hintText,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) return 'This field is required';
                   if (isPassword && value.length < AppConstants.minPasswordLength) {
                     return AppConstants.validationPassword;
                   }
-                  if (!isPassword && !RegExp(AppConstants.emailRegex).hasMatch(value)) {
+                  if (!isPassword && !isPhone && !RegExp(AppConstants.emailRegex).hasMatch(value)) {
                     return AppConstants.validationEmail;
+                  }
+                  if (isPhone && value.length < 8) {
+                    return 'Please enter a valid phone number';
                   }
                   return null;
                 },
@@ -315,6 +325,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Password updated successfully!')),
+                    );
+                  }
+                } else if (isPhone) {
+                  await ref.read(authNotifierProvider.notifier).updatePhone(controller.text.trim());
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('A verification SMS has been sent to ${controller.text.trim()}.')),
+                    );
+                    context.pushNamed(
+                      AuthRoutes.verifyOtp, 
+                      extra: {'phone': controller.text.trim()},
                     );
                   }
                 } else {

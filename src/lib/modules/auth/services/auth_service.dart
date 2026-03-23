@@ -209,6 +209,26 @@ class AuthService {
     }
   }
 
+  Future<void> updatePhone(String newPhone) async {
+    try {
+      await _client.auth.updateUser(
+        UserAttributes(phone: newPhone),
+      );
+    } on AuthException catch (e) {
+      if (e.message.toLowerCase().contains('already registered') ||
+          e.message.toLowerCase().contains('already been registered')) {
+        throw AuthException('This phone number is already registered.');
+      }
+      if (e.message.toLowerCase().contains('rate limit')) {
+        throw AuthException(AppConstants.errorRateLimit);
+      }
+      throw AuthException(AppConstants.errorGeneric);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException(AppConstants.errorGeneric);
+    }
+  }
+
   Future<void> updateEmail(String newEmail) async {
     try {
       await _client.auth.updateUser(

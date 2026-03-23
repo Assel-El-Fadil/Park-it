@@ -43,6 +43,7 @@ abstract class AuthRepository {
 
   Future<void> updatePassword({String? oldPassword, required String newPassword});
   Future<void> updateEmail(String newEmail);
+  Future<void> updatePhone(String newPhone);
   Future<void> resendVerification(String email, {String? phone});
 }
 
@@ -376,6 +377,18 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       // Supabase sends a confirmation email. The actual user email won't update 
       // until they click the link, but we still trigger a state refresh just in case.
       await _sessionService.saveUserEmail(newEmail);
+    } on AuthException catch (e) {
+      throw AppException(e.message);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException(AppConstants.errorGeneric);
+    }
+  }
+
+  @override
+  Future<void> updatePhone(String newPhone) async {
+    try {
+      await _authService.updatePhone(newPhone);
     } on AuthException catch (e) {
       throw AppException(e.message);
     } catch (e) {
