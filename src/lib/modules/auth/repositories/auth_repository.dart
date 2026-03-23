@@ -338,24 +338,8 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       if (user == null) return null;
 
       try {
-        Map<String, dynamic>? userRow;
-        if ((user.email ?? '').isNotEmpty) {
-          userRow = await client
-              .from(tableName)
-              .select()
-              .eq('email', user.email!)
-              .maybeSingle() as Map<String, dynamic>?;
-        }
-        if (userRow == null && (user.phone ?? '').isNotEmpty) {
-          userRow = await client
-              .from(tableName)
-              .select()
-              .eq('phone', user.phone!)
-              .maybeSingle() as Map<String, dynamic>?;
-        }
-        if (userRow == null) return null;
-
-        return UserModel.fromSupabaseUser(user, userRow);
+        final userModel = await _getOrCreateUser(user);
+        return userModel;
       } catch (_) {
         return null;
       }
@@ -377,9 +361,10 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
 
   UserRole _roleFromMeta(String? roleStr) {
     if (roleStr == null) return UserRole.driver;
-    if (roleStr.toUpperCase() == 'OWNER') return UserRole.owner;
-    if (roleStr.toUpperCase() == 'ADMIN') return UserRole.admin;
-    if (roleStr.toUpperCase() == 'SUPER_ADMIN') return UserRole.superAdmin;
+    final upper = roleStr.toUpperCase();
+    if (upper == 'OWNER') return UserRole.owner;
+    if (upper == 'ADMIN') return UserRole.admin;
+    if (upper == 'SUPER_ADMIN' || upper == 'SUPERADMIN') return UserRole.superAdmin;
     return UserRole.driver;
   }
 }
