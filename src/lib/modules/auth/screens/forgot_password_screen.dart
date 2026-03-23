@@ -189,7 +189,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         SizedBox(
           height: 56,
           child: ElevatedButton(
-            onPressed: () => context.go(AuthRoutes.login),
+            onPressed: () {
+              ref.read(authNotifierProvider.notifier).clearError();
+              context.go(AuthRoutes.login);
+            },
             child: const Text('Return to Login'),
           ),
         ),

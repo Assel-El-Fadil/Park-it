@@ -37,7 +37,10 @@ class RegisterScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(AuthRoutes.login),
+          onPressed: () {
+            ref.read(authNotifierProvider.notifier).clearError();
+            context.go(AuthRoutes.login);
+          },
         ),
       ),
       body: SafeArea(
