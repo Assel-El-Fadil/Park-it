@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:src/modules/user/screens/edit_profile_screen.dart';
 
 /// User module route names
 class UserRoutes {
@@ -30,11 +31,11 @@ class UserRoutes {
 List<GoRoute> getUserRoutes() {
   return [
     // Profile and Vehicles moved to auth_routes
-    // GoRoute(
-    //   path: UserRoutes.editProfilePath,
-    //   name: UserRoutes.editProfile,
-    //   builder: (context, state) => const EditProfileScreen(),
-    // ),
+    GoRoute(
+      path: UserRoutes.editProfilePath,
+      name: UserRoutes.editProfile,
+      builder: (context, state) => const EditProfileScreen(),
+    ),
 
     // // Settings
     // GoRoute(

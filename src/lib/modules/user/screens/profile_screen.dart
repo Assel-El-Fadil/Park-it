@@ -9,6 +9,7 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/user/routes/user_routes.dart';
 import 'package:src/shared/widgets/common_bottom_nav.dart';
 
 // Redacted: mock user removed
@@ -91,47 +92,44 @@ class ProfileScreen extends ConsumerWidget {
                 icon: Icons.person_outline,
                 title: 'Personal Information',
                 onTap: () {
-                  // TODO: Navigate to edit profile
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Personal Information coming soon'),
-                    ),
-                  );
+                  context.push(UserRoutes.editProfilePath);
                 },
               ),
-              const SizedBox(height: 8),
-              _ProfileTile(
-                icon: Icons.directions_car_outlined,
-                title: 'My Vehicles',
-                onTap: () {
-                  context.push(AuthRoutes.vehicles);
-                },
-              ),
-              const SizedBox(height: 8),
-              _ProfileTile(
-                icon: Icons.credit_card_outlined,
-                title: 'Payment Methods',
-                onTap: () {
-                  // TODO: Navigate to payment methods
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Payment Methods coming soon'),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-              _ProfileTile(
-                icon: Icons.location_on_outlined,
-                title: 'Saved Locations',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Saved Locations coming soon'),
-                    ),
-                  );
-                },
-              ),
+              if (user.role == UserRole.driver || user.role == UserRole.owner) ...[
+                const SizedBox(height: 8),
+                _ProfileTile(
+                  icon: Icons.directions_car_outlined,
+                  title: 'My Vehicles',
+                  onTap: () {
+                    context.push(AuthRoutes.vehicles);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ProfileTile(
+                  icon: Icons.credit_card_outlined,
+                  title: 'Payment Methods',
+                  onTap: () {
+                    // TODO: Navigate to payment methods
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Payment Methods coming soon'),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ProfileTile(
+                  icon: Icons.location_on_outlined,
+                  title: 'Saved Locations',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Saved Locations coming soon'),
+                      ),
+                    );
+                  },
+                ),
+              ],
               const SizedBox(height: 24),
               _SectionHeader(title: 'PREFERENCES'),
               const SizedBox(height: 8),
@@ -169,7 +167,9 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: const CommonBottomNav(currentIndex: 3),
+      bottomNavigationBar: user.role == UserRole.admin || user.role == UserRole.superAdmin 
+          ? null 
+          : const CommonBottomNav(currentIndex: 3),
     );
   }
 
@@ -213,7 +213,7 @@ class _ProfileHeader extends StatelessWidget {
               child: GestureDetector(
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Photo upload coming soon')),
+                    const SnackBar(content: Text('Pour modifier, allez dans Personal Information')),
                   );
                 },
                 child: Container(

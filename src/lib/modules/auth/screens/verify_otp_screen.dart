@@ -5,7 +5,9 @@ import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/owner/routes/owner_routes.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -46,10 +48,16 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
             type: type,
           );
       
-      // If successful, the authStateListener will automatically redirect to profile!
+      // If successful, the authStateListener will automatically redirect
       // But we can also force it here just in case:
       if (mounted) {
-        context.go(AuthRoutes.profile);
+        final state = ref.read(authNotifierProvider).value;
+        final user = state?.currentUser;
+        if (user != null && user.role == UserRole.owner) {
+          context.go(OwnerRoutes.ownerDashboardPath);
+        } else {
+          context.go(AuthRoutes.profile);
+        }
       }
     } catch (e) {
       // Error handled by AuthNotifier state
