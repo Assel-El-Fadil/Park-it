@@ -13,8 +13,8 @@ Future<void> main() async {
 
   await dotenv.load(fileName: "lib/.env");
 
-  //Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
-  //await Stripe.instance.applySettings();
+  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
+  await Stripe.instance.applySettings();
 
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL'] ?? AppConstants.supabaseUrl,

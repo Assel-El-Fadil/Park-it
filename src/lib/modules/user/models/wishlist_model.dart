@@ -1,6 +1,6 @@
 class WishlistModel {
   final int id;
-  final int userId;
+  final String userId;
   final int spotId;
   final DateTime addedAt;
 
@@ -14,7 +14,7 @@ class WishlistModel {
   factory WishlistModel.fromJson(Map<String, dynamic> json) {
     return WishlistModel(
       id: json['id'] as int,
-      userId: json['user_id'] as int,
+      userId: json['user_id'] as String,
       spotId: json['spot_id'] as int,
       addedAt: DateTime.parse(json['added_at'] as String),
     );

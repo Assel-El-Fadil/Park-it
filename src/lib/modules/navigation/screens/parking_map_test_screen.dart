@@ -11,7 +11,7 @@ class ParkingMapTestScreen extends ConsumerWidget {
   static final List<ParkingSpotModel> _testSpots = [
     ParkingSpotModel(
       id: 1,
-      ownerId: 101,
+      ownerId: "101",
       title: 'Jemaa el-Fna Parking',
       description: 'Central parking right next to the famous square.',
       latitude: 31.6258,
@@ -36,7 +36,7 @@ class ParkingMapTestScreen extends ConsumerWidget {
     ),
     ParkingSpotModel(
       id: 2,
-      ownerId: 102,
+      ownerId: "102",
       title: 'Medina Gate Garage',
       description: 'Covered multi-storey garage near Bab Doukkala.',
       latitude: 31.6320,
@@ -61,7 +61,7 @@ class ParkingMapTestScreen extends ConsumerWidget {
     ),
     ParkingSpotModel(
       id: 3,
-      ownerId: 103,
+      ownerId: "103",
       title: 'Gueliz City Parking',
       description: 'Open-air lot in the heart of the new city.',
       latitude: 31.6380,
@@ -86,7 +86,7 @@ class ParkingMapTestScreen extends ConsumerWidget {
     ),
     ParkingSpotModel(
       id: 4,
-      ownerId: 104,
+      ownerId: "104",
       title: 'Majorelle Garden Spot',
       description: 'Quiet reserved lot a short walk from Majorelle Garden.',
       latitude: 31.6420,
@@ -111,7 +111,7 @@ class ParkingMapTestScreen extends ConsumerWidget {
     ),
     ParkingSpotModel(
       id: 5,
-      ownerId: 105,
+      ownerId: "105",
       title: 'Palais Royal Underground',
       description: 'Secure underground parking near the Royal Palace.',
       latitude: 31.6185,

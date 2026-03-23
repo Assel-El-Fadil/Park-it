@@ -15,7 +15,7 @@ class PaymentNotifier extends Notifier<PaymentState> {
 
   Future<bool> processPayment({
     required int reservationId,
-    required int payerId,
+    required String payerId,
     required double amount,
     required PaymentMethod method,
     String currency = 'MAD',
