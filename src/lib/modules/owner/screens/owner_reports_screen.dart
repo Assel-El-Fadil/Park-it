@@ -45,7 +45,7 @@ class OwnerReportsScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () => Navigator.of(context).maybePop(),
                       icon: Icon(Icons.arrow_back, color: theme.colorScheme.primary),
                     ),
                     const SizedBox(width: 4),

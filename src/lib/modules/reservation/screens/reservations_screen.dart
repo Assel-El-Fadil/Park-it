@@ -8,8 +8,6 @@ import 'package:src/modules/reservation/models/reservation_model.dart';
 import 'package:src/modules/reservation/repositories/reservation_repository.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/common_bottom_nav.dart';
-import 'package:src/shared/widgets/section_header.dart';
-import 'package:src/core/config/themes/app_theme.dart';
 
 final userReservationsProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
@@ -40,6 +38,27 @@ class ReservationsScreen extends ConsumerWidget {
         ),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'Seed test booking',
+            onPressed: () async {
+              final user = ref.read(currentUserProvider);
+              final userId = int.tryParse(user?.id ?? '');
+              if (userId == null) return;
+              await ref
+                  .read(reservationRepositoryProvider)
+                  .seedExampleCompletedReservation(driverId: userId);
+              ref.invalidate(userReservationsProvider);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Example completed reservation ready.'),
+                ),
+              );
+            },
+            icon: const Icon(Icons.science_outlined),
+          ),
+        ],
       ),
       body: reservationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
