@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,7 +24,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late TextEditingController _lastNameController;
   late TextEditingController _phoneController;
   
-  File? _imageFile;
+  Uint8List? _imageBytes;
+  String? _imagePreviewPath;
   bool _isLoading = false;
 
   @override
@@ -49,8 +50,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _imageBytes = bytes;
+        _imagePreviewPath = pickedFile.path;
       });
     }
   }
@@ -66,8 +69,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       String? photoUrl = user.profilePhoto;
       
-      if (_imageFile != null) {
-        photoUrl = await ref.read(authRepositoryProvider).uploadProfilePhoto(user.id, _imageFile!);
+      if (_imageBytes != null) {
+        photoUrl = await ref.read(authRepositoryProvider).uploadProfilePhoto(user.id, _imageBytes!);
       }
 
       final updatedUser = UserModel(
@@ -124,12 +127,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       CircleAvatar(
                         radius: 56,
                         backgroundColor: context.surfaceColor,
-                        backgroundImage: _imageFile != null 
-                             ? FileImage(_imageFile!) as ImageProvider
+                        backgroundImage: _imageBytes != null 
+                             ? MemoryImage(_imageBytes!) as ImageProvider
                              : (user.profilePhoto != null && user.profilePhoto!.isNotEmpty
                                   ? NetworkImage(user.profilePhoto!)
                                   : null),
-                        child: (_imageFile == null && (user.profilePhoto == null || user.profilePhoto!.isEmpty))
+                        child: (_imageBytes == null && (user.profilePhoto == null || user.profilePhoto!.isEmpty))
                             ? Icon(Icons.person, size: 56, color: context.colorScheme.textTertiary)
                             : null,
                       ),

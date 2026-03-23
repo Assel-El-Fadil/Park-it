@@ -28,30 +28,6 @@ class ProfileScreen extends ConsumerWidget {
       );
     }
 
-    // ref.listen<AsyncValue<AppAuthState>>(authNotifierProvider, (prev, next) {
-    //   next.whenOrNull(
-    //     data: (state) {
-    //       if (!state.isAuthenticated) {
-    //         context.go(AuthRoutes.login);
-    //       }
-    //     },
-    //   );
-    // });
-
-    if (false) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text('Loading profile...', style: context.textTheme.bodyMedium),
-            ],
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -173,11 +149,6 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _navigatePlaceholder(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label coming soon')));
-  }
 }
 
 class _ProfileHeader extends StatelessWidget {
@@ -265,12 +236,12 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ),
             ),
-            if (user.averageRating != null) ...[
+            if (user.averageRating > 0) ...[
               const SizedBox(width: 12),
               Icon(Icons.star, size: 16, color: Colors.amber),
               const SizedBox(width: 4),
               Text(
-                user.averageRating!.toStringAsFixed(1),
+                user.averageRating.toStringAsFixed(1),
                 style: context.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: context.colorScheme.textPrimary,

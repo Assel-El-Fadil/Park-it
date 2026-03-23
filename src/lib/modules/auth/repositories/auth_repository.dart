@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/core/base/cloud/supabase_repo.dart';
 import 'package:src/core/constants/constants.dart';
@@ -27,7 +28,7 @@ abstract class AuthRepository {
 
   Future<UserModel?> getCurrentUser();
 
-  Future<String> uploadProfilePhoto(String userId, dynamic file);
+  Future<String> uploadProfilePhoto(String userId, Uint8List fileBytes);
 
   Future<void> sendPasswordReset(String email);
 
@@ -256,10 +257,10 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   }
 
   @override
-  Future<String> uploadProfilePhoto(String userId, dynamic file) async {
+  Future<String> uploadProfilePhoto(String userId, Uint8List fileBytes) async {
     try {
       final String path = '$userId/avatar-${DateTime.now().millisecondsSinceEpoch}.jpg';
-      await client.storage.from('avatars').upload(path, file);
+      await client.storage.from('avatars').uploadBinary(path, fileBytes);
       return client.storage.from('avatars').getPublicUrl(path);
     } catch (e) {
       throw AppException('Error uploading photo');
