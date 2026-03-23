@@ -148,10 +148,10 @@ class AuthService {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(e.message);
+      throw AuthException(AppConstants.errorGeneric);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(e.toString());
+      throw AuthException(AppConstants.errorGeneric);
     }
   }
 
@@ -194,7 +194,7 @@ class AuthService {
         );
       }
 
-      // 2. Update to the new password using the active recovery session
+      // 2. If successful, update to the new password
       await _client.auth.updateUser(UserAttributes(password: newPassword));
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('invalid login credentials')) {
@@ -204,10 +204,10 @@ class AuthService {
           e.message.toLowerCase().contains('weak')) {
         throw AuthException(AppConstants.errorWeakPassword);
       }
-      throw AuthException(e.message);
+      throw AuthException(AppConstants.errorGeneric);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(e.toString());
+      throw AuthException(AppConstants.errorGeneric);
     }
   }
 
