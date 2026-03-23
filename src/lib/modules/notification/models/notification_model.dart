@@ -2,7 +2,7 @@ import 'package:src/core/enums/app_enums.dart';
 
 class NotificationModel {
   final int id; //notification id
-  final int userId; // target user
+  final String userId; // target user
   final NotificationType type; //paymentFailed, paymentReceived e.t.c
   final String title;
   final String content;
@@ -30,7 +30,7 @@ class NotificationModel {
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] as int,
-      userId: json['user_id'] as int,
+      userId: json['user_id'] as String,
       type: NotificationType.fromString(json['type'] as String),
       title: json['title'] as String,
       content: json['content'] as String,

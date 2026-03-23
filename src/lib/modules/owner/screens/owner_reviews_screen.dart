@@ -48,7 +48,7 @@ class OwnerReviewsScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () => Navigator.of(context).maybePop(),
                       icon: Icon(Icons.arrow_back, color: theme.colorScheme.primary),
                     ),
                     const SizedBox(width: 4),
@@ -64,7 +64,9 @@ class OwnerReviewsScreen extends StatelessWidget {
                     ),
                     IconButton(
                       tooltip: 'Filter',
-                      onPressed: () {},
+                      onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Review filters coming soon.')),
+                      ),
                       icon: Icon(Icons.tune_rounded, color: theme.colorScheme.primary),
                     ),
                   ],

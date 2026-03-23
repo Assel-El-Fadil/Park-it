@@ -1,141 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:src/core/constants/constants.dart';
+import 'package:src/core/config/themes/color_palette.dart';
+import 'package:src/core/config/themes/app_theme.dart';
+import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/owner/data/owner_store.dart';
+import 'package:src/modules/owner/models/parking_spot_model.dart';
 import 'package:src/modules/owner/routes/owner_routes.dart';
-import 'package:src/shared/widgets/app_card.dart';
-import 'package:src/shared/widgets/app_layout.dart';
 import 'package:src/shared/widgets/empty_state.dart';
-import 'package:src/shared/widgets/frosted_bar.dart';
 
-class OwnerParkingSpacesScreen extends StatelessWidget {
+class OwnerParkingSpacesScreen extends ConsumerWidget {
   const OwnerParkingSpacesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentUser = ref.watch(currentUserProvider);
+    final ownerId = int.tryParse(currentUser?.id ?? '') ?? 1;
 
-    final spots = <_OwnerSpotCardModel>[
-      const _OwnerSpotCardModel(
-        id: '42',
-        title: 'Downtown Central Plaza',
-        subtitle: '123 Main St • Covered • EV',
-        pricePerHour: 5,
-        availabilityLabel: '12 spots',
-        rating: 4.8,
+    final spots = ref.watch(
+      ownerStoreProvider.select(
+        (s) => s.spots.where((p) => p.ownerId == ownerId).toList(),
       ),
-      const _OwnerSpotCardModel(
-        id: '07',
-        title: 'Harbor View Garage',
-        subtitle: '456 Waterfront Ave • Security',
-        pricePerHour: 8,
-        availabilityLabel: '6 spots',
-        rating: 4.6,
-      ),
-    ];
+    );
 
-    return SafeArea(
-      child: Scaffold(
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => context.pushNamed(OwnerRoutes.addParkingSpace),
-          icon: const Icon(Icons.add),
-          label: const Text('Add spot'),
-        ),
-        body: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: FrostedBar(
-                  borderRadius: BorderRadius.circular(16),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {},
-                        icon: Icon(Icons.arrow_back, color: theme.colorScheme.primary),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          'My Parking Spots',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Search',
-                        onPressed: () {},
-                        icon: Icon(Icons.search_rounded, color: theme.colorScheme.primary),
-                      ),
-                    ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Parking Spots'),
+        actions: [
+          IconButton(
+            tooltip: 'Search',
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Use the list below and tap a spot to open it.'),
+              ),
+            ),
+            icon: const Icon(Icons.search),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.pushNamed(OwnerRoutes.addParkingSpace),
+        child: const Icon(Icons.add),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          children: [
+            if (spots.isEmpty)
+              EmptyState(
+                title: 'No spots yet',
+                subtitle: 'Add your first parking spot to start earning.',
+                icon: Icons.local_parking_outlined,
+                action: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        context.pushNamed(OwnerRoutes.addParkingSpace),
+                    child: const Text('Add parking spot'),
+                  ),
+                ),
+              )
+            else
+              ...spots.map(
+                (spot) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _OwnerSpotCard(
+                    spot: spot,
+                    onTap: () => context.pushNamed(
+                      OwnerRoutes.parkingSpaceDetail,
+                      pathParameters: {'id': spot.id.toString()},
+                    ),
+                    onEdit: () => context.pushNamed(
+                      OwnerRoutes.editParkingSpace,
+                      pathParameters: {'id': spot.id.toString()},
+                    ),
                   ),
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: AppLayout(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 16, bottom: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (spots.isEmpty)
-                        EmptyState(
-                          title: 'No spots yet',
-                          subtitle: 'Add your first parking spot to start earning.',
-                          icon: Icons.local_parking_outlined,
-                          action: FilledButton(
-                            onPressed: () => context.pushNamed(OwnerRoutes.addParkingSpace),
-                            child: const Text('Add parking spot'),
-                          ),
-                        )
-                      else
-                        ...spots.map(
-                          (spot) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _OwnerSpotCard(
-                              spot: spot,
-                              onTap: () => context.pushNamed(
-                                OwnerRoutes.parkingSpaceDetail,
-                                pathParameters: {'id': spot.id},
-                              ),
-                              onEdit: () => context.pushNamed(
-                                OwnerRoutes.editParkingSpace,
-                                pathParameters: {'id': spot.id},
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
     );
   }
-}
-
-class _OwnerSpotCardModel {
-  const _OwnerSpotCardModel({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.pricePerHour,
-    required this.availabilityLabel,
-    required this.rating,
-  });
-
-  final String id;
-  final String title;
-  final String subtitle;
-  final double pricePerHour;
-  final String availabilityLabel;
-  final double rating;
 }
 
 class _OwnerSpotCard extends StatelessWidget {
@@ -145,78 +93,106 @@ class _OwnerSpotCard extends StatelessWidget {
     required this.onEdit,
   });
 
-  final _OwnerSpotCardModel spot;
+  final ParkingSpotModel spot;
   final VoidCallback onTap;
   final VoidCallback onEdit;
 
+  Color _statusColor(BuildContext context) {
+    return switch (spot.status) {
+      SpotStatus.available => AppColors.success,
+      SpotStatus.archived => AppColors.textTertiaryLight,
+      SpotStatus.suspended => AppColors.error,
+      _ => context.colorScheme.textSecondary,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final statusColor = _statusColor(context);
 
-    return AppCard(
+    return InkWell(
       onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(spot.title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 6),
-                    Text(
-                      spot.subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
+      borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+      child: Container(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        decoration: BoxDecoration(
+          color: context.surfaceColor,
+          borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        spot.title,
+                        style: context.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.colorScheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${spot.street ?? ''}, ${spot.city ?? ''} • ${spot.country ?? ''} ${spot.postalCode ?? ''}'.trim(),
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.colorScheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                tooltip: 'Edit',
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_outlined),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _Badge(
-                icon: Icons.attach_money_rounded,
-                label: '\$${spot.pricePerHour.toStringAsFixed(0)}/hr',
-              ),
-              const SizedBox(width: 8),
-              _Badge(
-                icon: Icons.event_available_outlined,
-                label: spot.availabilityLabel,
-                color: Colors.green,
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10),
+                const SizedBox(width: 12),
+                IconButton(
+                  tooltip: 'Edit',
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.star_rounded, size: 16, color: theme.colorScheme.primary),
-                    const SizedBox(width: 4),
-                    Text(
-                      spot.rating.toStringAsFixed(1),
-                      style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800, color: theme.colorScheme.primary),
-                    ),
-                  ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _Badge(
+                  icon: Icons.category_outlined,
+                  label: spot.spotType.toJson(),
                 ),
-              ),
-            ],
-          ),
-        ],
+                _Badge(
+                  icon: Icons.circle,
+                  label: spot.status.toJson(),
+                  color: statusColor,
+                ),
+                _Badge(
+                  icon: Icons.attach_money,
+                  label: '${spot.pricePerHour.toStringAsFixed(0)} /h',
+                ),
+                if (spot.pricePerDay != null)
+                  _Badge(
+                    icon: Icons.calendar_today_outlined,
+                    label: '${spot.pricePerDay!.toStringAsFixed(0)} /day',
+                  ),
+                _Badge(
+                  icon: Icons.star,
+                  label:
+                      '${spot.averageRating.toStringAsFixed(1)} (${spot.totalReviews})',
+                ),
+                _Badge(
+                  icon: Icons.bookmark_added_outlined,
+                  label: '${spot.totalBookings} bookings',
+                ),
+                if (spot.isDynamicPricing)
+                  const _Badge(icon: Icons.bolt, label: 'Dynamic'),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -231,8 +207,7 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final effectiveColor = color ?? theme.colorScheme.primary;
+    final effectiveColor = color ?? AppColors.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -246,7 +221,10 @@ class _Badge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800, color: effectiveColor),
+            style: context.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: effectiveColor,
+            ),
           ),
         ],
       ),

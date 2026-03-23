@@ -3,7 +3,7 @@ import 'package:src/core/enums/app_enums.dart';
 class PaymentModel {
   final int id;
   final int reservationId;
-  final int payerId;
+  final String payerId;
   final double amount;
   final double platformFee;
   final double ownerPayout;
@@ -43,7 +43,7 @@ class PaymentModel {
     return PaymentModel(
       id: json['id'] as int,
       reservationId: json['reservation_id'] as int,
-      payerId: json['payer_id'] as int,
+      payerId: json['payer_id'] as String,
       amount: (json['amount'] as num).toDouble(),
       platformFee: (json['platform_fee'] as num).toDouble(),
       ownerPayout: (json['owner_payout'] as num).toDouble(),

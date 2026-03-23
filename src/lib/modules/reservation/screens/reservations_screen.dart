@@ -8,13 +8,13 @@ import 'package:src/modules/reservation/models/reservation_model.dart';
 import 'package:src/modules/reservation/repositories/reservation_repository.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/common_bottom_nav.dart';
-import 'package:src/shared/widgets/section_header.dart';
-import 'package:src/core/config/themes/app_theme.dart';
 
-final userReservationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final userReservationsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return [];
-  
+
   final repo = ref.read(reservationRepositoryProvider);
   final userId = int.tryParse(user.id) ?? 0;
   return repo.getReservationsWithSpots(userId);
@@ -32,10 +32,33 @@ class ReservationsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           'My Bookings',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'Seed test booking',
+            onPressed: () async {
+              final user = ref.read(currentUserProvider);
+              final userId = int.tryParse(user?.id ?? '');
+              if (userId == null) return;
+              await ref
+                  .read(reservationRepositoryProvider)
+                  .seedExampleCompletedReservation(driverId: userId);
+              ref.invalidate(userReservationsProvider);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Example completed reservation ready.'),
+                ),
+              );
+            },
+            icon: const Icon(Icons.science_outlined),
+          ),
+        ],
       ),
       body: reservationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -46,11 +69,17 @@ class ReservationsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.calendar_today_outlined, size: 64, color: theme.colorScheme.outline),
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 64,
+                    color: theme.colorScheme.outline,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No bookings found',
-                    style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -79,7 +108,9 @@ class ReservationsScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               spot?['title'] ?? 'Parking Spot',
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -90,11 +121,19 @@ class ReservationsScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Icon(Icons.access_time, size: 16, color: theme.colorScheme.primary),
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
                           const SizedBox(width: 8),
                           Text(
-                            DateFormat('MMM dd, yyyy • hh:mm a').format(startTime),
-                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            DateFormat(
+                              'MMM dd, yyyy • hh:mm a',
+                            ).format(startTime),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -104,7 +143,11 @@ class ReservationsScreen extends ConsumerWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.attach_money, size: 16, color: theme.colorScheme.primary),
+                              Icon(
+                                Icons.attach_money,
+                                size: 16,
+                                color: theme.colorScheme.primary,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '\$${totalPrice.toStringAsFixed(2)}',
@@ -120,12 +163,19 @@ class ReservationsScreen extends ConsumerWidget {
                               padding: const EdgeInsets.only(right: 8),
                               child: TextButton(
                                 onPressed: () {
-                                  final booking = ReservationModel.fromJson(res);
-                                  context.push(PaymentRoutes.paymentPath, extra: booking);
+                                  final booking = ReservationModel.fromJson(
+                                    res,
+                                  );
+                                  context.push(
+                                    PaymentRoutes.paymentPath,
+                                    extra: booking,
+                                  );
                                 },
                                 style: TextButton.styleFrom(
                                   foregroundColor: theme.colorScheme.primary,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
                                 ),
                                 child: const Text('Continue Payment'),
                               ),
@@ -159,7 +209,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     Color color;
     switch (status.toUpperCase()) {
       case 'CONFIRMED':

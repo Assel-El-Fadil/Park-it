@@ -3,12 +3,11 @@
 import 'package:src/core/enums/app_enums.dart';
 
 class UserModel {
-  final int id;
+  final String id;
   final String firstName;
   final String lastName;
   final String? email;
   final String? phone;
-  final String? passwordHash;
   final String? profilePhoto;
   final UserRole role;
   final VerificationStatus verificationStatus;
@@ -30,7 +29,6 @@ class UserModel {
     required this.lastName,
     this.email,
     this.phone,
-    this.passwordHash,
     this.profilePhoto,
     required this.role,
     required this.verificationStatus,
@@ -49,12 +47,11 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as int,
+      id: json['id'] as String,
       firstName: json['first_name'] as String,
       lastName: json['last_name'] as String,
       email: json['email'] as String?,
       phone: json['phone'] as String?,
-      passwordHash: json['password_hash'] as String?,
       profilePhoto: json['profile_photo'] as String?,
       role: UserRole.fromString(json['role'] as String),
       verificationStatus: VerificationStatus.fromString(
@@ -87,7 +84,6 @@ class UserModel {
       'last_name': lastName,
       'email': email,
       'phone': phone,
-      'password_hash': passwordHash,
       'profile_photo': profilePhoto,
       'role': role.toJson(),
       'verification_status': verificationStatus.toJson(),
