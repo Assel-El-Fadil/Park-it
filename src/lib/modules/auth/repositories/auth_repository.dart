@@ -199,6 +199,14 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
 
       final userModel = await _getOrCreateUser(user);
 
+      // Block login if email is not yet confirmed
+      if (user.emailConfirmedAt == null) {
+        await _authService.signOut();
+        throw AppException(
+          'Please verify your email address before logging in. Check your inbox for a confirmation link.',
+        );
+      }
+
       final token = response.session?.accessToken;
       if (token != null) {
         await _sessionService.saveSession(userModel, token);
@@ -252,7 +260,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
               'fcm_token': user.fcmToken,
               'role': user.role.name.toUpperCase(),
             })
-            .eq('id', int.tryParse(user.id) ?? -1);
+            .eq('id', user.id);
       } catch (_) {
         // Ignored Database Error
       }

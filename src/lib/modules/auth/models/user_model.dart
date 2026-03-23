@@ -59,7 +59,7 @@ class UserModel {
 
   Map<String, dynamic> toUserRow() {
     return <String, dynamic>{
-      'id': id.isEmpty ? null : int.tryParse(id),
+      'id': id.isEmpty ? null : id,
       'first_name': firstName,
       'last_name': lastName,
       'email': email?.isNotEmpty == true ? email : null,

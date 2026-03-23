@@ -44,7 +44,8 @@ class AuthService {
           e.code == 'over_email_send_rate_limit') {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      // Surface the real Supabase error message directly
+      throw AuthException(e.message);
     } catch (e, stackTrace) {
       print('ERROR [AuthService.signUp]: $e');
       print('STACK [AuthService.signUp]: $stackTrace');
@@ -55,7 +56,7 @@ class AuthService {
           msg.contains('over_email_send_rate_limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -88,10 +89,10 @@ class AuthService {
           e.message.toLowerCase().contains('credentials')) {
         throw AuthException(AppConstants.errorInvalidCredentials);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -147,10 +148,10 @@ class AuthService {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -193,7 +194,7 @@ class AuthService {
         );
       }
 
-      // 2. If successful, update to the new password
+      // 2. Update to the new password using the active recovery session
       await _client.auth.updateUser(UserAttributes(password: newPassword));
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('invalid login credentials')) {
@@ -203,10 +204,10 @@ class AuthService {
           e.message.toLowerCase().contains('weak')) {
         throw AuthException(AppConstants.errorWeakPassword);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 

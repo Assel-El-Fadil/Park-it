@@ -55,7 +55,7 @@ class VehicleModel {
 
   Map<String, dynamic> toVehicleRow() {
     return <String, dynamic>{
-      'owner_id': int.tryParse(ownerId) ?? ownerId,
+      'owner_id': ownerId,
       'type': type.name.toUpperCase(),
       'brand': brand,
       'model': model,
