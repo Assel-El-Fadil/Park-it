@@ -79,6 +79,14 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
     }
   }
 
+  void clearError() {
+    if (state.value?.errorMessage != null) {
+      state = AsyncValue.data(
+        state.value!.copyWith(errorMessage: null),
+      );
+    }
+  }
+
   Future<void> addVehicle(
     String brand,
     String model,
@@ -114,14 +122,9 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
         color: color.isEmpty ? null : color,
       );
 
-      final addedVehicle = await vehicleRepository.addVehicle(vehicle);
+      await vehicleRepository.addVehicle(vehicle);
 
-      final vehicles = <VehicleModel>[...(state.value?.vehicles ?? []), addedVehicle];
-      state = AsyncValue.data(VehicleState(
-        vehicles: vehicles,
-        isLoading: false,
-        errorMessage: null,
-      ));
+      await loadVehicles(currentUser.id);
     } on AppException catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
@@ -148,15 +151,11 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
     try {
       final vehicleRepository = ref.read(vehicleRepositoryProvider);
       await vehicleRepository.updateVehicle(vehicle);
-
-      final vehicles = (state.value?.vehicles ?? [])
-          .map((v) => v.id == vehicle.id ? vehicle : v)
-          .toList();
-      state = AsyncValue.data(VehicleState(
-        vehicles: vehicles,
-        isLoading: false,
-        errorMessage: null,
-      ));
+      
+      final currentUser = ref.read(currentUserProvider);
+      if (currentUser != null) {
+        await loadVehicles(currentUser.id);
+      }
     } on AppException catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
@@ -187,13 +186,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       final vehicleRepository = ref.read(vehicleRepositoryProvider);
       await vehicleRepository.deleteVehicle(id);
 
-      final vehicles =
-          (state.value?.vehicles ?? []).where((v) => v.id != id).toList();
-      state = AsyncValue.data(VehicleState(
-        vehicles: vehicles,
-        isLoading: false,
-        errorMessage: null,
-      ));
+      await loadVehicles(currentUser.id);
     } on AppException catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
@@ -221,14 +214,7 @@ class VehicleNotifier extends AsyncNotifier<VehicleState> {
       final vehicleRepository = ref.read(vehicleRepositoryProvider);
       await vehicleRepository.setDefault(id, userId);
 
-      final vehicles = (state.value?.vehicles ?? [])
-          .map((v) => v.id == id ? v.copyWith(isDefault: true) : v.copyWith(isDefault: false))
-          .toList();
-      state = AsyncValue.data(VehicleState(
-        vehicles: vehicles,
-        isLoading: false,
-        errorMessage: null,
-      ));
+      await loadVehicles(userId);
     } on AppException catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(

@@ -68,6 +68,9 @@ class VehicleRepositoryImpl implements VehicleRepository {
     try {
       await _vehicleService.deleteVehicle(id);
     } on PostgrestException catch (e) {
+      if (e.message.contains('violates foreign key constraint') || e.code == '23503') {
+        throw AppException('Cannot delete vehicle: It is linked to one or more reservations.');
+      }
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;

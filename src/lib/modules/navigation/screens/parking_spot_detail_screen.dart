@@ -324,6 +324,27 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                               child: const Text('Book Now', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          FilledButton.icon(
+                            onPressed: () {
+                              AppNavigator.pushNamed(
+                                context,
+                                NavigationRoutes.parkingMap,
+                                extra: {
+                                  'spots': [spot],
+                                  'initialSelectedSpotId': spot.id,
+                                },
+                              );
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                              foregroundColor: theme.colorScheme.onSurfaceVariant,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            icon: const Icon(Icons.map_outlined, size: 20),
+                            label: const Text('Map', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
                         ],
                       ),
                     ),

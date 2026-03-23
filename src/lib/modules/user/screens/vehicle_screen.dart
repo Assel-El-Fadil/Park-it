@@ -19,6 +19,22 @@ class VehicleScreen extends ConsumerWidget {
     final errorMessage = vehicleState.value?.errorMessage;
     final currentUser = ref.watch(currentUserProvider);
 
+    ref.listen<AsyncValue<VehicleState>>(
+      vehicleNotifierProvider,
+      (previous, next) {
+        if (!next.isLoading && next.hasValue) {
+          final error = next.value!.errorMessage;
+          // We only show it as a snackbar if it's not handled by the AddVehicleSheet
+          // A naive approach: if the sheet is closed, it'll show the snackbar
+          if (error != null && error.isNotEmpty) {
+             ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(error), backgroundColor: AppColors.error),
+            );
+          }
+        }
+      },
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -65,6 +81,7 @@ class VehicleScreen extends ConsumerWidget {
   }
 
   void _showAddVehicleSheet(BuildContext context, WidgetRef ref) {
+    ref.read(vehicleNotifierProvider.notifier).clearError();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -308,7 +325,10 @@ class _AddVehicleSheetState extends ConsumerState<_AddVehicleSheet> {
         );
 
     if (mounted) {
-      widget.onSubmitted();
+      final error = ref.read(vehicleNotifierProvider).value?.errorMessage;
+      if (error == null) {
+        widget.onSubmitted();
+      }
     }
   }
 

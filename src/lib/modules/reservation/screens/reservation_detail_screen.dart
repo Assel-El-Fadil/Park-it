@@ -9,6 +9,8 @@ import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/section_header.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
+import 'package:src/modules/payment/widgets/order_summary.dart';
+import 'package:src/modules/reservation/screens/reservations_screen.dart';
 
 final reservationDetailProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, id) async {
   final repo = ref.read(reservationRepositoryProvider);
@@ -113,31 +115,13 @@ class ReservationDetailScreen extends ConsumerWidget {
                 ),
 
                 const SizedBox(height: 24),
-                const SectionHeader(title: 'PAYMENT SUMMARY'),
-                const SizedBox(height: 12),
-                AppCard(
-                  child: Column(
-                    children: [
-                      _DetailRow(
-                        label: 'Rate',
-                        value: '\$${totalPrice.toStringAsFixed(2)}',
-                      ),
-                      const SizedBox(height: 8),
-                      _DetailRow(
-                        label: 'Platform Fee',
-                        value: '\$${platformFee.toStringAsFixed(2)}',
-                      ),
-                      const Divider(height: 24),
-                      _DetailRow(
-                        label: 'Total Paid',
-                        value: '\$${(totalPrice + platformFee).toStringAsFixed(2)}',
-                        isBold: true,
-                        valueColor: theme.colorScheme.primary,
-                      ),
-                    ],
-                  ),
+                OrderSummary(
+                  amount: totalPrice,
+                  platformFee: platformFee,
+                  ownerPayout: totalPrice - platformFee,
+                  currency: 'MAD',
                 ),
-                
+
                 const SizedBox(height: 32),
                 if (status.toUpperCase() == 'PENDING') ...[
                   ElevatedButton(
@@ -154,18 +138,80 @@ class ReservationDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                 ],
-                if (status.toUpperCase() == 'PENDING' || status.toUpperCase() == 'CONFIRMED')
-                  OutlinedButton(
-                    onPressed: () {
-                      // TODO: Implement cancel
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.error,
-                      side: const BorderSide(color: AppColors.error),
-                      minimumSize: const Size(double.infinity, 56),
-                    ),
-                    child: const Text('Cancel Reservation'),
-                  ),
+                Builder(
+                  builder: (context) {
+                    final isPending = status.toUpperCase() == 'PENDING';
+                    final isConfirmed = status.toUpperCase() == 'CONFIRMED';
+                    final startTimeLabel = data['start_time'];
+                    final startDateTime = startTimeLabel != null ? DateTime.parse(startTimeLabel) : DateTime.now();
+                    final timeUntilStart = startDateTime.difference(DateTime.now());
+                    final canCancel = isPending || (isConfirmed && timeUntilStart.inHours >= 48);
+
+                    if (!canCancel) return const SizedBox.shrink();
+
+                    return OutlinedButton(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Cancel Reservation?'),
+                            content: const Text(
+                                'Are you sure you want to cancel this reservation? This action cannot be undone.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('No, keep it'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.error),
+                                child: const Text('Yes, cancel'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true && context.mounted) {
+                          try {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => const Center(child: CircularProgressIndicator()),
+                            );
+
+                            await ref
+                                .read(reservationRepositoryProvider)
+                                .cancelReservation(id);
+
+                            if (context.mounted) {
+                              Navigator.of(context).pop(); // clear loading
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Reservation cancelled successfully')),
+                              );
+
+                              ref.invalidate(reservationDetailProvider(id));
+                              ref.invalidate(userReservationsProvider);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              Navigator.of(context).pop(); // clear loading
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to cancel: $e'), backgroundColor: AppColors.error),
+                              );
+                            }
+                          }
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error),
+                        minimumSize: const Size(double.infinity, 56),
+                      ),
+                      child: const Text('Cancel Reservation'),
+                    );
+                  }
+                ),
                 const SizedBox(height: 16),
               ],
             ),

@@ -54,8 +54,15 @@ List<GoRoute> getNavigationRoutes() {
       path: NavigationRoutes.parkingMapPath,
       name: NavigationRoutes.parkingMap,
       builder: (context, state) {
-        final spots = state.extra as List<ParkingSpotModel>;
-        return ParkingMapScreen(spots: spots);
+        if (state.extra is Map<String, dynamic>) {
+          final extraMap = state.extra as Map<String, dynamic>;
+          final spots = extraMap['spots'] as List<ParkingSpotModel>? ?? [];
+          final selectedId = extraMap['initialSelectedSpotId'] as int?;
+          return ParkingMapScreen(spots: spots, initialSelectedSpotId: selectedId);
+        } else {
+          final spots = state.extra as List<ParkingSpotModel>? ?? [];
+          return ParkingMapScreen(spots: spots);
+        }
       },
     ),
     GoRoute(

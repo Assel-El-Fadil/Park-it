@@ -17,6 +17,8 @@ class ParkingMarker extends ConsumerWidget {
   final ColorScheme colorScheme;
 
   Color get _markerColor {
+    if (isSelected) return Colors.black;
+    
     return switch (spot.status) {
       SpotStatus.available => colorScheme.primary,
       SpotStatus.occupied => colorScheme.error,

@@ -58,6 +58,16 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  Future<void> cancelReservation(int reservationId) async {
+    await client
+        .from(tableName)
+        .update({
+          'status': 'CANCELLED',
+          'updated_at': DateTime.now().toIso8601String()
+        })
+        .eq('id', reservationId);
+  }
+
   Future<Map<String, dynamic>> getReservationWithDetails(int reservationId) async {
     final response = await client
         .from(tableName)

@@ -104,15 +104,14 @@ class ReservationsScreen extends ConsumerWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.attach_money, size: 16, color: theme.colorScheme.primary),
-                              const SizedBox(width: 4),
                               Text(
-                                '\$${totalPrice.toStringAsFixed(2)}',
+                                '${totalPrice.toStringAsFixed(2)} MAD',
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.primary,
                                 ),
                               ),
+
                             ],
                           ),
                           if (status.toUpperCase() == 'PENDING')

@@ -15,9 +15,14 @@ import 'package:src/modules/owner/models/parking_spot_model.dart';
 import 'package:src/providers/location_provider.dart';
 
 class ParkingMapScreen extends ConsumerStatefulWidget {
-  const ParkingMapScreen({super.key, required this.spots});
+  const ParkingMapScreen({
+    super.key,
+    required this.spots,
+    this.initialSelectedSpotId,
+  });
 
   final List<ParkingSpotModel> spots;
+  final int? initialSelectedSpotId;
 
   @override
   ConsumerState<ParkingMapScreen> createState() => _ParkingMapPageState();
@@ -34,6 +39,9 @@ class _ParkingMapPageState extends ConsumerState<ParkingMapScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialSelectedSpotId != null) {
+      _selectedSpot = _mappableSpots.where((s) => s.id == widget.initialSelectedSpotId).firstOrNull;
+    }
     Future.microtask(
       () => ref.read(locationProvider.notifier).getCurrentLocation(),
     );
@@ -46,6 +54,9 @@ class _ParkingMapPageState extends ConsumerState<ParkingMapScreen> {
   }
 
   LatLng get _initialCenter {
+    if (_selectedSpot != null && _selectedSpot!.latitude != null && _selectedSpot!.longitude != null) {
+      return LatLng(_selectedSpot!.latitude!, _selectedSpot!.longitude!);
+    }
     if (_mappableSpots.isNotEmpty) {
       return LatLng(
         _mappableSpots.first.latitude!,

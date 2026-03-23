@@ -10,7 +10,7 @@ class VehicleService {
     final response = await _client
         .from(_tableName)
         .select()
-        .eq('owner_id', userId)
+        .eq('owner_id', int.tryParse(userId) ?? userId)
         .order('is_default', ascending: false);
 
     return List<Map<String, dynamic>>.from(response as List);
@@ -22,19 +22,19 @@ class VehicleService {
   }
 
   Future<void> updateVehicle(String id, Map<String, dynamic> data) async {
-    await _client.from(_tableName).update(data).eq('id', id);
+    await _client.from(_tableName).update(data).eq('id', int.tryParse(id) ?? id);
   }
 
   Future<void> deleteVehicle(String id) async {
-    await _client.from(_tableName).delete().eq('id', id);
+    await _client.from(_tableName).delete().eq('id', int.tryParse(id) ?? id);
   }
 
   Future<void> setDefaultVehicle(String id, String userId) async {
     await _client
         .from(_tableName)
         .update({'is_default': false})
-        .eq('owner_id', userId);
-    await _client.from(_tableName).update({'is_default': true}).eq('id', id);
+        .eq('owner_id', int.tryParse(userId) ?? userId);
+    await _client.from(_tableName).update({'is_default': true}).eq('id', int.tryParse(id) ?? id);
   }
 }
 
