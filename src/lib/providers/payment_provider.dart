@@ -78,3 +78,7 @@ class PaymentNotifier extends Notifier<PaymentState> {
 final paymentProvider = NotifierProvider<PaymentNotifier, PaymentState>(
   PaymentNotifier.new,
 );
+
+final paymentServiceProvider = Provider<PaymentService>((ref) {
+  return PaymentService();
+});

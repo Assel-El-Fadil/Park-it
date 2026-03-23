@@ -18,7 +18,7 @@ final notificationProvider =
 class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
   final NotificationService _service;
 
-  int _currentUserId = 123; // This should come from your auth provider
+  int _currentUserId = 1; // This should come from your auth provider
 
   NotificationNotifier(this._service) : super([]) {
     _loadNotifications();

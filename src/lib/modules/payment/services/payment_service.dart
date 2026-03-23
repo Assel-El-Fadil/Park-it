@@ -172,4 +172,80 @@ class PaymentService {
     final updated = await _repo.getById(paymentId.toString());
     return updated!;
   }
+
+  Future<PaymentModel?> getById(int id) {
+    return _repo.getById(id.toString());
+  }
+
+  Future<List<PaymentModel>> getByPayerId(int payerId) {
+    return _repo.getByPayerId(payerId);
+  }
+
+  Future<PaymentModel?> getByReservationId(int reservationId) {
+    return _repo.getByReservationId(reservationId);
+  }
+
+  Future<List<PaymentModel>> getByStatus(PaymentStatus status) {
+    return _repo.getByStatus(status);
+  }
+
+  Future<PaymentModel?> getByStripePaymentIntentId(
+    String stripePaymentIntentId,
+  ) {
+    return _repo.getByStripePaymentIntentId(stripePaymentIntentId);
+  }
+
+  Future<PaymentModel?> getByStripeChargeId(String stripeChargeId) {
+    return _repo.getByStripeChargeId(stripeChargeId);
+  }
+
+  Future<List<PaymentModel>> getPendingPayments({int hoursThreshold = 24}) {
+    return _repo.getPendingPayments(hoursThreshold: hoursThreshold);
+  }
+
+  Future<double> getTotalRevenueForOwner(
+    int ownerId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return _repo.getTotalRevenueForOwner(
+      ownerId,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  Future<void> updateStatus(int paymentId, PaymentStatus status) {
+    return _repo.updateStatus(paymentId, status);
+  }
+
+  Future<void> updateStripeDetails(
+    int paymentId, {
+    String? stripePaymentIntentId,
+    String? stripeChargeId,
+    PaymentStatus? status,
+  }) {
+    return _repo.updateStripeDetails(
+      paymentId,
+      stripePaymentIntentId: stripePaymentIntentId,
+      stripeChargeId: stripeChargeId,
+      status: status,
+    );
+  }
+
+  Future<void> markAsRefunded(
+    int paymentId, {
+    required String refundId,
+    required double refundAmount,
+  }) {
+    return _repo.markAsRefunded(
+      paymentId,
+      refundId: refundId,
+      refundAmount: refundAmount,
+    );
+  }
+
+  Future<void> incrementRetryCount(int paymentId) {
+    return _repo.incrementRetryCount(paymentId);
+  }
 }
