@@ -19,6 +19,11 @@ class SessionService {
     await prefs.setString(AppConstants.prefKeyAuthToken, token);
   }
 
+  Future<void> saveUserEmail(String email) async {
+    final prefs = await _prefs;
+    await prefs.setString(AppConstants.prefKeyUserEmail, email);
+  }
+
   Future<bool> isLoggedIn() async {
     final prefs = await _prefs;
     return prefs.getBool(AppConstants.prefKeyIsLoggedIn) ?? false;

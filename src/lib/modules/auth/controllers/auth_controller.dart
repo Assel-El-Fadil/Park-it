@@ -351,6 +351,114 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       );
     }
   }
+
+  Future<void> updatePassword({
+    String? oldPassword,
+    required String newPassword,
+  }) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.updatePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> updateEmail(String newEmail) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.updateEmail(newEmail);
+
+      // Refresh the local user state to reflect the new email
+      await checkAuthState();
+
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> resendVerification(String email, {String? phone}) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.resendVerification(email, phone: phone);
+
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
 }
 
 final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AppAuthState>(

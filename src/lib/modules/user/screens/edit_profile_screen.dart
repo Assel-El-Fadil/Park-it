@@ -188,10 +188,156 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         : const Text('Save Changes'),
                   ),
                 ),
+                const SizedBox(height: 48),
+                Text(
+                  'Account Security',
+                  style: context.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: context.colorScheme.error,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.email_outlined),
+                  title: const Text('Change Email Address'),
+                  subtitle: Text(user?.email ?? 'No email set'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showUpdateDialog(context, 'email'),
+                ),
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.lock_outline),
+                  title: const Text('Change Password'),
+                  subtitle: const Text('Update your password securely'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showUpdateDialog(context, 'password'),
+                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showUpdateDialog(BuildContext context, String type) {
+    bool isPassword = type == 'password';
+    final controller = TextEditingController();         // used for 'new email' OR 'new password'
+    final oldPasswordController = TextEditingController(); // used only if isPassword
+    final confirmController = TextEditingController();  // used only if isPassword
+    final formKey = GlobalKey<FormState>();
+
+    // We can't use a StatefulBuilder easily without breaking Riverpod mounts, 
+    // but simple forms are fine. To toggle visibility inside dialog, it's better 
+    // to use a local StatefulWidget or just not allow toggling visibility in this simple version, 
+    // but let's keep it simple.
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isPassword ? 'Update Password' : 'Update Email'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isPassword) ...[
+                TextFormField(
+                  controller: oldPasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Current Password',
+                    hintText: 'Enter your current password',
+                  ),
+                  validator: (value) => value == null || value.trim().isEmpty ? 'This field is required' : null,
+                ),
+                const SizedBox(height: 16),
+              ],
+              TextFormField(
+                controller: controller,
+                obscureText: isPassword,
+                keyboardType: isPassword ? TextInputType.text : TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: isPassword ? 'New Password' : 'New Email Address',
+                  hintText: isPassword ? 'Enter new password' : 'Enter new email',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return 'This field is required';
+                  if (isPassword && value.length < AppConstants.minPasswordLength) {
+                    return AppConstants.validationPassword;
+                  }
+                  if (!isPassword && !RegExp(AppConstants.emailRegex).hasMatch(value)) {
+                    return AppConstants.validationEmail;
+                  }
+                  return null;
+                },
+              ),
+              if (isPassword) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: confirmController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm New Password',
+                    hintText: 'Re-enter new password',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return 'This field is required';
+                    if (value != controller.text) return 'Passwords do not match';
+                    return null;
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              
+              Navigator.pop(ctx);
+              setState(() => _isLoading = true);
+              
+              try {
+                if (isPassword) {
+                  await ref.read(authNotifierProvider.notifier).updatePassword(
+                    oldPassword: oldPasswordController.text,
+                    newPassword: controller.text,
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Password updated successfully!')),
+                    );
+                  }
+                } else {
+                  await ref.read(authNotifierProvider.notifier).updateEmail(controller.text.trim());
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('A confirmation link has been sent to your new email address.')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
+                  );
+                }
+              } finally {
+                if (mounted) setState(() => _isLoading = false);
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
       ),
     );
   }

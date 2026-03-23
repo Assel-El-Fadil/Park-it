@@ -8,21 +8,27 @@ import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 
-class ForgotPasswordScreen extends ConsumerStatefulWidget {
-  const ForgotPasswordScreen({super.key});
+/// Screen shown after clicking the password reset link in the email.
+/// The user enters and confirms a new password.
+class ResetPasswordScreen extends ConsumerStatefulWidget {
+  const ResetPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
+class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
   bool _isSuccess = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -30,14 +36,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      await ref.read(authNotifierProvider.notifier).sendPasswordReset(
-            _emailController.text.trim(),
+      await ref.read(authNotifierProvider.notifier).updatePassword(
+            newPassword: _passwordController.text,
           );
-      setState(() {
-        _isSuccess = true;
-      });
+      setState(() => _isSuccess = true);
     } catch (e) {
-      // Error is handled by AuthNotifier state, shown below
+      // Error handled by AuthNotifier state
     }
   }
 
@@ -48,13 +52,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final errorMessage = authState.value?.errorMessage;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Forgot Password',
-      ),
+      appBar: const CustomAppBar(title: 'New Password'),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: _isSuccess ? _buildSuccessView(context) : _buildFormView(context, isLoading, errorMessage),
+          child: _isSuccess
+              ? _buildSuccessView(context)
+              : _buildFormView(context, isLoading, errorMessage),
         ),
       ),
     );
@@ -68,7 +72,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           const SizedBox(height: 24),
           Text(
-            'Reset your password',
+            'Create a new password',
             style: context.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w600,
               color: context.colorScheme.textPrimary,
@@ -76,7 +80,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Enter the email address associated with your account and we\'ll send you a link to reset your password.',
+            'Your new password must be at least ${AppConstants.minPasswordLength} characters long.',
             style: context.textTheme.bodyMedium?.copyWith(
               color: context.colorScheme.textSecondary,
               height: 1.5,
@@ -84,21 +88,55 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ),
           const SizedBox(height: 32),
           TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => _submit(),
-            decoration: const InputDecoration(
-              labelText: 'Email Address',
-              hintText: 'Enter your email',
-              prefixIcon: Icon(Icons.email_outlined),
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: 'New Password',
+              hintText: 'Enter new password',
+              prefixIcon: const Icon(Icons.lock_outline),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: context.colorScheme.textSecondary,
+                ),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
             ),
             validator: (value) {
-              if (value == null || value.trim().isEmpty) {
+              if (value == null || value.isEmpty) {
                 return AppConstants.validationRequired;
               }
-              if (!RegExp(AppConstants.emailRegex).hasMatch(value.trim())) {
-                return AppConstants.validationEmail;
+              if (value.length < AppConstants.minPasswordLength) {
+                return AppConstants.validationPassword;
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _confirmPasswordController,
+            obscureText: _obscureConfirm,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _submit(),
+            decoration: InputDecoration(
+              labelText: 'Confirm Password',
+              hintText: 'Re-enter new password',
+              prefixIcon: const Icon(Icons.lock_outline),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                  color: context.colorScheme.textSecondary,
+                ),
+                onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return AppConstants.validationRequired;
+              }
+              if (value != _passwordController.text) {
+                return AppConstants.validationPasswordMatch;
               }
               return null;
             },
@@ -141,7 +179,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Send Reset Link'),
+                  : const Text('Update Password'),
             ),
           ),
         ],
@@ -162,14 +200,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             shape: BoxShape.circle,
           ),
           child: const Icon(
-            Icons.mark_email_read_outlined,
+            Icons.check_circle_outline,
             color: AppColors.success,
             size: 40,
           ),
         ),
         const SizedBox(height: 24),
         Text(
-          'Check your email',
+          'Password Updated!',
           textAlign: TextAlign.center,
           style: context.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w600,
@@ -178,7 +216,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'We have sent a password reset link to\n${_emailController.text.trim()}',
+          'Your password has been successfully updated.\nYou can now log in with your new password.',
           textAlign: TextAlign.center,
           style: context.textTheme.bodyLarge?.copyWith(
             color: context.colorScheme.textSecondary,
@@ -190,7 +228,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           height: 56,
           child: ElevatedButton(
             onPressed: () => context.go(AuthRoutes.login),
-            child: const Text('Return to Login'),
+            child: const Text('Go to Login'),
           ),
         ),
       ],

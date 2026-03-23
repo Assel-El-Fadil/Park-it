@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:src/modules/auth/screens/forgot_password_screen.dart';
 import 'package:src/modules/auth/screens/login_screen.dart';
 import 'package:src/modules/auth/screens/register_screen.dart';
+import 'package:src/modules/auth/screens/reset_password_screen.dart';
 import 'package:src/modules/auth/screens/verify_otp_screen.dart';
 import 'package:src/modules/user/screens/profile_screen.dart';
 import 'package:src/modules/user/screens/vehicle_screen.dart';
@@ -18,6 +19,9 @@ class AuthRoutes {
 
   static const String verifyOtp = 'verify-otp';
   static const String verifyOtpPath = '/verify-otp';
+
+  static const String resetPassword = 'reset-password';
+  static const String resetPasswordPath = '/reset-password';
 }
 
 /// Auth module route configuration
@@ -58,6 +62,11 @@ List<GoRoute> getAuthRoutes() {
           phone: extra['phone'] as String?,
         );
       },
+    ),
+    GoRoute(
+      path: AuthRoutes.resetPasswordPath,
+      name: AuthRoutes.resetPassword,
+      builder: (context, state) => const ResetPasswordScreen(),
     ),
   ];
 }

@@ -40,6 +40,10 @@ abstract class AuthRepository {
   });
 
   Stream<UserModel?> get authStateStream;
+
+  Future<void> updatePassword({String? oldPassword, required String newPassword});
+  Future<void> updateEmail(String newEmail);
+  Future<void> resendVerification(String email, {String? phone});
 }
 
 class AuthRepositoryImpl extends SupabaseRepository<UserModel>
@@ -345,6 +349,51 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         return null;
       }
     });
+  }
+
+  @override
+  Future<void> updatePassword({
+    String? oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _authService.updatePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+    } on AuthException catch (e) {
+      throw AppException(e.message);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException(AppConstants.errorGeneric);
+    }
+  }
+
+  @override
+  Future<void> updateEmail(String newEmail) async {
+    try {
+      await _authService.updateEmail(newEmail);
+      // Supabase sends a confirmation email. The actual user email won't update 
+      // until they click the link, but we still trigger a state refresh just in case.
+      await _sessionService.saveUserEmail(newEmail);
+    } on AuthException catch (e) {
+      throw AppException(e.message);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException(AppConstants.errorGeneric);
+    }
+  }
+
+  @override
+  Future<void> resendVerification(String email, {String? phone}) async {
+    try {
+      await _authService.resendVerification(email, phone: phone);
+    } on AuthException catch (e) {
+      throw AppException(e.message);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException(AppConstants.errorGeneric);
+    }
   }
 
   /// Resolves identifier (email or phone) to email for Supabase Auth.
