@@ -54,14 +54,32 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
-      final user = await authRepository.getCurrentUser();
+      final userModel = await authRepository.getCurrentUser();
 
-      if (user == null) {
+      if (userModel == null) {
         return const AppAuthState();
       }
 
+      // 1. Role Verification for Social Auth (Google / Instagram / Facebook)
+      // If the user signed in with Social Auth, but their role is Admin or Super Admin,
+      // we must block them from using Social Auth to meet business requirements.
+      final sbUser = Supabase.instance.client.auth.currentUser;
+      final provider = sbUser?.appMetadata['provider'];
+      final restrictedProviders = ['google', 'facebook'];
+      final isRestrictedAuth = restrictedProviders.contains(provider);
+      final isAdmin = userModel.role == UserRole.admin || userModel.role == UserRole.superAdmin;
+
+      if (isRestrictedAuth && isAdmin) {
+        // Block the session and force sign out
+        await authRepository.signOut();
+        return const AppAuthState(
+          isAuthenticated: false,
+          errorMessage: 'La connexion via les réseaux sociaux est bloquée pour les administrateurs.',
+        );
+      }
+
       return AppAuthState(
-        currentUser: user,
+        currentUser: userModel,
         isAuthenticated: true,
       );
     } catch (_) {
@@ -69,11 +87,20 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     }
   }
 
-  Future<void> signUp(
+  void clearError() {
+    if (state.value?.errorMessage != null) {
+      state = AsyncValue.data(
+        state.value!.copyWith(errorMessage: null),
+      );
+    }
+  }
+
+  Future<bool> signUp(
     String email,
     String password,
     String firstName,
     String lastName,
+    String? phone,
     UserRole role,
   ) async {
     state = AsyncValue.data(
@@ -88,15 +115,22 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
         password,
         firstName,
         lastName,
+        phone,
         role,
       );
 
+      final sessionService = ref.read(sessionServiceProvider);
+      final isLoggedIn = await sessionService.isLoggedIn();
+      final needsVerification = !isLoggedIn; // If no session was created, verification is required
+
       state = AsyncValue.data(AppAuthState(
         currentUser: user,
-        isAuthenticated: true,
+        isAuthenticated: isLoggedIn,
         isLoading: false,
         errorMessage: null,
       ));
+
+      return needsVerification;
     } on AppException catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
@@ -104,6 +138,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           errorMessage: e.message,
         ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
       );
+      return false;
     } catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
@@ -111,6 +146,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           errorMessage: e.toString(),
         ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
+      return false;
     }
   }
 
@@ -144,7 +180,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     }
   }
 
-  Future<void> signIn(String email, String password) async {
+  Future<void> signIn(String identifier, String password) async {
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const AppAuthState(isLoading: true),
@@ -152,7 +188,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
-      final user = await authRepository.signIn(email, password);
+      final user = await authRepository.signIn(identifier, password);
 
       state = AsyncValue.data(AppAuthState(
         currentUser: user,
@@ -205,6 +241,84 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     }
   }
 
+  Future<void> sendPasswordReset(String email) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.sendPasswordReset(email);
+
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow; // Rethrow to let the UI show a snackbar/dialog
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> verifyOTP({
+    String? email,
+    String? phone,
+    required String token,
+    required OtpType type,
+  }) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      final user = await authRepository.verifyOTP(
+        email: email,
+        phone: phone,
+        token: token,
+        type: type,
+      );
+
+      state = AsyncValue.data(AppAuthState(
+        currentUser: user,
+        isAuthenticated: true,
+        isLoading: false,
+        errorMessage: null,
+      ));
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
   Future<void> updateProfile(UserModel user) async {
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
@@ -235,6 +349,147 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           errorMessage: e.toString(),
         ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
+    }
+  }
+
+  Future<void> updatePassword({
+    String? oldPassword,
+    required String newPassword,
+  }) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.updatePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> updateEmail(String newEmail) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.updateEmail(newEmail);
+
+      // Refresh the local user state to reflect the new email
+      await checkAuthState();
+
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> updatePhone(String newPhone) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.updatePhone(newPhone);
+
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> resendVerification(String email, {String? phone}) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.resendVerification(email, phone: phone);
+
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
     }
   }
 }
