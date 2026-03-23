@@ -253,7 +253,12 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ),
               child: Text(
-                user.role == UserRole.owner ? 'Parking Owner' : 'Driver',
+                switch (user.role) {
+                  UserRole.owner => 'Parking Owner',
+                  UserRole.admin => 'Admin',
+                  UserRole.superAdmin => 'Super Admin',
+                  _ => 'Driver',
+                },
                 style: AppTextStyles.labelMedium.copyWith(
                   color: AppColors.secondary,
                   fontWeight: FontWeight.w600,

@@ -12,13 +12,19 @@ class AuthService {
     String password, {
     required String firstName,
     required String lastName,
+    String? phone,
     required String role,
   }) async {
     try {
       return await _client.auth.signUp(
         email: email,
         password: password,
-        data: {'first_name': firstName, 'last_name': lastName, 'role': role},
+        data: {
+          'first_name': firstName,
+          'last_name': lastName,
+          'phone': phone?.trim().isNotEmpty == true ? phone!.trim() : null,
+          'role': role,
+        },
       );
     } on AuthException catch (e, stackTrace) {
       print('ERROR [AuthService.signUp]: $e');
@@ -126,6 +132,41 @@ class AuthService {
       return _client.auth.currentSession?.accessToken;
     } catch (e) {
       return null;
+    }
+  }
+
+  Future<void> sendPasswordReset(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email);
+    } on AuthException catch (e) {
+      if (e.message.toLowerCase().contains('rate limit')) {
+        throw AuthException(AppConstants.errorRateLimit);
+      }
+      throw AuthException(AppConstants.errorGeneric);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException(AppConstants.errorGeneric);
+    }
+  }
+
+  Future<AuthResponse> verifyOTP({
+    String? email,
+    String? phone,
+    required String token,
+    required OtpType type,
+  }) async {
+    try {
+      return await _client.auth.verifyOTP(
+        email: email,
+        phone: phone,
+        token: token,
+        type: type,
+      );
+    } on AuthException catch (e) {
+      throw AuthException(e.message);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException(AppConstants.errorGeneric);
     }
   }
 

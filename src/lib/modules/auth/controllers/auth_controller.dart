@@ -69,11 +69,20 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     }
   }
 
-  Future<void> signUp(
+  void clearError() {
+    if (state.value?.errorMessage != null) {
+      state = AsyncValue.data(
+        state.value!.copyWith(errorMessage: null),
+      );
+    }
+  }
+
+  Future<bool> signUp(
     String email,
     String password,
     String firstName,
     String lastName,
+    String? phone,
     UserRole role,
   ) async {
     state = AsyncValue.data(
@@ -88,15 +97,22 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
         password,
         firstName,
         lastName,
+        phone,
         role,
       );
 
+      final sessionService = ref.read(sessionServiceProvider);
+      final isLoggedIn = await sessionService.isLoggedIn();
+      final needsVerification = !isLoggedIn; // If no session was created, verification is required
+
       state = AsyncValue.data(AppAuthState(
         currentUser: user,
-        isAuthenticated: true,
+        isAuthenticated: isLoggedIn,
         isLoading: false,
         errorMessage: null,
       ));
+
+      return needsVerification;
     } on AppException catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
@@ -104,6 +120,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           errorMessage: e.message,
         ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
       );
+      return false;
     } catch (e) {
       state = AsyncValue.data(
         state.value?.copyWith(
@@ -111,6 +128,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           errorMessage: e.toString(),
         ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
+      return false;
     }
   }
 
@@ -144,7 +162,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     }
   }
 
-  Future<void> signIn(String email, String password) async {
+  Future<void> signIn(String identifier, String password) async {
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const AppAuthState(isLoading: true),
@@ -152,7 +170,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
-      final user = await authRepository.signIn(email, password);
+      final user = await authRepository.signIn(identifier, password);
 
       state = AsyncValue.data(AppAuthState(
         currentUser: user,
@@ -202,6 +220,84 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           errorMessage: e.toString(),
         ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
+    }
+  }
+
+  Future<void> sendPasswordReset(String email) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.sendPasswordReset(email);
+
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: null) ??
+            const AppAuthState(isLoading: false),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow; // Rethrow to let the UI show a snackbar/dialog
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> verifyOTP({
+    String? email,
+    String? phone,
+    required String token,
+    required OtpType type,
+  }) async {
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      final user = await authRepository.verifyOTP(
+        email: email,
+        phone: phone,
+        token: token,
+        type: type,
+      );
+
+      state = AsyncValue.data(AppAuthState(
+        currentUser: user,
+        isAuthenticated: true,
+        isLoading: false,
+        errorMessage: null,
+      ));
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.message,
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
     }
   }
 

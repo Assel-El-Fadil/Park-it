@@ -102,7 +102,8 @@ class VehicleModel {
 }
 
 VehicleType _typeFromString(String? value) {
-  switch (value) {
+  final v = (value ?? '').toLowerCase();
+  switch (v) {
     case 'car':
       return VehicleType.car;
     case 'van':
