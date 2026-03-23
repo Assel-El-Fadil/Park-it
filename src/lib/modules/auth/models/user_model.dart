@@ -142,6 +142,7 @@ UserRole _roleFromString(String? value) {
     case 'ADMIN':
       return UserRole.admin;
     case 'SUPER_ADMIN':
+    case 'SUPERADMIN':
       return UserRole.superAdmin;
     default:
       return UserRole.driver;
