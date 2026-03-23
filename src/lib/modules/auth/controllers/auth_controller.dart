@@ -65,7 +65,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       // we must block them from using Social Auth to meet business requirements.
       final sbUser = Supabase.instance.client.auth.currentUser;
       final provider = sbUser?.appMetadata['provider'];
-      final restrictedProviders = ['google', 'instagram', 'facebook'];
+      final restrictedProviders = ['google', 'facebook'];
       final isRestrictedAuth = restrictedProviders.contains(provider);
       final isAdmin = userModel.role == UserRole.admin || userModel.role == UserRole.superAdmin;
 

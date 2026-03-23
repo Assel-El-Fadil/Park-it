@@ -48,18 +48,7 @@ class SocialLoginButtons extends ConsumerWidget {
                         ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SocialButton(
-                label: 'Instagram',
-                icon: Icons.camera_alt_outlined,
-                onTap: isLoading
-                    ? null
-                    : () => ref.read(authNotifierProvider.notifier).signInWithOAuth(
-                          OAuthProvider.instagram,
-                        ),
-              ),
-            ),
+            // Instagram removed: not a supported Supabase OAuth provider
           ],
         ),
       ],
