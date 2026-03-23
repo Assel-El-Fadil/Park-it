@@ -60,12 +60,12 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
         return const AppAuthState();
       }
 
-      // 1. Role Verification for Social Auth (Google / Instagram)
-      // If the user signed in with Google/Instagram, but their role is Admin or Super Admin,
+      // 1. Role Verification for Social Auth (Google / Instagram / Facebook)
+      // If the user signed in with Social Auth, but their role is Admin or Super Admin,
       // we must block them from using Social Auth to meet business requirements.
       final sbUser = Supabase.instance.client.auth.currentUser;
       final provider = sbUser?.appMetadata['provider'];
-      final restrictedProviders = ['google', 'instagram'];
+      final restrictedProviders = ['google', 'instagram', 'facebook'];
       final isRestrictedAuth = restrictedProviders.contains(provider);
       final isAdmin = userModel.role == UserRole.admin || userModel.role == UserRole.superAdmin;
 
