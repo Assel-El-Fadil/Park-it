@@ -1,12 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-enum UserRole { driver, owner }
+enum UserRole { driver, owner, admin, superAdmin }
 
 class UserModel {
   final String id;
   final String firstName;
   final String lastName;
-  final String email;
+  final String? email;
   final String? phone;
   final String? profilePhoto;
   final double averageRating;
@@ -18,7 +18,7 @@ class UserModel {
     required this.id,
     required this.firstName,
     required this.lastName,
-    required this.email,
+    this.email,
     this.phone,
     this.profilePhoto,
     this.averageRating = 0.0,
@@ -32,7 +32,7 @@ class UserModel {
       id: json['id'] as String,
       firstName: json['firstName'] as String,
       lastName: json['lastName'] as String,
-      email: json['email'] as String,
+      email: json['email'] as String?,
       phone: json['phone'] as String?,
       profilePhoto: json['profilePhoto'] as String?,
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
@@ -62,8 +62,8 @@ class UserModel {
       'id': id.isEmpty ? null : int.tryParse(id),
       'first_name': firstName,
       'last_name': lastName,
-      'email': email,
-      'phone': phone,
+      'email': email?.isNotEmpty == true ? email : null,
+      'phone': phone?.isNotEmpty == true ? phone : null,
       'profile_photo': profilePhoto,
       'average_rating': averageRating,
       'total_reviews': totalReviews,
@@ -80,7 +80,7 @@ class UserModel {
       id: (userRow['id'] ?? '').toString(),
       firstName: (userRow['first_name'] as String?) ?? '',
       lastName: (userRow['last_name'] as String?) ?? '',
-      email: (userRow['email'] as String?) ?? (user.email ?? ''),
+      email: (userRow['email'] as String?) ?? user.email,
       phone: userRow['phone'] as String? ?? user.phone,
       profilePhoto: userRow['profile_photo'] as String?,
       averageRating:
@@ -96,7 +96,7 @@ class UserModel {
       id: (data['id'] ?? '').toString(),
       firstName: (data['first_name'] as String?) ?? '',
       lastName: (data['last_name'] as String?) ?? '',
-      email: (data['email'] as String?) ?? '',
+      email: data['email'] as String?,
       phone: data['phone'] as String?,
       profilePhoto: data['profile_photo'] as String?,
       averageRating:
@@ -136,7 +136,16 @@ class UserModel {
 
 UserRole _roleFromString(String? value) {
   final normalized = (value ?? '').toUpperCase();
-  if (normalized == 'OWNER') return UserRole.owner;
-  return UserRole.driver;
+  switch (normalized) {
+    case 'OWNER':
+      return UserRole.owner;
+    case 'ADMIN':
+      return UserRole.admin;
+    case 'SUPER_ADMIN':
+    case 'SUPERADMIN':
+      return UserRole.superAdmin;
+    default:
+      return UserRole.driver;
+  }
 }
 

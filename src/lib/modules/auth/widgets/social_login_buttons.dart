@@ -48,24 +48,7 @@ class SocialLoginButtons extends ConsumerWidget {
                         ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SocialButton(
-                label: 'Instagram',
-                icon: Icons.camera_alt_outlined,
-                onTap: isLoading
-                    ? null
-                    : () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Instagram sign-in is not available. Use Facebook or Google.',
-                            ),
-                          ),
-                        );
-                      },
-              ),
-            ),
+            // Instagram removed: not a supported Supabase OAuth provider
           ],
         ),
       ],

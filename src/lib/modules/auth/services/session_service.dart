@@ -10,13 +10,18 @@ class SessionService {
   Future<void> saveSession(UserModel user, String token) async {
     final prefs = await _prefs;
     await prefs.setString(AppConstants.prefKeyUserId, user.id);
-    await prefs.setString(AppConstants.prefKeyUserEmail, user.email);
+    await prefs.setString(AppConstants.prefKeyUserEmail, user.email ?? user.phone ?? '');
     await prefs.setString(
       AppConstants.prefKeyUserName,
       '${user.firstName} ${user.lastName}'.trim(),
     );
     await prefs.setBool(AppConstants.prefKeyIsLoggedIn, true);
     await prefs.setString(AppConstants.prefKeyAuthToken, token);
+  }
+
+  Future<void> saveUserEmail(String email) async {
+    final prefs = await _prefs;
+    await prefs.setString(AppConstants.prefKeyUserEmail, email);
   }
 
   Future<bool> isLoggedIn() async {

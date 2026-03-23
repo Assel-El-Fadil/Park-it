@@ -9,6 +9,7 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/user/routes/user_routes.dart';
 import 'package:src/shared/widgets/common_bottom_nav.dart';
 
 // Redacted: mock user removed
@@ -27,30 +28,6 @@ class ProfileScreen extends ConsumerWidget {
       );
     }
 
-    // ref.listen<AsyncValue<AppAuthState>>(authNotifierProvider, (prev, next) {
-    //   next.whenOrNull(
-    //     data: (state) {
-    //       if (!state.isAuthenticated) {
-    //         context.go(AuthRoutes.login);
-    //       }
-    //     },
-    //   );
-    // });
-
-    if (false) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text('Loading profile...', style: context.textTheme.bodyMedium),
-            ],
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -91,47 +68,44 @@ class ProfileScreen extends ConsumerWidget {
                 icon: Icons.person_outline,
                 title: 'Personal Information',
                 onTap: () {
-                  // TODO: Navigate to edit profile
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Personal Information coming soon'),
-                    ),
-                  );
+                  context.push(UserRoutes.editProfilePath);
                 },
               ),
-              const SizedBox(height: 8),
-              _ProfileTile(
-                icon: Icons.directions_car_outlined,
-                title: 'My Vehicles',
-                onTap: () {
-                  context.push(AuthRoutes.vehicles);
-                },
-              ),
-              const SizedBox(height: 8),
-              _ProfileTile(
-                icon: Icons.credit_card_outlined,
-                title: 'Payment Methods',
-                onTap: () {
-                  // TODO: Navigate to payment methods
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Payment Methods coming soon'),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-              _ProfileTile(
-                icon: Icons.location_on_outlined,
-                title: 'Saved Locations',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Saved Locations coming soon'),
-                    ),
-                  );
-                },
-              ),
+              if (user.role == UserRole.driver || user.role == UserRole.owner) ...[
+                const SizedBox(height: 8),
+                _ProfileTile(
+                  icon: Icons.directions_car_outlined,
+                  title: 'My Vehicles',
+                  onTap: () {
+                    context.push(AuthRoutes.vehicles);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ProfileTile(
+                  icon: Icons.credit_card_outlined,
+                  title: 'Payment Methods',
+                  onTap: () {
+                    // TODO: Navigate to payment methods
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Payment Methods coming soon'),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ProfileTile(
+                  icon: Icons.location_on_outlined,
+                  title: 'Saved Locations',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Saved Locations coming soon'),
+                      ),
+                    );
+                  },
+                ),
+              ],
               const SizedBox(height: 24),
               _SectionHeader(title: 'PREFERENCES'),
               const SizedBox(height: 8),
@@ -169,15 +143,12 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: const CommonBottomNav(currentIndex: 3),
+      bottomNavigationBar: user.role == UserRole.admin || user.role == UserRole.superAdmin 
+          ? null 
+          : const CommonBottomNav(currentIndex: 3),
     );
   }
 
-  void _navigatePlaceholder(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label coming soon')));
-  }
 }
 
 class _ProfileHeader extends StatelessWidget {
@@ -213,7 +184,7 @@ class _ProfileHeader extends StatelessWidget {
               child: GestureDetector(
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Photo upload coming soon')),
+                    const SnackBar(content: Text('Pour modifier, allez dans Personal Information')),
                   );
                 },
                 child: Container(
@@ -253,19 +224,24 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ),
               child: Text(
-                user.role == UserRole.owner ? 'Parking Owner' : 'Driver',
+                switch (user.role) {
+                  UserRole.owner => 'Parking Owner',
+                  UserRole.admin => 'Admin',
+                  UserRole.superAdmin => 'Super Admin',
+                  _ => 'Driver',
+                },
                 style: AppTextStyles.labelMedium.copyWith(
                   color: AppColors.secondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            if (user.averageRating != null) ...[
+            if (user.averageRating > 0) ...[
               const SizedBox(width: 12),
               Icon(Icons.star, size: 16, color: Colors.amber),
               const SizedBox(width: 4),
               Text(
-                user.averageRating!.toStringAsFixed(1),
+                user.averageRating.toStringAsFixed(1),
                 style: context.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: context.colorScheme.textPrimary,

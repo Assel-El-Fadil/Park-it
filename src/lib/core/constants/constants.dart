@@ -20,6 +20,14 @@ class AppConstants {
     'SUPABASE_ANON_KEY',
     defaultValue: 'your-anon-key',
   );
+  /// Base URL for Supabase email redirects (set via --dart-define or .env)
+  static const String siteUrl = String.fromEnvironment(
+    'SITE_URL',
+    defaultValue: 'http://localhost:3000',
+  );
+
+  /// Builds a redirect URL for Supabase email links.
+  static String authRedirectUrl(String path) => '$siteUrl/#$path';
 
   // ===== Storage Keys =====
   static const String prefKeyUserId = 'user_id';

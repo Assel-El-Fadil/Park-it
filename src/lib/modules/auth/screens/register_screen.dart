@@ -9,6 +9,7 @@ import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/modules/auth/widgets/social_login_buttons.dart';
+import 'package:src/modules/owner/routes/owner_routes.dart';
 
 class RegisterScreen extends ConsumerWidget {
   const RegisterScreen({super.key});
@@ -21,7 +22,12 @@ class RegisterScreen extends ConsumerWidget {
       next.whenOrNull(
         data: (state) {
           if (state.isAuthenticated) {
-            context.go(AuthRoutes.profile);
+            final user = state.currentUser;
+            if (user != null && user.role == UserRole.owner) {
+              context.go(OwnerRoutes.ownerDashboardPath);
+            } else {
+              context.go(AuthRoutes.profile);
+            }
           }
         },
       );
@@ -31,7 +37,10 @@ class RegisterScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(AuthRoutes.login),
+          onPressed: () {
+            ref.read(authNotifierProvider.notifier).clearError();
+            context.go(AuthRoutes.login);
+          },
         ),
       ),
       body: SafeArea(
@@ -67,7 +76,10 @@ class RegisterScreen extends ConsumerWidget {
                     style: context.textTheme.bodyMedium,
                   ),
                   GestureDetector(
-                    onTap: () => context.go(AuthRoutes.login),
+                    onTap: () {
+                      ref.read(authNotifierProvider.notifier).clearError();
+                      context.go(AuthRoutes.login);
+                    },
                     child: Text(
                       'Login',
                       style: context.textTheme.bodyMedium?.copyWith(
@@ -100,6 +112,7 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
@@ -111,6 +124,7 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -119,13 +133,35 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    await ref.read(authNotifierProvider.notifier).signUp(
+    final needsVerification = await ref.read(authNotifierProvider.notifier).signUp(
           _emailController.text.trim(),
           _passwordController.text,
           _firstNameController.text.trim(),
           _lastNameController.text.trim(),
+          _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
           _selectedRole,
         );
+
+    if (needsVerification && mounted) {
+      final phone = _phoneController.text.trim();
+      if (phone.isNotEmpty) {
+        // Email verification is handled via the confirmation link.
+        // Now also verify phone via SMS OTP.
+        context.goNamed(AuthRoutes.verifyOtp, extra: {
+          'email': _emailController.text.trim(),
+          'phone': phone,
+        });
+      } else {
+        // Email-only registration: email confirmation link is sent automatically.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('A confirmation link has been sent to your email. Please verify your email to log in.'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+        context.go(AuthRoutes.login);
+      }
+    }
   }
 
   @override
@@ -185,6 +221,16 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
               }
               return null;
             },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: 'Phone (optional)',
+              hintText: 'e.g. +212612345678',
+            ),
           ),
           const SizedBox(height: 16),
           TextFormField(
