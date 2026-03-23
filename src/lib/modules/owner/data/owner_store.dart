@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
 import 'package:src/modules/owner/models/parking_lot_model.dart';
@@ -140,8 +141,24 @@ class OwnerStoreController extends Notifier<OwnerStoreState> {
 
   Future<void> addLot({
     required ParkingLotModel lot,
+    required int totalSpots,
+    required SpotType spotType,
+    required double pricePerHour,
+    required double? pricePerDay,
+    required bool isDynamicPricing,
+    required List<VehicleType>? vehicleTypes,
+    required List<Amenity>? amenities,
   }) async {
-    await ref.read(ownerRepositoryProvider).addParkingLot(lot);
+    await ref.read(ownerRepositoryProvider).addParkingLotWithSpots(
+          lot: lot,
+          totalSpots: totalSpots,
+          spotType: spotType,
+          pricePerHour: pricePerHour,
+          pricePerDay: pricePerDay,
+          isDynamicPricing: isDynamicPricing,
+          vehicleTypes: vehicleTypes,
+          amenities: amenities,
+        );
     if (lot.ownerId != _loadedOwnerId) return;
     await _loadForOwner(lot.ownerId);
   }

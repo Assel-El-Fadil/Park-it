@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
@@ -42,13 +43,14 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
   SpotType _spotType = SpotType.outdoor;
   SpotStatus _status = SpotStatus.available;
   bool _dynamicPricing = false;
+  List<String> _photos = <String>[];
 
   final _amenities = <String, bool>{
     'CCTV': true,
-    'LIGHTING': true,
+    'LIGHTING': false,
     'EV_CHARGER': false,
     'WHEELCHAIR': false,
-    'GUARD': true,
+    'GUARD': false,
     'CAR_WASH': false,
   };
 
@@ -142,6 +144,66 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                         selected: {_isLotMode},
                         onSelectionChanged: (v) =>
                             setState(() => _isLotMode = v.first),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SectionHeader(title: 'Photos (max 5)'),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final path in _photos)
+                            InputChip(
+                              label: Text(
+                                path.split('\\').last,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onDeleted: () {
+                                setState(() {
+                                  _photos.remove(path);
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          if (_photos.length >= 5) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Maximum 5 photos allowed.'),
+                              ),
+                            );
+                            return;
+                          }
+                          final result = await FilePicker.platform.pickFiles(
+                            allowMultiple: true,
+                            type: FileType.image,
+                          );
+                          if (result == null) return;
+                          final picked = result.paths.whereType<String>().toList();
+                          final merged = <String>{..._photos, ...picked}.toList();
+                          if (merged.length > 5) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Only first 5 photos are kept.'),
+                              ),
+                            );
+                          }
+                          setState(() {
+                            _photos = merged.take(5).toList();
+                          });
+                        },
+                        icon: const Icon(Icons.add_a_photo_outlined),
+                        label: const Text('Add photos'),
                       ),
                     ],
                   ),
@@ -253,7 +315,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                         const SectionHeader(title: 'Spot setup'),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<SpotType>(
-                          value: _spotType,
+                          initialValue: _spotType,
                           decoration: const InputDecoration(
                             labelText: 'Spot type',
                           ),
@@ -270,7 +332,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<SpotStatus>(
-                          value: _status,
+                          initialValue: _status,
                           decoration: const InputDecoration(
                             labelText: 'Status',
                           ),
@@ -384,7 +446,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                     final desc = _descCtrl.text.trim();
                     final totalSpots =
                         int.tryParse(_totalSpotsCtrl.text.trim()) ?? 1;
-                    if (_isLotMode && (totalSpots == null || totalSpots <= 0)) {
+                    if (_isLotMode && totalSpots <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Please enter a valid number of spots'),
@@ -421,12 +483,22 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                               city: city,
                               country: country,
                               postalCode: postal,
-                              photos: const [],
+                              photos: _photos.isEmpty ? null : _photos,
                               amenities: amenities.isEmpty ? null : amenities,
                               totalSpots: totalSpots,
                               createdAt: DateTime.now(),
                               updatedAt: DateTime.now(),
                             ),
+                            totalSpots: totalSpots,
+                            spotType: _spotType,
+                            pricePerHour: double.tryParse(_priceHourCtrl.text.trim()) ?? 5,
+                            pricePerDay: double.tryParse(_priceDayCtrl.text.trim()),
+                            isDynamicPricing: _dynamicPricing,
+                            vehicleTypes: _vehicles.entries
+                                .where((e) => e.value)
+                                .map((e) => VehicleType.fromString(e.key))
+                                .toList(),
+                            amenities: amenities.isEmpty ? null : amenities,
                           );
                     } else {
                       final priceHour =
@@ -455,7 +527,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                               city: city,
                               country: country,
                               postalCode: postal,
-                              photos: const [],
+                              photos: _photos.isEmpty ? null : _photos,
                               pricePerHour: priceHour,
                               pricePerDay: priceDay,
                               spotType: _spotType,

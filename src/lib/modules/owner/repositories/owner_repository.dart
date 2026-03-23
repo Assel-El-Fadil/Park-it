@@ -2,6 +2,7 @@ import 'package:src/modules/owner/models/availability_model.dart';
 import 'package:src/modules/owner/models/dynamic_pricing_model.dart';
 import 'package:src/modules/owner/models/parking_lot_model.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
+import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/reservation/models/reservation_model.dart';
 import 'package:src/modules/review/models/review_model.dart';
 
@@ -24,7 +25,16 @@ abstract class OwnerRepository {
   );
 
   Future<void> addParkingSpot(ParkingSpotModel spot);
-  Future<void> addParkingLot(ParkingLotModel lot);
+  Future<void> addParkingLotWithSpots({
+    required ParkingLotModel lot,
+    required int totalSpots,
+    required SpotType spotType,
+    required double pricePerHour,
+    required double? pricePerDay,
+    required bool isDynamicPricing,
+    required List<VehicleType>? vehicleTypes,
+    required List<Amenity>? amenities,
+  });
   Future<void> updateParkingSpot(ParkingSpotModel spot);
   Future<void> archiveParkingSpot(int spotId);
 

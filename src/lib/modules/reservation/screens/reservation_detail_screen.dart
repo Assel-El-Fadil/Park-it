@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/reservation/models/reservation_model.dart';
 import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/reservation/repositories/reservation_repository.dart';
+import 'package:src/modules/review/repositories/review_repository.dart';
+import 'package:src/modules/report/repositories/report_repository.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/section_header.dart';
-import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 
 final reservationDetailProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, id) async {
@@ -42,6 +45,10 @@ class ReservationDetailScreen extends ConsumerWidget {
           final endTime = DateTime.parse(data['end_time'] as String);
           final totalPrice = (data['total_price'] as num).toDouble();
           final platformFee = (data['platform_fee'] as num).toDouble();
+          final user = ref.watch(currentUserProvider);
+          final userId = int.tryParse(user?.id ?? '');
+          final reservationIntId = id;
+          final spotId = (data['spot_id'] as int?) ?? (spot?['id'] as int?) ?? 0;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -166,6 +173,68 @@ class ReservationDetailScreen extends ConsumerWidget {
                     ),
                     child: const Text('Cancel Reservation'),
                   ),
+                const SizedBox(height: 12),
+                if (userId != null)
+                  FutureBuilder<bool>(
+                    future: ref
+                        .read(reservationRepositoryProvider)
+                        .canUserReviewOrReport(
+                          reservationId: reservationIntId,
+                          driverId: userId,
+                        ),
+                    builder: (context, eligibilitySnap) {
+                      final canReview = eligibilitySnap.data == true;
+                      if (!canReview) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              final hasReview = await ref
+                                  .read(reservationRepositoryProvider)
+                                  .hasExistingReview(reservationIntId);
+                              if (hasReview) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('You already reviewed this booking.'),
+                                  ),
+                                );
+                                return;
+                              }
+                              if (!context.mounted) return;
+                              await _showReviewDialog(
+                                context,
+                                ref,
+                                reservationId: reservationIntId,
+                                reviewerId: userId,
+                                spotId: spotId,
+                              );
+                            },
+                            icon: const Icon(Icons.rate_review_outlined),
+                            label: const Text('Leave a review'),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              await _showReportDialog(
+                                context,
+                                ref,
+                                reporterId: userId,
+                                targetSpotId: spotId,
+                              );
+                            },
+                            icon: const Icon(Icons.flag_outlined),
+                            label: const Text('Report this spot'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.error,
+                              side: const BorderSide(color: AppColors.error),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 const SizedBox(height: 16),
               ],
             ),
@@ -180,6 +249,145 @@ class ReservationDetailScreen extends ConsumerWidget {
       return '${duration.inDays} day${duration.inDays > 1 ? 's' : ''}';
     }
     return '${duration.inHours} hour${duration.inHours > 1 ? 's' : ''}';
+  }
+
+  Future<void> _showReviewDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    required int reservationId,
+    required int reviewerId,
+    required int spotId,
+  }) async {
+    int rating = 5;
+    final controller = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Leave a review'),
+          content: StatefulBuilder(
+            builder: (context, setLocalState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<int>(
+                    initialValue: rating,
+                    decoration: const InputDecoration(labelText: 'Rating'),
+                    items: List.generate(
+                      5,
+                      (i) => DropdownMenuItem(
+                        value: i + 1,
+                        child: Text('${i + 1} stars'),
+                      ),
+                    ),
+                    onChanged: (v) => setLocalState(() => rating = v ?? 5),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Comment',
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
+    if (result != true) return;
+    await ref.read(reviewRepositoryProvider).createReview(
+          reservationId: reservationId,
+          reviewerId: reviewerId,
+          spotId: spotId,
+          rating: rating,
+          comment: controller.text,
+        );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Review submitted.')),
+    );
+  }
+
+  Future<void> _showReportDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    required int reporterId,
+    required int targetSpotId,
+  }) async {
+    ReportReason reason = ReportReason.fakeListing;
+    final controller = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Report parking spot'),
+          content: StatefulBuilder(
+            builder: (context, setLocalState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<ReportReason>(
+                    initialValue: reason,
+                    decoration: const InputDecoration(labelText: 'Reason'),
+                    items: ReportReason.values
+                        .map(
+                          (e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(e.toJson()),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setLocalState(
+                      () => reason = v ?? ReportReason.fakeListing,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller,
+                    maxLines: 4,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
+    if (result != true) return;
+    await ref.read(reportRepositoryProvider).createSpotReport(
+          reporterId: reporterId,
+          targetSpotId: targetSpotId,
+          reason: reason,
+          description: controller.text,
+        );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Report submitted.')),
+    );
   }
 }
 

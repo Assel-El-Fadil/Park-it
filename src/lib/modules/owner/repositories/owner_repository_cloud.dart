@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:src/core/enums/app_enums.dart';
 import 'package:src/core/errors/app_exception.dart';
 import 'package:src/modules/owner/models/availability_model.dart';
 import 'package:src/modules/owner/models/dynamic_pricing_model.dart';
@@ -149,10 +150,54 @@ class OwnerRepositoryCloud implements OwnerRepository {
   }
 
   @override
-  Future<void> addParkingLot(ParkingLotModel lot) async {
+  Future<void> addParkingLotWithSpots({
+    required ParkingLotModel lot,
+    required int totalSpots,
+    required SpotType spotType,
+    required double pricePerHour,
+    required double? pricePerDay,
+    required bool isDynamicPricing,
+    required List<VehicleType>? vehicleTypes,
+    required List<Amenity>? amenities,
+  }) async {
     try {
       final data = lot.toJson()..remove('id');
-      await _client.from('parking_lots').insert(data);
+      data['total_spots'] = totalSpots;
+      final lotRow = await _client.from('parking_lots').insert(data).select().single();
+      final lotId = lotRow['id'] as int;
+
+      if (totalSpots > 0) {
+        final now = DateTime.now().toIso8601String();
+        final spots = List.generate(totalSpots, (index) {
+          return <String, dynamic>{
+            'owner_id': lot.ownerId,
+            'lot_id': lotId,
+            'title': '${lot.name} - Spot ${index + 1}',
+            'description': lot.description,
+            'latitude': lot.latitude,
+            'longitude': lot.longitude,
+            'altitude': lot.altitude,
+            'street': lot.street,
+            'city': lot.city,
+            'country': lot.country,
+            'postal_code': lot.postalCode,
+            'photos': lot.photos,
+            'price_per_hour': pricePerHour,
+            'price_per_day': pricePerDay,
+            'spot_type': spotType.toJson(),
+            'vehicle_types': vehicleTypes?.map((e) => e.toJson()).toList(),
+            'amenities': amenities?.map((e) => e.toJson()).toList(),
+            'status': SpotStatus.available.toJson(),
+            'average_rating': 0,
+            'total_reviews': 0,
+            'total_bookings': 0,
+            'is_dynamic_pricing': isDynamicPricing,
+            'created_at': now,
+            'updated_at': now,
+          };
+        });
+        await _client.from('parking_spots').insert(spots);
+      }
     } on PostgrestException catch (e) {
       throw AppException(e.message);
     } catch (_) {
