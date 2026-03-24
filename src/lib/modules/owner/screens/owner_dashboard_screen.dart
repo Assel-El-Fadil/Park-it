@@ -14,11 +14,27 @@ class OwnerDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(currentUserProvider);
-    final ownerId = int.tryParse(currentUser?.id ?? '') ?? 1;
+    final ownerId = currentUser?.id ?? '';
 
     final spots = ref.watch(
       ownerStoreProvider.select(
-        (s) => s.spots.where((p) => p.ownerId == ownerId).toList(),
+        (s) => s.spots
+            .where((p) => p.ownerId == ownerId && p.lotId == null)
+            .toList(),
+      ),
+    );
+
+    final lots = ref.watch(
+      ownerStoreProvider.select(
+        (s) => s.lots.where((l) => l.ownerId == ownerId).toList(),
+      ),
+    );
+
+    final lotSpots = ref.watch(
+      ownerStoreProvider.select(
+        (s) => s.spots
+            .where((p) => p.ownerId == ownerId && p.lotId != null)
+            .toList(),
       ),
     );
 
@@ -29,7 +45,6 @@ class OwnerDashboardScreen extends ConsumerWidget {
         ? 0.0
         : spots.fold<double>(0, (sum, s) => sum + s.averageRating) /
               spots.length;
-    final dynamicPricingEnabled = spots.any((s) => s.isDynamicPricing);
 
     return Scaffold(
       appBar: AppBar(
@@ -68,9 +83,19 @@ class OwnerDashboardScreen extends ConsumerWidget {
               _KpiGrid(
                 items: [
                   _KpiItem(
-                    label: 'Total spots',
+                    label: 'Standalone spots',
                     value: '$totalSpots',
                     icon: Icons.local_parking_outlined,
+                  ),
+                  _KpiItem(
+                    label: 'Parking lots',
+                    value: '${lots.length}',
+                    icon: Icons.garage_outlined,
+                  ),
+                  _KpiItem(
+                    label: 'Lot spots',
+                    value: '${lotSpots.length}',
+                    icon: Icons.grid_view_outlined,
                   ),
                   _KpiItem(
                     label: 'Total bookings',
@@ -88,14 +113,6 @@ class OwnerDashboardScreen extends ConsumerWidget {
                     icon: Icons.rate_review_outlined,
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              _InfoBanner(
-                title: 'Dynamic pricing',
-                subtitle: dynamicPricingEnabled
-                    ? 'Enabled for some spots.'
-                    : 'Disabled. You can enable it per spot.',
-                icon: Icons.bolt_outlined,
               ),
               const SizedBox(height: 24),
               SizedBox(

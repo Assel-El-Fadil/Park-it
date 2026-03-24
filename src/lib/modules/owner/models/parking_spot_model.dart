@@ -95,10 +95,10 @@ class ParkingSpotModel {
                 .toList()
           : null,
       status: SpotStatus.fromString(json['status'] as String),
-      averageRating: (json['average_rating'] as num).toDouble(),
-      totalReviews: json['total_reviews'] as int,
-      totalBookings: json['total_bookings'] as int,
-      isDynamicPricing: json['is_dynamic_pricing'] as bool,
+      averageRating: json['average_rating'] != null ? (json['average_rating'] as num).toDouble() : 0.0,
+      totalReviews: (json['total_reviews'] as num?)?.toInt() ?? 0,
+      totalBookings: (json['total_bookings'] as num?)?.toInt() ?? 0,
+      isDynamicPricing: json['is_dynamic_pricing'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );

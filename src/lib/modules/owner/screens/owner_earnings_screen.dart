@@ -17,10 +17,10 @@ class OwnerEarningsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(currentUserProvider);
-    final ownerId = int.tryParse(currentUser?.id ?? '') ?? 1;
+    final ownerId = currentUser?.id ?? '';
 
     final spots = ref.watch(
-      ownerStoreProvider.select((s) => s.spots.where((p) => p.ownerId == ownerId).toList()),
+      ownerStoreProvider.select((s) => s.spots.where((p) => p.ownerId == ownerId && p.lotId == null).toList()),
     );
     final ownedSpotIds = spots.map((s) => s.id).toSet();
 

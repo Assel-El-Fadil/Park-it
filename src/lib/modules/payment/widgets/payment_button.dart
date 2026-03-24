@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/navigation/models/spot_model.dart';
+import 'package:src/modules/navigation/routes/navigation_routes.dart';
+import 'package:src/modules/reservation/repositories/reservation_repository.dart';
 import 'package:src/providers/payment_provider.dart';
+import 'package:src/shared/widgets/custom_modal.dart';
 
 class PayButton extends ConsumerStatefulWidget {
   final double amount;
@@ -76,7 +82,10 @@ class _PayButtonState extends ConsumerState<PayButton> {
   }
 
   Future<void> _handlePay() async {
-    await ref
+    final router = GoRouter.of(context);
+    final reservationRepo = ref.read(reservationRepositoryProvider);
+
+    final result = await ref
         .read(paymentProvider.notifier)
         .processPayment(
           reservationId: widget.reservationId,
@@ -85,6 +94,33 @@ class _PayButtonState extends ConsumerState<PayButton> {
           method: _method,
           currency: widget.currency,
         );
+
+    if (!mounted) return;
+
+    if (result) {
+      CustomModal.show(
+        context: context,
+        message: "Do you want to go there now?",
+        confirmText: "Yes",
+        onConfirm: () async {
+          final value = await reservationRepo.getReservationWithDetails(
+            widget.reservationId,
+          );
+
+          final spot = value['parking_spots'] as Map<String, dynamic>;
+
+          router.pushNamed(
+            NavigationRoutes.navigation,
+            extra: SpotModel(
+              id: (spot['id'] as int).toString(),
+              name: spot['title'] as String,
+              latitude: (spot['latitude'] as num).toDouble(),
+              longitude: (spot['longitude'] as num).toDouble(),
+            ),
+          );
+        },
+      );
+    }
   }
 
   String _methodLabel(PaymentMethod m) => switch (m) {

@@ -1,40 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:src/modules/owner/data/owner_store.dart';
 import 'package:src/modules/review/routes/review_routes.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/app_layout.dart';
 import 'package:src/shared/widgets/frosted_bar.dart';
 import 'package:src/shared/widgets/rating_stars.dart';
 
-class OwnerReviewsScreen extends StatelessWidget {
+class OwnerReviewsScreen extends ConsumerStatefulWidget {
   const OwnerReviewsScreen({super.key});
+
+  @override
+  ConsumerState<OwnerReviewsScreen> createState() => _OwnerReviewsScreenState();
+}
+
+class _OwnerReviewsScreenState extends ConsumerState<OwnerReviewsScreen> {
+  int _selectedFilter = 0; // 0 all, 1 unreplied, 2 low rating, 3 last 30 days
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    final reviews = <_ReviewCardModel>[
-      const _ReviewCardModel(
-        id: 'r1',
-        spotName: 'Downtown Central Plaza',
-        reviewerName: 'John Doe',
-        reviewerInitials: 'JD',
-        rating: 5,
-        timeAgo: '2 days ago',
-        text: 'Very easy to find and the security guard was very helpful. Would definitely park here again!',
-        hasOwnerReply: false,
+    final spots = ref.watch(ownerStoreProvider.select((s) => s.spots));
+    final allReviews = ref.watch(
+      ownerStoreProvider.select(
+        (s) => s.reviewsBySpotId.values.expand((list) => list).toList(),
       ),
-      const _ReviewCardModel(
-        id: 'r2',
-        spotName: 'Harbor View Garage',
-        reviewerName: 'Mina S.',
-        reviewerInitials: 'MS',
-        rating: 4,
-        timeAgo: '1 week ago',
-        text: 'Great location. Entry was smooth, but signage could be clearer.',
-        hasOwnerReply: true,
-      ),
-    ];
+    );
+    final spotNameById = <int, String>{
+      for (final s in spots) s.id: s.title,
+    };
+    final now = DateTime.now();
+    final reviews = allReviews.where((r) {
+      switch (_selectedFilter) {
+        case 1:
+          return (r.ownerReply ?? '').trim().isEmpty;
+        case 2:
+          return r.rating <= 2;
+        case 3:
+          return now.difference(r.createdAt).inDays <= 30;
+        default:
+          return true;
+      }
+    }).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return SafeArea(
       child: CustomScrollView(
@@ -64,9 +74,7 @@ class OwnerReviewsScreen extends StatelessWidget {
                     ),
                     IconButton(
                       tooltip: 'Filter',
-                      onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Review filters coming soon.')),
-                      ),
+                      onPressed: () {},
                       icon: Icon(Icons.tune_rounded, color: theme.colorScheme.primary),
                     ),
                   ],
@@ -84,22 +92,62 @@ class OwnerReviewsScreen extends StatelessWidget {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: const [
-                        _Pill(label: 'All', selected: true),
-                        _Pill(label: 'Unreplied'),
-                        _Pill(label: 'Low rating'),
-                        _Pill(label: 'Last 30 days'),
+                      children: [
+                        _Pill(
+                          label: 'All',
+                          selected: _selectedFilter == 0,
+                          onTap: () => setState(() => _selectedFilter = 0),
+                        ),
+                        _Pill(
+                          label: 'Unreplied',
+                          selected: _selectedFilter == 1,
+                          onTap: () => setState(() => _selectedFilter = 1),
+                        ),
+                        _Pill(
+                          label: 'Low rating',
+                          selected: _selectedFilter == 2,
+                          onTap: () => setState(() => _selectedFilter = 2),
+                        ),
+                        _Pill(
+                          label: 'Last 30 days',
+                          selected: _selectedFilter == 3,
+                          onTap: () => setState(() => _selectedFilter = 3),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
+                    if (reviews.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 32),
+                        child: Center(
+                          child: Text(
+                            'No reviews found.',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
                     ...reviews.map(
                       (r) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _ReviewCard(
-                          review: r,
+                          review: _ReviewCardModel(
+                            id: r.id.toString(),
+                            spotName: spotNameById[r.spotId] ?? 'Spot #${r.spotId}',
+                            reviewerName: r.reviewerName ?? 'User ${r.reviewerId}',
+                            reviewerInitials: (r.reviewerName?.isNotEmpty == true)
+                                ? r.reviewerName!.substring(0, 1).toUpperCase()
+                                : r.reviewerId.substring(0, 2).toUpperCase(),
+                            rating: r.rating,
+                            timeAgo: DateFormat('MMM d, yyyy').format(r.createdAt),
+                            text: (r.comment ?? '').trim().isEmpty ? 'No comment provided.' : r.comment!,
+                            hasOwnerReply: (r.ownerReply ?? '').trim().isNotEmpty,
+                          ),
                           onTap: () => context.pushNamed(
                             ReviewRoutes.reviewDetail,
-                            pathParameters: {'id': r.id},
+                            pathParameters: {'id': r.id.toString()},
                           ),
                         ),
                       ),
@@ -116,10 +164,15 @@ class OwnerReviewsScreen extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.label, this.selected = false});
+  const _Pill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -130,25 +183,29 @@ class _Pill extends StatelessWidget {
     final border = selected
         ? theme.colorScheme.primary.withValues(alpha: 0.20)
         : theme.colorScheme.outlineVariant.withValues(alpha: 0.70);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: border,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: theme.brightness == Brightness.light ? 0.05 : 0.16),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: border,
           ),
-        ],
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800, color: selected ? theme.colorScheme.primary : null),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: theme.brightness == Brightness.light ? 0.05 : 0.16),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800, color: selected ? theme.colorScheme.primary : null),
+        ),
       ),
     );
   }

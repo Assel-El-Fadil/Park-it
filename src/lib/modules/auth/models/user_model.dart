@@ -1,30 +1,34 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-enum UserRole { driver, owner }
+enum UserRole { driver, owner, admin, superAdmin }
 
 class UserModel {
   final String id;
   final String firstName;
   final String lastName;
-  final String email;
+  final String? email;
   final String? phone;
   final String? profilePhoto;
   final double averageRating;
   final int totalReviews;
   final String? fcmToken;
   final UserRole role;
+  final bool isBanned;
+  final bool isSuspended;
 
   const UserModel({
     required this.id,
     required this.firstName,
     required this.lastName,
-    required this.email,
+    this.email,
     this.phone,
     this.profilePhoto,
     this.averageRating = 0.0,
     this.totalReviews = 0,
     this.fcmToken,
     required this.role,
+    this.isBanned = false,
+    this.isSuspended = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -32,13 +36,15 @@ class UserModel {
       id: json['id'] as String,
       firstName: json['firstName'] as String,
       lastName: json['lastName'] as String,
-      email: json['email'] as String,
+      email: json['email'] as String?,
       phone: json['phone'] as String?,
       profilePhoto: json['profilePhoto'] as String?,
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: json['totalReviews'] as int? ?? 0,
       fcmToken: json['fcmToken'] as String?,
       role: _roleFromString(json['role'] as String?),
+      isBanned: json['isBanned'] as bool? ?? false,
+      isSuspended: json['isSuspended'] as bool? ?? false,
     );
   }
 
@@ -59,16 +65,19 @@ class UserModel {
 
   Map<String, dynamic> toUserRow() {
     return <String, dynamic>{
-      'id': id.isEmpty ? null : int.tryParse(id),
+      'id': id.isEmpty ? null : id,
       'first_name': firstName,
       'last_name': lastName,
-      'email': email,
-      'phone': phone,
+      'email': email?.isNotEmpty == true ? email : null,
+      'phone': phone?.isNotEmpty == true ? phone : null,
       'profile_photo': profilePhoto,
       'average_rating': averageRating,
       'total_reviews': totalReviews,
       'fcm_token': fcmToken,
       'role': role.name.toUpperCase(),
+      // Read-only generally, but keep them for full row mapping
+      'is_banned': isBanned,
+      'is_suspended': isSuspended,
     };
   }
 
@@ -76,18 +85,33 @@ class UserModel {
     User user,
     Map<String, dynamic> userRow,
   ) {
+    final metadata = user.userMetadata ?? {};
+    
+    // Name: metadata first (updateUser), then DB.
+    final String firstName = (metadata['first_name'] as String?) ?? (userRow['first_name'] as String?) ?? '';
+    final String lastName = (metadata['last_name'] as String?) ?? (userRow['last_name'] as String?) ?? '';
+    // Photo: DB first so a new `users` row after account deletion (null photo) is not
+    // overridden by stale profile_photo still stored in Auth user_metadata.
+    final String? rowPhoto = userRow['profile_photo'] as String?;
+    final String? metaPhoto = metadata['profile_photo'] as String?;
+    final String? profilePhoto = (rowPhoto != null && rowPhoto.trim().isNotEmpty)
+        ? rowPhoto.trim()
+        : (metaPhoto != null && metaPhoto.trim().isNotEmpty ? metaPhoto.trim() : null);
+
     return UserModel(
       id: (userRow['id'] ?? '').toString(),
-      firstName: (userRow['first_name'] as String?) ?? '',
-      lastName: (userRow['last_name'] as String?) ?? '',
-      email: (userRow['email'] as String?) ?? (user.email ?? ''),
-      phone: userRow['phone'] as String? ?? user.phone,
-      profilePhoto: userRow['profile_photo'] as String?,
+      firstName: firstName,
+      lastName: lastName,
+      email: (userRow['email'] as String?) ?? user.email,
+      phone: (metadata['phone'] as String?) ?? (userRow['phone'] as String?) ?? user.phone,
+      profilePhoto: profilePhoto,
       averageRating:
           (userRow['average_rating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: userRow['total_reviews'] as int? ?? 0,
-      fcmToken: userRow['fcm_token'] as String?,
-      role: _roleFromString(userRow['role'] as String?),
+      fcmToken: (metadata['fcm_token'] as String?) ?? (userRow['fcm_token'] as String?),
+      role: _roleFromString((metadata['role'] as String?) ?? (userRow['role'] as String?)),
+      isBanned: userRow['is_banned'] as bool? ?? false,
+      isSuspended: userRow['is_suspended'] as bool? ?? false,
     );
   }
 
@@ -96,7 +120,7 @@ class UserModel {
       id: (data['id'] ?? '').toString(),
       firstName: (data['first_name'] as String?) ?? '',
       lastName: (data['last_name'] as String?) ?? '',
-      email: (data['email'] as String?) ?? '',
+      email: data['email'] as String?,
       phone: data['phone'] as String?,
       profilePhoto: data['profile_photo'] as String?,
       averageRating:
@@ -104,6 +128,8 @@ class UserModel {
       totalReviews: data['total_reviews'] as int? ?? 0,
       fcmToken: data['fcm_token'] as String?,
       role: _roleFromString(data['role'] as String?),
+      isBanned: data['is_banned'] as bool? ?? false,
+      isSuspended: data['is_suspended'] as bool? ?? false,
     );
   }
 
@@ -118,6 +144,8 @@ class UserModel {
     int? totalReviews,
     String? fcmToken,
     UserRole? role,
+    bool? isBanned,
+    bool? isSuspended,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -130,13 +158,24 @@ class UserModel {
       totalReviews: totalReviews ?? this.totalReviews,
       fcmToken: fcmToken ?? this.fcmToken,
       role: role ?? this.role,
+      isBanned: isBanned ?? this.isBanned,
+      isSuspended: isSuspended ?? this.isSuspended,
     );
   }
 }
 
 UserRole _roleFromString(String? value) {
   final normalized = (value ?? '').toUpperCase();
-  if (normalized == 'OWNER') return UserRole.owner;
-  return UserRole.driver;
+  switch (normalized) {
+    case 'OWNER':
+      return UserRole.owner;
+    case 'ADMIN':
+      return UserRole.admin;
+    case 'SUPER_ADMIN':
+    case 'SUPERADMIN':
+      return UserRole.superAdmin;
+    default:
+      return UserRole.driver;
+  }
 }
 

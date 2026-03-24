@@ -19,8 +19,8 @@ class _LocationPageState extends ConsumerState<LocationScreen> {
   static const _testSpot = SpotModel(
     id: 'jemaa-el-fna',
     name: 'Jemaa el-Fna',
-    latitude: 31.6295,
-    longitude: -7.9811,
+    latitude: 37.6295,
+    longitude: -122.9811,
     imageUrl: 'https://picsum.photos/seed/spot1a/800/500',
     description: 'Famous square in the medina of Marrakesh.',
     category: 'Landmark',

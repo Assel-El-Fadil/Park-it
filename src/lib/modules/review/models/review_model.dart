@@ -8,6 +8,7 @@ class ReviewModel {
   final String? ownerReply;
   final DateTime? ownerRepliedAt;
   final bool isVisible;
+  final String? reviewerName;
   final DateTime createdAt;
 
   ReviewModel({
@@ -20,6 +21,7 @@ class ReviewModel {
     this.ownerReply,
     this.ownerRepliedAt,
     required this.isVisible,
+    this.reviewerName,
     required this.createdAt,
   });
 
@@ -27,7 +29,9 @@ class ReviewModel {
     return ReviewModel(
       id: json['id'] as int,
       reservationId: json['reservation_id'] as int,
-      reviewerId: json['reviewer_id'] as String,
+      // DB can store reviewer_id as uuid/int depending on environment.
+      // Normalize to string to keep UI stable.
+      reviewerId: '${json['reviewer_id']}',
       spotId: json['spot_id'] as int,
       rating: json['rating'] as int,
       comment: json['comment'] as String?,
@@ -36,6 +40,9 @@ class ReviewModel {
           ? DateTime.parse(json['owner_replied_at'] as String)
           : null,
       isVisible: json['is_visible'] as bool,
+      reviewerName: json['users'] != null
+          ? '${json['users']['first_name']} ${json['users']['last_name']}'
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

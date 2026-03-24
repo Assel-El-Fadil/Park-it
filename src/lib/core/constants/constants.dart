@@ -20,6 +20,14 @@ class AppConstants {
     'SUPABASE_ANON_KEY',
     defaultValue: 'your-anon-key',
   );
+  /// Base URL for Supabase email redirects (set via --dart-define or .env)
+  static const String siteUrl = String.fromEnvironment(
+    'SITE_URL',
+    defaultValue: 'http://localhost:3000',
+  );
+
+  /// Builds a redirect URL for Supabase email links.
+  static String authRedirectUrl(String path) => '$siteUrl/#$path';
 
   // ===== Storage Keys =====
   static const String prefKeyUserId = 'user_id';
@@ -293,7 +301,7 @@ class AppConstants {
 
   // ===== Regex Patterns =====
   static const String emailRegex = r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$';
-  static const String phoneRegex = r'^\+?[1-9]\d{1,14}$';
+  static const String phoneRegex = r'^\d{10}$';
   static const String passwordRegex = r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$';
 
   // ===== Feature Flags =====

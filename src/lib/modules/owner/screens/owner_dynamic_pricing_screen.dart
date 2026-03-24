@@ -46,16 +46,21 @@ class _OwnerDynamicPricingScreenState
     final id = int.tryParse(widget.spotId) ?? -1;
 
     final spot = ref.watch(
-      ownerStoreProvider.select((s) => s.spots.where((p) => p.id == id).firstOrNull),
+      ownerStoreProvider.select(
+        (s) => s.spots.where((p) => p.id == id).firstOrNull,
+      ),
     );
 
     final rules = ref.watch(
-      ownerStoreProvider.select((s) => s.dynamicPricingBySpotId[id] ?? const []),
+      ownerStoreProvider.select(
+        (s) => s.dynamicPricingBySpotId[id] ?? const [],
+      ),
     );
 
     final firstRule = rules.isNotEmpty ? rules.first : null;
 
-    final enabled = spot?.isDynamicPricing == true && (firstRule?.isActive ?? false);
+    final enabled =
+        spot?.isDynamicPricing == true && (firstRule?.isActive ?? false);
 
     // Initialize fields once when data becomes available.
     if (_ruleId == null && firstRule != null) {
@@ -67,9 +72,7 @@ class _OwnerDynamicPricingScreenState
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(spot?.title ?? 'Dynamic pricing'),
-      ),
+      appBar: AppBar(title: Text(spot?.title ?? 'Dynamic pricing')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -90,17 +93,17 @@ class _OwnerDynamicPricingScreenState
             ),
             const SizedBox(height: 12),
             _MultiplierField(
-              label: 'Multiplier for up to 3 hours',
+              label: 'Multiplier for more than 3 hours',
               controller: _threeCtrl,
             ),
             const SizedBox(height: 12),
             _MultiplierField(
-              label: 'Multiplier for up to 6 hours',
+              label: 'Multiplier for more than 6 hours',
               controller: _sixCtrl,
             ),
             const SizedBox(height: 12),
             _MultiplierField(
-              label: 'Multiplier for up to 12 hours',
+              label: 'Multiplier for more than 12 hours',
               controller: _twelveCtrl,
             ),
             const SizedBox(height: 20),
@@ -114,7 +117,9 @@ class _OwnerDynamicPricingScreenState
 
                   if (three == null || six == null || twelve == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please enter valid numbers.')),
+                      const SnackBar(
+                        content: Text('Please enter valid numbers.'),
+                      ),
                     );
                     return;
                   }
@@ -129,7 +134,9 @@ class _OwnerDynamicPricingScreenState
                     isActive: _enabled,
                   );
 
-                  ref.read(ownerStoreProvider.notifier).setDynamicPricingRules(
+                  ref
+                      .read(ownerStoreProvider.notifier)
+                      .setDynamicPricingRules(
                         spotId: id,
                         rule: rule,
                         enabled: _enabled,
@@ -148,10 +155,7 @@ class _OwnerDynamicPricingScreenState
 }
 
 class _MultiplierField extends StatelessWidget {
-  const _MultiplierField({
-    required this.label,
-    required this.controller,
-  });
+  const _MultiplierField({required this.label, required this.controller});
 
   final String label;
   final TextEditingController controller;
@@ -160,15 +164,11 @@ class _MultiplierField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      keyboardType:
-          const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 }
-

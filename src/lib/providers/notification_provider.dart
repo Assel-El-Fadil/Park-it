@@ -18,7 +18,8 @@ final notificationProvider =
 class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
   final NotificationService _service;
 
-  int _currentUserId = 1; // This should come from your auth provider
+  String _currentUserId =
+      "00000000-0000-0000-0000-000000000005"; // This should come from your auth provider
 
   NotificationNotifier(this._service) : super([]) {
     _loadNotifications();
@@ -119,7 +120,7 @@ class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
 
   int get unreadCount => state.where((n) => !n.isRead).length;
 
-  void setCurrentUserId(int userId) {
+  void setCurrentUserId(String userId) {
     _currentUserId = userId;
     _loadNotifications();
   }

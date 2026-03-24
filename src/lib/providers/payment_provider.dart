@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide PaymentMethod;
+
 import 'package:src/core/enums/app_enums.dart';
+
 import 'package:src/modules/payment/models/payment_state.dart';
 import 'package:src/modules/payment/services/payment_service.dart';
 
@@ -32,6 +34,7 @@ class PaymentNotifier extends Notifier<PaymentState> {
       );
 
       state = state.copyWith(status: PaymentStatus.succeeded, payment: payment);
+
       return true;
     } on StripeException catch (e) {
       if (e.error.code == FailureCode.Canceled) {
