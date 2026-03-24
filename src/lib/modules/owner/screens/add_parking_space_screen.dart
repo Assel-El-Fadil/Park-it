@@ -189,8 +189,13 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                             type: FileType.image,
                           );
                           if (result == null) return;
-                          final picked = result.paths.whereType<String>().toList();
-                          final merged = <String>{..._photos, ...picked}.toList();
+                          final picked = result.paths
+                              .whereType<String>()
+                              .toList();
+                          final merged = <String>{
+                            ..._photos,
+                            ...picked,
+                          }.toList();
                           if (merged.length > 5) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -242,25 +247,25 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                       ],
                       if (!_isLotMode && lots.isNotEmpty) ...[
                         const SizedBox(height: 12),
-                        DropdownButtonFormField<int?>(
-                          initialValue: _lotId,
-                          decoration: const InputDecoration(
-                            labelText: 'Parent lot (optional)',
-                          ),
-                          items: [
-                            const DropdownMenuItem<int?>(
-                              value: null,
-                              child: Text('No lot'),
-                            ),
-                            ...lots.map(
-                              (lot) => DropdownMenuItem<int?>(
-                                value: lot.id,
-                                child: Text(lot.name),
-                              ),
-                            ),
-                          ],
-                          onChanged: (v) => setState(() => _lotId = v),
-                        ),
+                        // DropdownButtonFormField<int?>(
+                        //   initialValue: _lotId,
+                        //   decoration: const InputDecoration(
+                        //     labelText: 'Parent lot (optional)',
+                        //   ),
+                        //   items: [
+                        //     const DropdownMenuItem<int?>(
+                        //       value: null,
+                        //       child: Text('No lot'),
+                        //     ),
+                        //     ...lots.map(
+                        //       (lot) => DropdownMenuItem<int?>(
+                        //         value: lot.id,
+                        //         child: Text(lot.name),
+                        //       ),
+                        //     ),
+                        //   ],
+                        //   onChanged: (v) => setState(() => _lotId = v),
+                        // ),
                       ],
                     ],
                   ),
@@ -314,45 +319,45 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                       children: [
                         const SectionHeader(title: 'Spot setup'),
                         const SizedBox(height: 12),
-                        DropdownButtonFormField<SpotType>(
-                          initialValue: _spotType,
-                          decoration: const InputDecoration(
-                            labelText: 'Spot type',
-                          ),
-                          items: SpotType.values
-                              .map(
-                                (e) => DropdownMenuItem(
-                                  value: e,
-                                  child: Text(e.toJson()),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => _spotType = v ?? _spotType),
-                        ),
+                        // DropdownButtonFormField<SpotType>(
+                        //   initialValue: _spotType,
+                        //   decoration: const InputDecoration(
+                        //     labelText: 'Spot type',
+                        //   ),
+                        //   items: SpotType.values
+                        //       .map(
+                        //         (e) => DropdownMenuItem(
+                        //           value: e,
+                        //           child: Text(e.toJson()),
+                        //         ),
+                        //       )
+                        //       .toList(),
+                        //   onChanged: (v) =>
+                        //       setState(() => _spotType = v ?? _spotType),
+                        // ),
                         const SizedBox(height: 12),
-                        DropdownButtonFormField<SpotStatus>(
-                          initialValue: _status,
-                          decoration: const InputDecoration(
-                            labelText: 'Status',
-                          ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: SpotStatus.available,
-                              child: Text('AVAILABLE'),
-                            ),
-                            DropdownMenuItem(
-                              value: SpotStatus.archived,
-                              child: Text('ARCHIVED'),
-                            ),
-                            DropdownMenuItem(
-                              value: SpotStatus.suspended,
-                              child: Text('SUSPENDED'),
-                            ),
-                          ],
-                          onChanged: (v) =>
-                              setState(() => _status = v ?? _status),
-                        ),
+                        // DropdownButtonFormField<SpotStatus>(
+                        //   initialValue: _status,
+                        //   decoration: const InputDecoration(
+                        //     labelText: 'Status',
+                        //   ),
+                        //   items: const [
+                        //     DropdownMenuItem(
+                        //       value: SpotStatus.available,
+                        //       child: Text('AVAILABLE'),
+                        //     ),
+                        //     DropdownMenuItem(
+                        //       value: SpotStatus.archived,
+                        //       child: Text('ARCHIVED'),
+                        //     ),
+                        //     DropdownMenuItem(
+                        //       value: SpotStatus.suspended,
+                        //       child: Text('SUSPENDED'),
+                        //     ),
+                        //   ],
+                        //   onChanged: (v) =>
+                        //       setState(() => _status = v ?? _status),
+                        // ),
                         const SizedBox(height: 12),
                         TextField(
                           controller: _priceHourCtrl,
@@ -432,7 +437,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                   icon: Icons.check_circle_outline_rounded,
                   onPressed: () async {
                     final currentUser = ref.read(currentUserProvider);
-                    final ownerId = int.tryParse(currentUser?.id ?? '');
+                    final ownerId = currentUser?.id ?? '';
                     final lat = double.tryParse(_latCtrl.text.trim());
                     final lng = double.tryParse(_lngCtrl.text.trim());
 
@@ -491,8 +496,12 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                             ),
                             totalSpots: totalSpots,
                             spotType: _spotType,
-                            pricePerHour: double.tryParse(_priceHourCtrl.text.trim()) ?? 5,
-                            pricePerDay: double.tryParse(_priceDayCtrl.text.trim()),
+                            pricePerHour:
+                                double.tryParse(_priceHourCtrl.text.trim()) ??
+                                5,
+                            pricePerDay: double.tryParse(
+                              _priceDayCtrl.text.trim(),
+                            ),
                             isDynamicPricing: _dynamicPricing,
                             vehicleTypes: _vehicles.entries
                                 .where((e) => e.value)
