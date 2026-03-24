@@ -142,6 +142,7 @@ class AuthService {
     try {
       await _client.auth.resetPasswordForEmail(
         email,
+        // Keep reset flow on dedicated screen URL.
         redirectTo: AppConstants.authRedirectUrl('/reset-password'),
       );
     } on AuthException catch (e) {
@@ -182,6 +183,14 @@ class AuthService {
   }) async {
     try {
       final user = _client.auth.currentUser;
+
+      // For web password-recovery flow, try to recover session directly from URL
+      // before validating session presence.
+      if (oldPassword == null || oldPassword.isEmpty) {
+        if (_client.auth.currentSession == null && kIsWeb) {
+          await _tryRecoverSessionFromUrl();
+        }
+      }
       
       // 1. Verify old password if provided
       if (oldPassword != null && oldPassword.isNotEmpty) {
@@ -197,17 +206,67 @@ class AuthService {
       // 2. If successful, update to the new password
       await _client.auth.updateUser(UserAttributes(password: newPassword));
     } on AuthException catch (e) {
-      if (e.message.toLowerCase().contains('invalid login credentials')) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('invalid login credentials')) {
         throw AuthException('Le mot de passe actuel est incorrect.');
       }
-      if (e.message.toLowerCase().contains('password') &&
-          e.message.toLowerCase().contains('weak')) {
+      if (msg.contains('password') && msg.contains('weak')) {
         throw AuthException(AppConstants.errorWeakPassword);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      if (msg.contains('same') && msg.contains('password')) {
+        throw AuthException('New password must be different from the current password.');
+      }
+      if (msg.contains('session') || msg.contains('jwt')) {
+        throw AuthException(
+          'Your reset session is invalid or expired. Please request a new reset link and open it in the same browser.',
+        );
+      }
+      // Keep the real Supabase message instead of masking it.
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
+    }
+  }
+
+  Future<void> _tryRecoverSessionFromUrl() async {
+    // Strategy 1: let Supabase parse callback URL automatically.
+    try {
+      await _client.auth.getSessionFromUrl(Uri.base);
+      if (_client.auth.currentSession != null) return;
+    } catch (_) {}
+
+    final uri = Uri.base;
+    final params = <String, String>{...uri.queryParameters};
+
+    // Strategy 2: parse hash/fragment parameters when using web hash routing.
+    if (uri.fragment.isNotEmpty) {
+      final fragment = uri.fragment;
+      final queryPart = fragment.contains('?')
+          ? fragment.substring(fragment.indexOf('?') + 1)
+          : '';
+      if (queryPart.isNotEmpty) {
+        try {
+          params.addAll(Uri.splitQueryString(queryPart));
+        } catch (_) {}
+      }
+    }
+
+    // Strategy 3: if refresh_token exists, set session directly.
+    final refreshToken = params['refresh_token'];
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        await _client.auth.setSession(refreshToken);
+        if (_client.auth.currentSession != null) return;
+      } catch (_) {}
+    }
+
+    // Strategy 4: fallback to code exchange if code is available.
+    final code = params['code'];
+    if (code != null && code.isNotEmpty) {
+      try {
+        await _client.auth.exchangeCodeForSession(code);
+      } catch (_) {}
     }
   }
 

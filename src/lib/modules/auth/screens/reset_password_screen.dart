@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/constants/constants.dart';
@@ -24,6 +25,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isSuccess = false;
+  bool _sessionPrepared = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareRecoverySession();
+  }
 
   @override
   void dispose() {
@@ -36,12 +44,76 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
+      await _prepareRecoverySession();
       await ref.read(authNotifierProvider.notifier).updatePassword(
             newPassword: _passwordController.text,
           );
       setState(() => _isSuccess = true);
     } catch (e) {
       // Error handled by AuthNotifier state
+    }
+  }
+
+  Future<void> _prepareRecoverySession() async {
+    if (_sessionPrepared) return;
+
+    final client = Supabase.instance.client;
+    if (client.auth.currentSession != null) {
+      _sessionPrepared = true;
+      return;
+    }
+
+    // Preferred: let Supabase parse and store session from callback URL.
+    // This handles both query and fragment formats.
+    try {
+      await client.auth.getSessionFromUrl(Uri.base);
+      if (client.auth.currentSession != null) {
+        _sessionPrepared = true;
+        return;
+      }
+    } catch (_) {
+      // Continue with manual fallbacks below.
+    }
+
+    final uri = Uri.base;
+
+    // Supabase recovery links on web can place params in query or fragment.
+    final params = <String, String>{...uri.queryParameters};
+    if (uri.fragment.isNotEmpty) {
+      final fragment = uri.fragment;
+      final queryPart = fragment.contains('?')
+          ? fragment.substring(fragment.indexOf('?') + 1)
+          : '';
+      if (queryPart.isNotEmpty) {
+        try {
+          params.addAll(Uri.splitQueryString(queryPart));
+        } catch (_) {}
+      }
+    }
+
+    final code = params['code'];
+    final refreshToken = params['refresh_token'];
+
+    // 1) Try exchanging recovery code first.
+    if (code != null && code.isNotEmpty) {
+      try {
+        await client.auth.exchangeCodeForSession(code);
+        _sessionPrepared = true;
+        return;
+      } catch (_) {
+        // Continue to fallback below.
+      }
+    }
+
+    // 2) Fallback: use refresh token directly when present.
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        await client.auth.setSession(refreshToken);
+        _sessionPrepared = true;
+        return;
+      } catch (_) {
+        // Keep silent here; submit will show explicit error from auth service.
+      }
     }
   }
 
