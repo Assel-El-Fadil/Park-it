@@ -113,4 +113,49 @@ class ParkingSpotRepository extends SupabaseRepository<ParkingSpotModel> {
 
     return (response as List).map((e) => AvailabilityModel.fromJson(e)).toList();
   }
+
+  /// Insert a new row (park-it.sql `parking_spots`). Returns new id.
+  Future<int> insertSpot({
+    required int ownerId,
+    int? lotId,
+    required String title,
+    String? description,
+    required double latitude,
+    required double longitude,
+    required String street,
+    required String city,
+    required String country,
+    required String postalCode,
+    required double pricePerHour,
+    double? pricePerDay,
+    required String spotTypeDb,
+    List<String> vehicleTypesDb = const ['CAR'],
+    List<String> amenitiesDb = const [],
+    List<String> photos = const <String>[],
+  }) async {
+    final res = await client.from(tableName).insert({
+      'owner_id': ownerId,
+      'lot_id': lotId,
+      'title': title,
+      'description': description,
+      'latitude': latitude,
+      'longitude': longitude,
+      'street': street,
+      'city': city,
+      'country': country,
+      'postal_code': postalCode,
+      'photos': photos,
+      'price_per_hour': pricePerHour,
+      'price_per_day': pricePerDay,
+      'spot_type': spotTypeDb,
+      'vehicle_types': vehicleTypesDb,
+      'amenities': amenitiesDb,
+      'status': 'AVAILABLE',
+      'average_rating': 0,
+      'total_reviews': 0,
+      'total_bookings': 0,
+      'is_dynamic_pricing': false,
+    }).select('id').single();
+    return res['id'] as int;
+  }
 }

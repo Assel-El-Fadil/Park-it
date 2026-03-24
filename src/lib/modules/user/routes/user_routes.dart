@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:src/modules/user/screens/edit_profile_screen.dart';
+import 'package:src/modules/user/screens/saved_locations_screen.dart';
 
 /// User module route names
 class UserRoutes {
@@ -13,10 +14,12 @@ class UserRoutes {
   static const String editVehicle = 'edit-vehicle';
   static const String notificationSettings = 'notification-settings';
   static const String privacySettings = 'privacy-settings';
+  static const String savedLocations = 'saved-locations';
 
   // Paths
   static const String profilePath = '/profile';
   static const String editProfilePath = '/profile/edit';
+  static const String savedLocationsPath = '/profile/saved-locations';
   static const String userSettingsPath = '/profile/settings';
   static const String favoriteSpacesPath = '/profile/favorites';
   static const String userVehiclesPath = '/profile/vehicles';
@@ -35,6 +38,11 @@ List<GoRoute> getUserRoutes() {
       path: UserRoutes.editProfilePath,
       name: UserRoutes.editProfile,
       builder: (context, state) => const EditProfileScreen(),
+    ),
+    GoRoute(
+      path: UserRoutes.savedLocationsPath,
+      name: UserRoutes.savedLocations,
+      builder: (context, state) => const SavedLocationsScreen(),
     ),
 
     // // Settings

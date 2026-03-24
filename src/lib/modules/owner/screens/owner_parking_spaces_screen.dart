@@ -35,7 +35,7 @@ class OwnerParkingSpacesScreen extends StatelessWidget {
     return SafeArea(
       child: Scaffold(
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => context.pushNamed(OwnerRoutes.addParkingSpace),
+          onPressed: () => context.pushNamed(OwnerRoutes.ownerMesParkings),
           icon: const Icon(Icons.add),
           label: const Text('Add spot'),
         ),
@@ -87,7 +87,7 @@ class OwnerParkingSpacesScreen extends StatelessWidget {
                           subtitle: 'Add your first parking spot to start earning.',
                           icon: Icons.local_parking_outlined,
                           action: FilledButton(
-                            onPressed: () => context.pushNamed(OwnerRoutes.addParkingSpace),
+                            onPressed: () => context.pushNamed(OwnerRoutes.ownerMesParkings),
                             child: const Text('Add parking spot'),
                           ),
                         )
