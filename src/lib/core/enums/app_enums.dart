@@ -9,13 +9,29 @@ enum UserRole {
   superAdmin;
 
   static UserRole fromString(String value) {
-    return values.firstWhere(
-      (e) => e.name.toUpperCase() == value.toUpperCase(),
-      orElse: () => UserRole.driver,
-    );
+    final normalized = value.toUpperCase();
+    switch (normalized) {
+      case 'OWNER':
+        return UserRole.owner;
+      case 'ADMIN':
+        return UserRole.admin;
+      case 'SUPER_ADMIN':
+      case 'SUPERADMIN':
+        return UserRole.superAdmin;
+      case 'DRIVER':
+      default:
+        return UserRole.driver;
+    }
   }
 
-  String toJson() => name.toUpperCase();
+  String toJson() {
+    return switch (this) {
+      UserRole.driver => 'DRIVER',
+      UserRole.owner => 'OWNER',
+      UserRole.admin => 'ADMIN',
+      UserRole.superAdmin => 'SUPER_ADMIN',
+    };
+  }
 }
 
 enum VerificationStatus {
@@ -55,7 +71,6 @@ enum SpotType {
   outdoor,
   indoor,
   covered,
-  valet,
   garage,
   street;
 
@@ -96,13 +111,37 @@ enum Amenity {
   carWash;
 
   static Amenity fromString(String value) {
-    return values.firstWhere(
-      (e) => e.name.toUpperCase() == value.toUpperCase(),
-      orElse: () => Amenity.cctv,
-    );
+    final normalized = value.toUpperCase();
+    switch (normalized) {
+      case 'EV_CHARGER':
+      case 'EVCHARGER':
+        return Amenity.evCharger;
+      case 'CAR_WASH':
+      case 'CARWASH':
+        return Amenity.carWash;
+      case 'CCTV':
+        return Amenity.cctv;
+      case 'LIGHTING':
+        return Amenity.lighting;
+      case 'WHEELCHAIR':
+        return Amenity.wheelchair;
+      case 'GUARD':
+        return Amenity.guard;
+      default:
+        return Amenity.cctv;
+    }
   }
 
-  String toJson() => name.toUpperCase();
+  String toJson() {
+    return switch (this) {
+      Amenity.cctv => 'CCTV',
+      Amenity.lighting => 'LIGHTING',
+      Amenity.evCharger => 'EV_CHARGER',
+      Amenity.wheelchair => 'WHEELCHAIR',
+      Amenity.guard => 'GUARD',
+      Amenity.carWash => 'CAR_WASH',
+    };
+  }
 }
 
 enum ReservationStatus {

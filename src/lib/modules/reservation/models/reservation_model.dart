@@ -2,7 +2,7 @@ import 'package:src/core/enums/app_enums.dart';
 
 class ReservationModel {
   final int id;
-  final int driverId;
+  final String driverId;
   final int spotId;
   final int vehicleId;
   final DateTime startTime;
@@ -36,7 +36,7 @@ class ReservationModel {
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
     return ReservationModel(
       id: json['id'] as int,
-      driverId: json['driver_id'] as int,
+      driverId: json['driver_id'] as String,
       spotId: json['spot_id'] as int,
       vehicleId: json['vehicle_id'] as int,
       startTime: DateTime.parse(json['start_time'] as String),

@@ -1,37 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/report/repositories/report_repository.dart';
+import 'package:src/modules/review/models/report_model.dart';
 import 'package:src/modules/report/routes/report_routes.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/app_layout.dart';
 import 'package:src/shared/widgets/frosted_bar.dart';
 
-class OwnerReportsScreen extends StatelessWidget {
+final ownerReportsProvider = FutureProvider<List<ReportModel>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  final ownerId = user?.id;
+  if (ownerId == null || ownerId.isEmpty) return const <ReportModel>[];
+  return ref.read(reportRepositoryProvider).getReportsForOwner(ownerId);
+});
+
+class OwnerReportsScreen extends ConsumerWidget {
   const OwnerReportsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-
-    final reports = <_ReportCardModel>[
-      const _ReportCardModel(
-        id: 'p1',
-        title: 'Noise complaint',
-        subtitle: 'Central Plaza • Yesterday',
-        status: _ReportStatus.open,
-      ),
-      const _ReportCardModel(
-        id: 'p2',
-        title: 'Blocked entry',
-        subtitle: 'Harbor View • 3 days ago',
-        status: _ReportStatus.inReview,
-      ),
-      const _ReportCardModel(
-        id: 'p3',
-        title: 'Incorrect pricing',
-        subtitle: 'Metro Station North • 2 weeks ago',
-        status: _ReportStatus.resolved,
-      ),
-    ];
+    final reportsAsync = ref.watch(ownerReportsProvider);
 
     return SafeArea(
       child: CustomScrollView(
@@ -45,7 +38,7 @@ class OwnerReportsScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () => Navigator.of(context).maybePop(),
                       icon: Icon(Icons.arrow_back, color: theme.colorScheme.primary),
                     ),
                     const SizedBox(width: 4),
@@ -67,85 +60,131 @@ class OwnerReportsScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: AppLayout(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16, bottom: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AppCard(
-                      child: Row(
-                        children: [
-                          _Kpi(
-                            label: 'Open',
-                            value: '2',
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: 12),
-                          _Kpi(
-                            label: 'Resolved',
-                            value: '14',
-                            color: Colors.green,
-                          ),
-                          const SizedBox(width: 12),
-                          _Kpi(
-                            label: 'Avg time',
-                            value: '1.8d',
-                            color: theme.colorScheme.tertiary,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ...reports.map(
-                      (r) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: AppCard(
-                          onTap: () => context.pushNamed(
-                            ReportRoutes.reportDetail,
-                            pathParameters: {'id': r.id},
-                          ),
+              child: reportsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.only(top: 40),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (error, _) => Padding(
+                  padding: const EdgeInsets.only(top: 24),
+                  child: Text('Failed to load reports: $error'),
+                ),
+                data: (reports) {
+                  final openCount = reports
+                      .where((r) => r.status == ReportStatus.pending)
+                      .length;
+                  final resolvedCount = reports
+                      .where((r) => r.status == ReportStatus.resolved)
+                      .length;
+                  final avgResolution = _avgResolutionDays(reports);
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16, bottom: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AppCard(
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(Icons.flag_outlined, color: theme.colorScheme.primary),
+                              _Kpi(
+                                label: 'Open',
+                                value: '$openCount',
+                                color: theme.colorScheme.primary,
                               ),
                               const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(r.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      r.subtitle,
-                                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    _StatusChip(status: r.status),
-                                  ],
-                                ),
+                              _Kpi(
+                                label: 'Resolved',
+                                value: '$resolvedCount',
+                                color: Colors.green,
                               ),
                               const SizedBox(width: 12),
-                              const Icon(Icons.chevron_right_rounded),
+                              _Kpi(
+                                label: 'Avg time',
+                                value: avgResolution,
+                                color: theme.colorScheme.tertiary,
+                              ),
                             ],
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        if (reports.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 32),
+                            child: Center(
+                              child: Text(
+                                'No reports for your spots yet.',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          ...reports.map(
+                            (r) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: AppCard(
+                                onTap: () => context.pushNamed(
+                                  ReportRoutes.reportDetail,
+                                  pathParameters: {'id': r.id.toString()},
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(Icons.flag_outlined, color: theme.colorScheme.primary),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            r.reason.toJson(),
+                                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Spot #${r.targetId} • ${DateFormat('MMM d, yyyy').format(r.createdAt)}',
+                                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          _StatusChip(status: r.status),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Icon(Icons.chevron_right_rounded),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _avgResolutionDays(List<ReportModel> reports) {
+    final resolved = reports.where((r) => r.resolvedAt != null).toList();
+    if (resolved.isEmpty) return '-';
+    final totalHours = resolved.fold<int>(
+      0,
+      (sum, r) => sum + r.resolvedAt!.difference(r.createdAt).inHours,
+    );
+    final avgDays = (totalHours / resolved.length) / 24;
+    return '${avgDays.toStringAsFixed(1)}d';
   }
 }
 
@@ -186,26 +225,10 @@ class _Kpi extends StatelessWidget {
   }
 }
 
-enum _ReportStatus { open, inReview, resolved }
-
-class _ReportCardModel {
-  const _ReportCardModel({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.status,
-  });
-
-  final String id;
-  final String title;
-  final String subtitle;
-  final _ReportStatus status;
-}
-
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.status});
 
-  final _ReportStatus status;
+  final ReportStatus status;
 
   @override
   Widget build(BuildContext context) {
@@ -214,15 +237,15 @@ class _StatusChip extends StatelessWidget {
     late final String label;
     late final Color color;
     switch (status) {
-      case _ReportStatus.open:
-        label = 'Open';
+      case ReportStatus.pending:
+        label = 'Pending';
         color = theme.colorScheme.primary;
-      case _ReportStatus.inReview:
-        label = 'In review';
-        color = theme.colorScheme.tertiary;
-      case _ReportStatus.resolved:
+      case ReportStatus.resolved:
         label = 'Resolved';
         color = Colors.green;
+      case ReportStatus.dismissed:
+        label = 'Dismissed';
+        color = theme.colorScheme.tertiary;
     }
 
     return Container(

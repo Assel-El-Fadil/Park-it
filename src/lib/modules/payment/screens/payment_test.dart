@@ -16,7 +16,7 @@ class PaymentTestWidget extends StatelessWidget {
           onPressed: () {
             final reservation = ReservationModel(
               id: 11,
-              driverId: 6,
+              driverId: "6",
               spotId: 7,
               vehicleId: 8,
               startTime: DateTime.now(),

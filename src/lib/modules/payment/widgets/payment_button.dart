@@ -7,7 +7,7 @@ class PayButton extends ConsumerStatefulWidget {
   final double amount;
   final String currency;
   final int reservationId;
-  final int payerId;
+  final String payerId;
   final bool isLoading;
   final bool hasFailed;
 

@@ -1,7 +1,7 @@
 class ReviewModel {
   final int id;
   final int reservationId;
-  final int reviewerId;
+  final String reviewerId;
   final int spotId;
   final int rating;
   final String? comment;
@@ -27,7 +27,9 @@ class ReviewModel {
     return ReviewModel(
       id: json['id'] as int,
       reservationId: json['reservation_id'] as int,
-      reviewerId: json['reviewer_id'] as int,
+      // DB can store reviewer_id as uuid/int depending on environment.
+      // Normalize to string to keep UI stable.
+      reviewerId: '${json['reviewer_id']}',
       spotId: json['spot_id'] as int,
       rating: json['rating'] as int,
       comment: json['comment'] as String?,

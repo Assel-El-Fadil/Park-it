@@ -2,7 +2,7 @@ import 'package:src/core/enums/app_enums.dart';
 
 class ReportModel {
   final int id;
-  final int reporterId;
+  final String reporterId;
   final int targetId;
   final ReportTargetType targetType;
   final ReportReason reason;
@@ -30,7 +30,7 @@ class ReportModel {
   factory ReportModel.fromJson(Map<String, dynamic> json) {
     return ReportModel(
       id: json['id'] as int,
-      reporterId: json['reporter_id'] as int,
+      reporterId: json['reporter_id'] as String,
       targetId: json['target_id'] as int,
       targetType: ReportTargetType.fromString(json['target_type'] as String),
       reason: ReportReason.fromString(json['reason'] as String),

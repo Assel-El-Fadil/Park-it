@@ -6,6 +6,7 @@ import 'package:src/modules/notification/models/notification_model.dart';
 import 'package:src/modules/notification/routes/notification_routes.dart';
 import 'package:src/modules/notification/widgets/notification_filter_chip.dart';
 import 'package:src/modules/notification/widgets/notification_tile.dart';
+import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/providers/notification_provider.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 
@@ -378,10 +379,11 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
             // );
             break;
           case 'payment':
-            // context.pushNamed(
-            //   AppRoutes.paymentDetails,
-            //   pathParameters: {'id': notification.referenceId.toString()},
-            // );
+            AppNavigator.pushNamed(
+              context,
+              PaymentRoutes.paymentDetails,
+              extra: notification.referenceId,
+            );
             break;
           case 'review':
             // context.pushNamed(

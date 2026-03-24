@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:src/modules/owner/screens/owner_dashboard_screen.dart';
 import 'package:src/modules/owner/screens/owner_parking_spaces_screen.dart';
-import 'package:src/shared/widgets/stitch_bottom_nav.dart';
+import 'package:src/modules/owner/screens/owner_parking_lots_screen.dart';
 
 /// Owner area entry point with bottom navigation.
 ///
@@ -21,23 +21,29 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
     final pages = <Widget>[
       const OwnerDashboardScreen(),
       const OwnerParkingSpacesScreen(),
+      const OwnerParkingLotsScreen(),
     ];
 
     return Scaffold(
       body: IndexedStack(index: _index, children: pages),
-      bottomNavigationBar: StitchBottomNav(
-        index: _index,
-        onChanged: (value) => setState(() => _index = value),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _index,
+        onTap: (value) => setState(() => _index = value),
         items: const [
-          StitchBottomNavItem(
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard_rounded),
             label: 'Dashboard',
-            icon: Icons.dashboard_outlined,
-            selectedIcon: Icons.dashboard_rounded,
           ),
-          StitchBottomNavItem(
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_parking_outlined),
+            activeIcon: Icon(Icons.local_parking_rounded),
             label: 'Spots',
-            icon: Icons.local_parking_outlined,
-            selectedIcon: Icons.local_parking_rounded,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.garage_outlined),
+            activeIcon: Icon(Icons.garage_rounded),
+            label: 'Lots',
           ),
         ],
       ),
