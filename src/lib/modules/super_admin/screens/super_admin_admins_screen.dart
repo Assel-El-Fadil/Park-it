@@ -5,43 +5,8 @@ import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/config/themes/text_styles.dart';
 import 'package:src/core/constants/constants.dart';
-import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/super_admin/routes/super_admin_routes.dart';
-
-// Mock data for admins - replace with actual data fetching
-class MockAdminData {
-  static List<UserModel> getAdmins() {
-    return [
-      UserModel(
-        id: '1',
-        email: 'admin1@parkit.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: UserRole.admin,
-        averageRating: 4.5,
-        totalReviews: 12,
-      ),
-      UserModel(
-        id: '2',
-        email: 'admin2@parkit.com',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        role: UserRole.admin,
-        averageRating: 4.8,
-        totalReviews: 8,
-      ),
-      UserModel(
-        id: '3',
-        email: 'admin3@parkit.com',
-        firstName: 'Bob',
-        lastName: 'Johnson',
-        role: UserRole.admin,
-        averageRating: 4.2,
-        totalReviews: 5,
-      ),
-    ];
-  }
-}
+import 'package:src/modules/super_admin/services/super_admin_service.dart';
 
 class SuperAdminAdminsScreen extends ConsumerStatefulWidget {
   const SuperAdminAdminsScreen({super.key});
@@ -51,7 +16,50 @@ class SuperAdminAdminsScreen extends ConsumerStatefulWidget {
 }
 
 class _SuperAdminAdminsScreenState extends ConsumerState<SuperAdminAdminsScreen> {
-  List<UserModel> admins = MockAdminData.getAdmins();
+  final SuperAdminService _service = SuperAdminService();
+  List<Map<String, dynamic>> admins = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdmins();
+  }
+
+  Future<void> _loadAdmins() async {
+    print('DEBUG: Starting to load admins...');
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final fetchedAdmins = await _service.getAdmins();
+      print('DEBUG: Fetched ${fetchedAdmins.length} admins');
+      print('DEBUG: Admins data: $fetchedAdmins');
+      
+      if (mounted) {
+        setState(() {
+          admins = fetchedAdmins;
+          _isLoading = false;
+        });
+        print('DEBUG: State updated with ${admins.length} admins');
+      }
+    } catch (e, stackTrace) {
+      print('DEBUG: Error loading admins: $e');
+      print('DEBUG: Stack trace: $stackTrace');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading admins: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,76 +75,98 @@ class _SuperAdminAdminsScreenState extends ConsumerState<SuperAdminAdminsScreen>
         backgroundColor: context.backgroundColor,
         elevation: 0,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header with add button
-            Container(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${admins.length} Admins',
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: context.colorScheme.textPrimary,
-                        fontWeight: FontWeight.w600,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : admins.isEmpty
+              ? _EmptyState()
+              : Column(
+                  children: [
+                    // Header with add button
+                    Container(
+                      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${admins.length} Admins',
+                              style: AppTextStyles.titleMedium.copyWith(
+                                color: context.colorScheme.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              context.pushNamed(SuperAdminRoutes.addAdmin);
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Admin'),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      context.pushNamed(SuperAdminRoutes.addAdmin);
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Admin'),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Admins List
-            Expanded(
-              child: admins.isEmpty
-                  ? _EmptyState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-                      itemCount: admins.length,
-                      itemBuilder: (context, index) {
-                        final admin = admins[index];
-                        return _AdminCard(
-                          admin: admin,
-                          onDelete: () => _showDeleteDialog(admin),
-                        );
-                      },
+                    
+                    // Admins List
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _loadAdmins,
+                        child: CustomScrollView(
+                          slivers: [
+                            SliverPadding(
+                              padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+                              sliver: SliverList(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    final admin = admins[index];
+                                    return _AdminCard(
+                                      admin: admin,
+                                      onDelete: () => _showDeleteDialog(admin),
+                                    );
+                                  },
+                                  childCount: admins.length,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-            ),
-          ],
-        ),
-      ),
+                  ],
+                ),
     );
   }
 
-  void _showDeleteDialog(UserModel admin) {
+  void _showDeleteDialog(Map<String, dynamic> admin) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Admin'),
-        content: Text('Are you sure you want to delete admin ${admin.firstName} ${admin.lastName}?'),
+        content: Text('Are you sure you want to delete admin ${admin['first_name'] ?? ''} ${admin['last_name'] ?? ''}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                admins.removeWhere((a) => a.id == admin.id);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Admin ${admin.firstName} ${admin.lastName} deleted')),
-              );
+            onPressed: () async {
+              final success = await _service.deleteAdmin(admin['id']);
+              if (success) {
+                setState(() {
+                  admins.removeWhere((a) => a['id'] == admin['id']);
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Admin ${admin['first_name']} ${admin['last_name']} deleted')),
+                );
+              } else {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed to delete admin'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Delete'),
@@ -196,7 +226,7 @@ class _AdminCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  final UserModel admin;
+  final Map<String, dynamic> admin;
   final VoidCallback onDelete;
 
   @override
@@ -208,56 +238,54 @@ class _AdminCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.cardBorderRadius),
         border: Border.all(color: AppColors.border),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(AppConstants.defaultPadding),
-        leading: CircleAvatar(
-          backgroundColor: AppColors.primary,
-          child: Text(
-            '${admin.firstName[0]}${admin.lastName[0]}',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ),
-        title: Text(
-          '${admin.firstName} ${admin.lastName}',
-          style: AppTextStyles.titleMedium.copyWith(
-            color: context.colorScheme.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Row(
           children: [
-            Text(
-              admin.email ?? 'No email',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: context.colorScheme.textSecondary,
+            // Avatar
+            CircleAvatar(
+              backgroundColor: AppColors.primary,
+              child: Text(
+                '${(admin['first_name'] ?? 'A')[0]}${(admin['last_name'] ?? 'D')[0]}',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Admin account',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: context.colorScheme.textTertiary,
-              ),
-            ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'delete') {
-              onDelete();
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
+            const SizedBox(width: 16),
+            
+            // Admin Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.delete, color: AppColors.error),
-                  SizedBox(width: 8),
-                  Text('Delete'),
+                  Text(
+                    '${admin['first_name'] ?? 'Admin'} ${admin['last_name'] ?? 'User'}',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: context.colorScheme.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    admin['email'] ?? 'No email',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: context.colorScheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Admin account',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: context.colorScheme.textTertiary,
+                    ),
+                  ),
                 ],
               ),
+            ),
+            
+            // Delete Button
+            IconButton(
+              icon: const Icon(Icons.delete, color: AppColors.error),
+              onPressed: onDelete,
             ),
           ],
         ),

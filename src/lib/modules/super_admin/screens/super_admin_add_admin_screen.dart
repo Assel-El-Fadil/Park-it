@@ -5,6 +5,7 @@ import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/config/themes/text_styles.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/modules/super_admin/services/super_admin_service.dart';
 
 class SuperAdminAddAdminScreen extends ConsumerStatefulWidget {
   const SuperAdminAddAdminScreen({super.key});
@@ -217,17 +218,32 @@ class _SuperAdminAddAdminScreenState extends ConsumerState<SuperAdminAddAdminScr
     });
 
     try {
-      // Simulate API call - replace with actual admin creation logic
-      await Future.delayed(const Duration(seconds: 2));
+      final service = SuperAdminService();
+      final success = await service.createAdmin(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+      );
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Admin account created successfully!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        context.pop();
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Admin account created successfully!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.pop();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to create admin account'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

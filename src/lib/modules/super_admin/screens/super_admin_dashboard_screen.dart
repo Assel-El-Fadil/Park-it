@@ -6,12 +6,71 @@ import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/config/themes/text_styles.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/super_admin/routes/super_admin_routes.dart';
+import 'package:src/modules/super_admin/services/super_admin_service.dart';
 
-class SuperAdminDashboardScreen extends ConsumerWidget {
+class SuperAdminDashboardScreen extends ConsumerStatefulWidget {
   const SuperAdminDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SuperAdminDashboardScreen> createState() => _SuperAdminDashboardScreenState();
+}
+
+class _SuperAdminDashboardScreenState extends ConsumerState<SuperAdminDashboardScreen> {
+  final SuperAdminService _service = SuperAdminService();
+  
+  int _totalAdmins = 0;
+  int _totalUsers = 0;
+  int _totalParkings = 0;
+  int _totalReservations = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final results = await Future.wait([
+        _service.getTotalAdmins(),
+        _service.getTotalUsers(),
+        _service.getTotalParkingLots(),
+        _service.getTotalReservations(),
+      ]);
+
+      final totalSpots = await _service.getTotalParkingSpots();
+
+      if (mounted) {
+        setState(() {
+          _totalAdmins = results[0];
+          _totalUsers = results[1];
+          _totalParkings = results[2] + totalSpots; // Combine lots + spots
+          _totalReservations = results[3];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading stats: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -27,7 +86,7 @@ class SuperAdminDashboardScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
-              context.pushNamed(SuperAdminRoutes.profile);
+              context.push('/profile');
             },
           ),
         ],
@@ -39,35 +98,38 @@ class SuperAdminDashboardScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Stats Cards
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Total Admins',
-                      value: '12',
-                      icon: Icons.admin_panel_settings,
-                      color: AppColors.primary,
-                      onTap: () => context.pushNamed(SuperAdminRoutes.admins),
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Total Admins',
+                        value: '$_totalAdmins',
+                        icon: Icons.admin_panel_settings,
+                        color: AppColors.primary,
+                        onTap: () => context.pushNamed(SuperAdminRoutes.admins),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Active Users',
-                      value: '1,248',
-                      icon: Icons.people,
-                      color: AppColors.success,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Active Users',
+                        value: '$_totalUsers',
+                        icon: Icons.people,
+                        color: AppColors.success,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
                     child: _StatCard(
                       title: 'Total Parkings',
-                      value: '342',
+                      value: '$_totalParkings',
                       icon: Icons.local_parking,
                       color: AppColors.secondary,
                     ),
@@ -76,7 +138,7 @@ class SuperAdminDashboardScreen extends ConsumerWidget {
                   Expanded(
                     child: _StatCard(
                       title: 'Reservations',
-                      value: '5,621',
+                      value: '$_totalReservations',
                       icon: Icons.calendar_today,
                       color: AppColors.warning,
                     ),
@@ -110,19 +172,6 @@ class SuperAdminDashboardScreen extends ConsumerWidget {
                 title: 'Manage Admins',
                 subtitle: 'View and manage all admin accounts',
                 onTap: () => context.pushNamed(SuperAdminRoutes.admins),
-              ),
-              
-              const SizedBox(height: 12),
-              
-              _ActionCard(
-                icon: Icons.analytics,
-                title: 'View Analytics',
-                subtitle: 'Detailed platform analytics',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Analytics coming soon')),
-                  );
-                },
               ),
             ],
           ),
