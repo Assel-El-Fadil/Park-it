@@ -61,6 +61,12 @@ class _SuperAdminAdminsScreenState extends ConsumerState<SuperAdminAdminsScreen>
     }
   }
 
+  String _initial(String? value, {String fallback = 'A'}) {
+    final safe = (value ?? '').trim();
+    if (safe.isEmpty) return fallback;
+    return safe[0].toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -246,7 +252,7 @@ class _AdminCard extends StatelessWidget {
             CircleAvatar(
               backgroundColor: AppColors.primary,
               child: Text(
-                '${(admin['first_name'] ?? 'A')[0]}${(admin['last_name'] ?? 'D')[0]}',
+                '${_initial(admin['first_name'] as String?, fallback: 'A')}${_initial(admin['last_name'] as String?, fallback: 'D')}',
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),

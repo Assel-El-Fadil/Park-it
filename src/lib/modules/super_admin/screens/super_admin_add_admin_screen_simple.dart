@@ -298,13 +298,7 @@ class _SuperAdminAddAdminScreenSimpleState extends ConsumerState<SuperAdminAddAd
       
       if (mounted) {
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Admin account created successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          context.pop();
+          context.pop(true);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -312,6 +306,7 @@ class _SuperAdminAddAdminScreenSimpleState extends ConsumerState<SuperAdminAddAd
               backgroundColor: Colors.red,
             ),
           );
+          context.pop(false);
         }
       }
     } catch (e) {

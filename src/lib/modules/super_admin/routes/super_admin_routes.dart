@@ -1,6 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:src/modules/super_admin/screens/super_admin_dashboard_screen.dart';
-import 'package:src/modules/super_admin/screens/super_admin_admins_screen_simple.dart';
+import 'package:src/modules/super_admin/screens/super_admin_admins_screen_fixed.dart';
 import 'package:src/modules/super_admin/screens/super_admin_add_admin_screen_simple.dart';
 
 /// Super Admin module route names
@@ -30,7 +30,7 @@ List<GoRoute> getSuperAdminRoutes() {
     GoRoute(
       path: SuperAdminRoutes.adminsPath,
       name: SuperAdminRoutes.admins,
-      builder: (context, state) => const SuperAdminAdminsScreenSimple(),
+      builder: (context, state) => const SuperAdminAdminsScreenFixed(),
     ),
     
     // Add Admin
