@@ -67,6 +67,22 @@ class AdminRepository {
     }
   }
 
+  /// Fetch a single parking spot by its ID
+  Future<ParkingSpotModel?> getSpotById(int id) async {
+    try {
+      final row = await _client
+          .from('parking_spots')
+          .select()
+          .eq('id', id)
+          .maybeSingle();
+      
+      if (row == null) return null;
+      return ParkingSpotModel.fromJson(row);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Update the status of a parking spot
   Future<void> updateSpotStatus({
     required int spotId,

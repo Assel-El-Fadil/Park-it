@@ -59,7 +59,7 @@ class OwnerRepositoryCloud implements OwnerRepository {
     try {
       final response = await _client
           .from('reviews')
-          .select()
+          .select('*, users(first_name, last_name)')
           .inFilter('spot_id', spotIds)
           .order('created_at', ascending: false);
 

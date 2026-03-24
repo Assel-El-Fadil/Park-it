@@ -8,6 +8,7 @@ class ReviewModel {
   final String? ownerReply;
   final DateTime? ownerRepliedAt;
   final bool isVisible;
+  final String? reviewerName;
   final DateTime createdAt;
 
   ReviewModel({
@@ -20,6 +21,7 @@ class ReviewModel {
     this.ownerReply,
     this.ownerRepliedAt,
     required this.isVisible,
+    this.reviewerName,
     required this.createdAt,
   });
 
@@ -38,6 +40,9 @@ class ReviewModel {
           ? DateTime.parse(json['owner_replied_at'] as String)
           : null,
       isVisible: json['is_visible'] as bool,
+      reviewerName: json['users'] != null
+          ? '${json['users']['first_name']} ${json['users']['last_name']}'
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

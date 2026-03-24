@@ -20,7 +20,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     AdminUsersScreen(),
     AdminSpotsScreen(),
     AdminReportsScreen(),
-    SuperAdminProfileScreen(), // Reusing profile screen as they both manage accounts identically
   ];
 
   @override
@@ -48,11 +47,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             icon: Icon(Icons.report_problem_outlined),
             selectedIcon: Icon(Icons.report_problem),
             label: 'Reports',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
           ),
         ],
       ),

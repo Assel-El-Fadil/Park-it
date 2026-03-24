@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/admin/repositories/admin_repository.dart';
 import 'package:src/modules/report/repositories/report_repository.dart';
 import 'package:src/modules/review/models/report_model.dart';
 import 'package:src/shared/widgets/app_card.dart';
@@ -10,11 +11,17 @@ import 'package:src/shared/widgets/app_layout.dart';
 import 'package:src/shared/widgets/primary_button.dart';
 import 'package:src/shared/widgets/section_header.dart';
 
-final reportDetailProvider = FutureProvider.family<ReportModel, int>((
+final reportDetailProvider = FutureProvider.family<({ReportModel report, String? spotTitle}), int>((
   ref,
   id,
 ) async {
-  return ref.read(reportRepositoryProvider).getReportById(id);
+  final report = await ref.read(reportRepositoryProvider).getReportById(id);
+  String? spotTitle;
+  if (report.targetType == ReportTargetType.parkingSpot) {
+    final spot = await ref.read(adminRepositoryProvider).getSpotById(int.parse(report.targetId));
+    spotTitle = spot?.title;
+  }
+  return (report: report, spotTitle: spotTitle);
 });
 
 class ReportDetailScreen extends ConsumerWidget {
@@ -42,7 +49,10 @@ class ReportDetailScreen extends ConsumerWidget {
         body: reportAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Error: $error')),
-          data: (report) => SingleChildScrollView(
+          data: (data) {
+            final report = data.report;
+            final spotTitle = data.spotTitle;
+            return SingleChildScrollView(
             padding: const EdgeInsets.only(bottom: 24),
             child: AppLayout(
               child: Column(
@@ -67,7 +77,7 @@ class ReportDetailScreen extends ConsumerWidget {
                         const SizedBox(height: 8),
                         _KeyValue(
                           label: 'Target Spot',
-                          value: '#${report.targetId}',
+                          value: spotTitle ?? '#${report.targetId}',
                         ),
                         const SizedBox(height: 8),
                         _KeyValue(
@@ -136,7 +146,8 @@ class ReportDetailScreen extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
+            );
+          },
         ),
       ),
     );
