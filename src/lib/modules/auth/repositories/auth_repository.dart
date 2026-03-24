@@ -45,6 +45,7 @@ abstract class AuthRepository {
   Future<void> updateEmail(String newEmail);
   Future<void> updatePhone(String newPhone);
   Future<void> resendVerification(String email, {String? phone});
+  Future<void> deleteAccount();
 }
 
 class AuthRepositoryImpl extends SupabaseRepository<UserModel>
@@ -417,16 +418,51 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     }
   }
 
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      final user = client.auth.currentUser;
+      if (user == null) throw AppException('No authenticated user found');
+
+      // Call the RPC function to delete both Auth and public data.
+      // This function MUST be created in the Supabase SQL Editor first.
+      await client.rpc('delete_user_permanently');
+
+      // Sign out locally
+      await signOut();
+    } on AuthException catch (e) {
+      throw AppException(e.message);
+    } catch (e) {
+      print('ERROR [AuthRepositoryImpl.deleteAccount]: $e');
+      // Fallback for better error messaging if the SQL is missing
+      if (e.toString().contains('column "delete_user_permanently" does not exist') || 
+          e.toString().contains('procedure does not exist')) {
+        throw AppException('Account deletion service is not fully configured. Please contact support or run the required SQL.');
+      }
+      throw AppException('Failed to delete account permanently: $e');
+    }
+  }
+
   /// Resolves identifier (email or phone) to email for Supabase Auth.
   Future<String?> _resolveEmailFromIdentifier(String identifier) async {
     if (identifier.contains('@')) {
       return identifier;
     }
+
+    String phone = identifier.replaceAll(RegExp(r'\s+'), '');
+    
+    // Normalize Moroccan numbers: if 10 digits starting with '0', also try '+212' format
+    List<String> phoneVariants = [phone];
+    if (phone.length == 10 && phone.startsWith('0')) {
+      phoneVariants.add('+212${phone.substring(1)}');
+    }
+
     final row = await client
         .from(tableName)
         .select('email')
-        .eq('phone', identifier)
+        .or('phone.eq.${phoneVariants.join(",phone.eq.")}')
         .maybeSingle();
+        
     return row?['email'] as String?;
   }
 

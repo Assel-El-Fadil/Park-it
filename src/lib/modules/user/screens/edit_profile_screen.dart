@@ -329,13 +329,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   }
                 } else if (isPhone) {
                   await ref.read(authNotifierProvider.notifier).updatePhone(controller.text.trim());
+                  await ref.read(authNotifierProvider.notifier).checkAuthState();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('A verification SMS has been sent to ${controller.text.trim()}.')),
-                    );
-                    context.pushNamed(
-                      AuthRoutes.verifyOtp, 
-                      extra: {'phone': controller.text.trim()},
+                      const SnackBar(content: Text('Phone number updated successfully.')),
                     );
                   }
                 } else {

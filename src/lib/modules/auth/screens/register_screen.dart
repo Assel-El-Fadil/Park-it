@@ -143,24 +143,13 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
         );
 
     if (needsVerification && mounted) {
-      final phone = _phoneController.text.trim();
-      if (phone.isNotEmpty) {
-        // Email verification is handled via the confirmation link.
-        // Now also verify phone via SMS OTP.
-        context.goNamed(AuthRoutes.verifyOtp, extra: {
-          'email': _emailController.text.trim(),
-          'phone': phone,
-        });
-      } else {
-        // Email-only registration: email confirmation link is sent automatically.
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('A confirmation link has been sent to your email. Please verify your email to log in.'),
-            duration: Duration(seconds: 5),
-          ),
-        );
-        context.go(AuthRoutes.login);
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('A confirmation link has been sent to your email. Please verify your email to log in.'),
+          duration: Duration(seconds: 5),
+        ),
+      );
+      context.go(AuthRoutes.login);
     }
   }
 
