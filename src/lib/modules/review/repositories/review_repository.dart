@@ -28,6 +28,23 @@ class ReviewRepository {
       throw const AppException('Failed to create review.');
     }
   }
+
+  Future<List<ReviewModel>> getReviewsByReviewer(int reviewerId) async {
+    try {
+      final rows = await _client
+          .from('reviews')
+          .select()
+          .eq('reviewer_id', reviewerId)
+          .order('created_at', ascending: false);
+      return (rows as List)
+          .map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw AppException(e.message);
+    } catch (_) {
+      throw const AppException('Failed to load your reviews.');
+    }
+  }
 }
 
 final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {

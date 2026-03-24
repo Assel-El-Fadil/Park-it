@@ -14,11 +14,23 @@ class OwnerDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(currentUserProvider);
-    final ownerId = int.tryParse(currentUser?.id ?? '') ?? 1;
+    final ownerId = currentUser?.id ?? '';
 
     final spots = ref.watch(
       ownerStoreProvider.select(
-        (s) => s.spots.where((p) => p.ownerId == ownerId).toList(),
+        (s) => s.spots.where((p) => p.ownerId == ownerId && p.lotId == null).toList(),
+      ),
+    );
+
+    final lots = ref.watch(
+      ownerStoreProvider.select(
+        (s) => s.lots.where((l) => l.ownerId == ownerId).toList(),
+      ),
+    );
+
+    final lotSpots = ref.watch(
+      ownerStoreProvider.select(
+        (s) => s.spots.where((p) => p.ownerId == ownerId && p.lotId != null).toList(),
       ),
     );
 
@@ -68,9 +80,19 @@ class OwnerDashboardScreen extends ConsumerWidget {
               _KpiGrid(
                 items: [
                   _KpiItem(
-                    label: 'Total spots',
+                    label: 'Standalone spots',
                     value: '$totalSpots',
                     icon: Icons.local_parking_outlined,
+                  ),
+                  _KpiItem(
+                    label: 'Parking lots',
+                    value: '${lots.length}',
+                    icon: Icons.garage_outlined,
+                  ),
+                  _KpiItem(
+                    label: 'Lot spots',
+                    value: '${lotSpots.length}',
+                    icon: Icons.grid_view_outlined,
                   ),
                   _KpiItem(
                     label: 'Total bookings',

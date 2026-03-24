@@ -16,7 +16,7 @@ final userReservationsProvider = FutureProvider<List<Map<String, dynamic>>>((
   if (user == null) return [];
 
   final repo = ref.read(reservationRepositoryProvider);
-  final userId = int.tryParse(user.id) ?? 0;
+  final userId = user.id;
   return repo.getReservationsWithSpots(userId);
 });
 
