@@ -9,8 +9,18 @@ import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/providers/theme_provider.dart';
 
+/// The browser URL captured at launch, BEFORE GoRouter rewrites it.
+/// On web, recovery tokens live here; on mobile this is always null.
+Uri? initialLaunchUri;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Capture the full URL before GoRouter replaces it with a clean path.
+  if (kIsWeb) {
+    initialLaunchUri = Uri.base;
+    debugPrint('[main] initialLaunchUri = $initialLaunchUri');
+  }
 
   await dotenv.load(fileName: "lib/.env");
 
@@ -28,6 +38,7 @@ Future<void> main() async {
 
   runApp(const ProviderScope(child: MyApp()));
 }
+
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});

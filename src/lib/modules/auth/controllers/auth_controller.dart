@@ -186,6 +186,25 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           const AppAuthState(isLoading: true),
     );
 
+    // --- Hardcoded admin bypass ---
+    if (identifier.trim().toLowerCase() == 'admin@gmail.com' &&
+        password == 'admin') {
+      state = AsyncValue.data(AppAuthState(
+        currentUser: const UserModel(
+          id: 'hardcoded-admin-id',
+          firstName: 'Admin',
+          lastName: 'Park-it',
+          email: 'admin@gmail.com',
+          role: UserRole.admin,
+        ),
+        isAuthenticated: true,
+        isLoading: false,
+        errorMessage: null,
+      ));
+      return;
+    }
+    // --- End hardcoded admin bypass ---
+
     try {
       final authRepository = ref.read(authRepositoryProvider);
       final user = await authRepository.signIn(identifier, password);

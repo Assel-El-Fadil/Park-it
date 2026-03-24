@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/main.dart' show initialLaunchUri;
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
@@ -58,63 +59,116 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     if (_sessionPrepared) return;
 
     final client = Supabase.instance.client;
+
+    // 1. Session already set (e.g. by detectSessionInUri at boot).
     if (client.auth.currentSession != null) {
+      debugPrint('[ResetPwd] Session already present.');
       _sessionPrepared = true;
       return;
     }
 
-    // Preferred: let Supabase parse and store session from callback URL.
-    // This handles both query and fragment formats.
-    try {
-      await client.auth.getSessionFromUrl(Uri.base);
-      if (client.auth.currentSession != null) {
-        _sessionPrepared = true;
-        return;
-      }
-    } catch (_) {
-      // Continue with manual fallbacks below.
-    }
+    // 2. Parse tokens from the launch URL.
+    //
+    //    With hash-routing redirect (http://localhost:3000/#/reset-password),
+    //    Supabase implicit flow produces a DOUBLE-HASH URL:
+    //      http://localhost:3000/#/reset-password#access_token=xxx&refresh_token=yyy&type=recovery
+    //
+    //    Dart's Uri sees the entire fragment as:
+    //      /reset-password#access_token=xxx&refresh_token=yyy&type=recovery
+    //
+    //    We must split on BOTH '#' and '?' inside the fragment to extract
+    //    the token query string.
+    final savedUri = initialLaunchUri ?? Uri.base;
+    debugPrint('[ResetPwd] Parsing URL: $savedUri');
+    debugPrint('[ResetPwd] fragment: ${savedUri.fragment}');
 
-    final uri = Uri.base;
+    final params = <String, String>{...savedUri.queryParameters};
 
-    // Supabase recovery links on web can place params in query or fragment.
-    final params = <String, String>{...uri.queryParameters};
-    if (uri.fragment.isNotEmpty) {
-      final fragment = uri.fragment;
-      final queryPart = fragment.contains('?')
-          ? fragment.substring(fragment.indexOf('?') + 1)
-          : '';
-      if (queryPart.isNotEmpty) {
+    if (savedUri.fragment.isNotEmpty) {
+      final fragment = savedUri.fragment;
+
+      // Find the token separator: could be '#' (implicit flow) or '?' (PKCE)
+      int sepIdx = fragment.indexOf('#');
+      if (sepIdx == -1) sepIdx = fragment.indexOf('?');
+
+      if (sepIdx != -1 && sepIdx < fragment.length - 1) {
+        final tokenStr = fragment.substring(sepIdx + 1);
+        debugPrint('[ResetPwd] tokenStr from fragment: $tokenStr');
         try {
-          params.addAll(Uri.splitQueryString(queryPart));
+          params.addAll(Uri.splitQueryString(tokenStr));
         } catch (_) {}
       }
     }
 
-    final code = params['code'];
+    debugPrint('[ResetPwd] Extracted params: ${params.keys.toList()}');
+
+    final accessToken = params['access_token'];
     final refreshToken = params['refresh_token'];
+    final code = params['code'];
 
-    // 1) Try exchanging recovery code first.
-    if (code != null && code.isNotEmpty) {
-      try {
-        await client.auth.exchangeCodeForSession(code);
-        _sessionPrepared = true;
-        return;
-      } catch (_) {
-        // Continue to fallback below.
-      }
-    }
-
-    // 2) Fallback: use refresh token directly when present.
+    // Strategy A: setSession with refresh_token (implicit flow).
     if (refreshToken != null && refreshToken.isNotEmpty) {
+      debugPrint('[ResetPwd] Trying setSession(refreshToken)...');
       try {
         await client.auth.setSession(refreshToken);
-        _sessionPrepared = true;
-        return;
-      } catch (_) {
-        // Keep silent here; submit will show explicit error from auth service.
+        if (client.auth.currentSession != null) {
+          debugPrint('[ResetPwd] setSession succeeded.');
+          _sessionPrepared = true;
+          return;
+        }
+      } catch (e) {
+        debugPrint('[ResetPwd] setSession failed: $e');
       }
     }
+
+    // Strategy B: exchangeCodeForSession (PKCE flow).
+    if (code != null && code.isNotEmpty) {
+      debugPrint('[ResetPwd] Trying exchangeCodeForSession...');
+      try {
+        await client.auth.exchangeCodeForSession(code);
+        if (client.auth.currentSession != null) {
+          debugPrint('[ResetPwd] exchangeCodeForSession succeeded.');
+          _sessionPrepared = true;
+          return;
+        }
+      } catch (e) {
+        debugPrint('[ResetPwd] exchangeCodeForSession failed: $e');
+      }
+    }
+
+    // Strategy C: build a clean URL with tokens as query params and let
+    // Supabase parse it.
+    if (accessToken != null && accessToken.isNotEmpty) {
+      debugPrint('[ResetPwd] Trying getSessionFromUrl with synthetic URL...');
+      try {
+        final syntheticUri = Uri(
+          scheme: savedUri.scheme,
+          host: savedUri.host,
+          port: savedUri.port,
+          path: '/',
+          queryParameters: params,
+        );
+        await client.auth.getSessionFromUrl(syntheticUri);
+        if (client.auth.currentSession != null) {
+          debugPrint('[ResetPwd] getSessionFromUrl succeeded.');
+          _sessionPrepared = true;
+          return;
+        }
+      } catch (e) {
+        debugPrint('[ResetPwd] getSessionFromUrl failed: $e');
+      }
+    }
+
+    // Strategy D: wait briefly for Supabase auth stream to fire.
+    debugPrint('[ResetPwd] Waiting 2s for auth stream...');
+    await Future.delayed(const Duration(seconds: 2));
+    if (client.auth.currentSession != null) {
+      debugPrint('[ResetPwd] Session appeared after wait.');
+      _sessionPrepared = true;
+      return;
+    }
+
+    debugPrint('[ResetPwd] All strategies exhausted. No session found.');
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/main.dart' show initialLaunchUri;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -230,44 +231,96 @@ class AuthService {
   }
 
   Future<void> _tryRecoverSessionFromUrl() async {
-    // Strategy 1: let Supabase parse callback URL automatically.
-    try {
-      await _client.auth.getSessionFromUrl(Uri.base);
-      if (_client.auth.currentSession != null) return;
-    } catch (_) {}
+    // If the session is already set (by detectSessionInUri at boot), skip.
+    if (_client.auth.currentSession != null) {
+      debugPrint('[AuthService] Session already present, skipping URL recovery.');
+      return;
+    }
 
-    final uri = Uri.base;
+    final uri = initialLaunchUri ?? Uri.base;
+
+    // Build a flat param map covering both query and fragment params.
+    // With hash routing + implicit flow, Supabase produces a double-hash URL:
+    //   #/reset-password#access_token=xxx&refresh_token=yyy&type=recovery
+    // Dart sees fragment = "/reset-password#access_token=xxx&..."
+    // We split on '#' or '?' inside the fragment to extract the token part.
     final params = <String, String>{...uri.queryParameters};
-
-    // Strategy 2: parse hash/fragment parameters when using web hash routing.
     if (uri.fragment.isNotEmpty) {
-      final fragment = uri.fragment;
-      final queryPart = fragment.contains('?')
-          ? fragment.substring(fragment.indexOf('?') + 1)
-          : '';
-      if (queryPart.isNotEmpty) {
+      final frag = uri.fragment;
+      int sepIdx = frag.indexOf('#');
+      if (sepIdx == -1) sepIdx = frag.indexOf('?');
+      if (sepIdx != -1 && sepIdx < frag.length - 1) {
         try {
-          params.addAll(Uri.splitQueryString(queryPart));
+          params.addAll(Uri.splitQueryString(frag.substring(sepIdx + 1)));
         } catch (_) {}
       }
     }
+    debugPrint('[AuthService] params keys: ${params.keys.toList()}');
 
-    // Strategy 3: if refresh_token exists, set session directly.
+    final accessToken  = params['access_token'];
     final refreshToken = params['refresh_token'];
-    if (refreshToken != null && refreshToken.isNotEmpty) {
+    final code         = params['code'];
+
+    // Strategy 1: access_token + refresh_token (implicit recovery flow).
+    if (accessToken != null && accessToken.isNotEmpty &&
+        refreshToken != null && refreshToken.isNotEmpty) {
       try {
         await _client.auth.setSession(refreshToken);
-        if (_client.auth.currentSession != null) return;
-      } catch (_) {}
+        if (_client.auth.currentSession != null) {
+          debugPrint('[AuthService] Strategy 1 (setSession) succeeded.');
+          return;
+        }
+      } catch (e) {
+        debugPrint('[AuthService] Strategy 1 failed: $e');
+      }
     }
 
-    // Strategy 4: fallback to code exchange if code is available.
-    final code = params['code'];
+    // Strategy 2: PKCE code exchange.
     if (code != null && code.isNotEmpty) {
       try {
         await _client.auth.exchangeCodeForSession(code);
-      } catch (_) {}
+        if (_client.auth.currentSession != null) {
+          debugPrint('[AuthService] Strategy 2 (exchangeCode) succeeded.');
+          return;
+        }
+      } catch (e) {
+        debugPrint('[AuthService] Strategy 2 failed: $e');
+      }
     }
+
+    // Strategy 3: let Supabase parse the full URL automatically.
+    try {
+      await _client.auth.getSessionFromUrl(uri);
+      if (_client.auth.currentSession != null) {
+        debugPrint('[AuthService] Strategy 3 (getSessionFromUrl) succeeded.');
+        return;
+      }
+    } catch (e) {
+      debugPrint('[AuthService] Strategy 3 failed: $e');
+    }
+
+    // Strategy 4: synthetic URL without hash fragment.
+    if (accessToken != null && accessToken.isNotEmpty) {
+      try {
+        final syntheticUri = Uri(
+          scheme: uri.scheme,
+          host: uri.host,
+          port: uri.port,
+          path: '/',
+          queryParameters: params,
+        );
+        await _client.auth.getSessionFromUrl(syntheticUri);
+        if (_client.auth.currentSession != null) {
+          debugPrint('[AuthService] Strategy 4 (synthetic URL) succeeded.');
+          return;
+        }
+      } catch (e) {
+        debugPrint('[AuthService] Strategy 4 failed: $e');
+      }
+    }
+
+    debugPrint('[AuthService] All recovery strategies failed. '
+        'Session: ${_client.auth.currentSession}');
   }
 
   Future<void> updatePhone(String newPhone) async {
