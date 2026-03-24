@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:src/modules/owner/screens/add_parking_lot_screen.dart';
+import 'package:src/modules/owner/screens/add_parking_space_screen.dart';
 import 'package:src/modules/owner/screens/add_spot_to_lot_screen.dart';
 import 'package:src/modules/owner/screens/edit_parking_space_screen.dart';
 import 'package:src/modules/owner/screens/owner_bookings_screen.dart';
@@ -9,6 +10,7 @@ import 'package:src/modules/owner/screens/owner_parkings_hub_screen.dart';
 import 'package:src/modules/owner/screens/owner_parking_lots_screen.dart';
 import 'package:src/modules/owner/screens/owner_parking_lot_detail_screen.dart';
 import 'package:src/modules/owner/screens/owner_shell_screen.dart';
+import 'package:src/modules/owner/screens/owner_parking_spaces_screen.dart';
 import 'package:src/modules/owner/screens/owner_standalone_spot_screen.dart';
 import 'package:src/modules/owner/screens/owner_dynamic_pricing_screen.dart';
 import 'package:src/modules/owner/screens/owner_availability_screen.dart';
@@ -104,6 +106,21 @@ List<GoRoute> getOwnerRoutes() {
       name: OwnerRoutes.ownerStandaloneSpot,
       builder: (context, state) => const OwnerStandaloneSpotScreen(),
     ),
+
+    // Add Parking Space
+    GoRoute(
+      path: OwnerRoutes.addParkingSpacePath,
+      name: OwnerRoutes.addParkingSpace,
+      builder: (context, state) => const AddParkingSpaceScreen(),
+    ),
+
+    // Parking Spaces List
+    GoRoute(
+      path: OwnerRoutes.parkingSpacesPath,
+      name: OwnerRoutes.parkingSpaces,
+      builder: (context, state) => const OwnerParkingSpacesScreen(),
+    ),
+
     // Spots CRUD
     GoRoute(
       path: OwnerRoutes.editParkingSpacePath,
