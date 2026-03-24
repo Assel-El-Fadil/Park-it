@@ -47,7 +47,7 @@ class AvailabilityModel {
     return AvailabilityModel(
       id: json['id'] as int,
       spotId: json['spot_id'] as int,
-      dayOfWeek: json['day_of_week'] as int,
+      dayOfWeek: (json['day_of_week'] as num?)?.toInt() ?? -1,
       isBlocked: json['is_blocked'] as bool,
       openTime: _parseTime(json['open_time'] as String),
       closeTime: _parseTime(json['close_time'] as String),
