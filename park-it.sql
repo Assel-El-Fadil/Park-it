@@ -45,7 +45,7 @@ CREATE TYPE report_status AS ENUM ('PENDING', 'RESOLVED', 'DISMISSED');
 -- ========================
 
 CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   first_name VARCHAR NOT NULL,
   last_name VARCHAR NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE users (
 CREATE TABLE user_auth_providers (
   id SERIAL PRIMARY KEY,
 
-  user_id INT NOT NULL REFERENCES users(id),
+  user_id UUID NOT NULL REFERENCES users(id),
 
   provider VARCHAR NOT NULL,           -- GOOGLE / FACEBOOK / APPLE
   provider_user_id VARCHAR NOT NULL,
@@ -105,7 +105,7 @@ CREATE TABLE user_auth_providers (
 CREATE TABLE vehicles (
   id SERIAL PRIMARY KEY,
 
-  owner_id INT NOT NULL REFERENCES users(id),
+  owner_id UUID NOT NULL REFERENCES users(id),
 
   plate_number VARCHAR UNIQUE NOT NULL,
 
@@ -128,7 +128,7 @@ CREATE TABLE vehicles (
 CREATE TABLE parking_lots (
   id SERIAL PRIMARY KEY,
 
-  owner_id INT NOT NULL REFERENCES users(id),
+  owner_id UUID NOT NULL REFERENCES users(id),
 
   name VARCHAR NOT NULL,
   description TEXT,
@@ -160,7 +160,7 @@ CREATE TABLE parking_lots (
 CREATE TABLE parking_spots (
   id SERIAL PRIMARY KEY,
 
-  owner_id INT NOT NULL REFERENCES users(id),
+  owner_id UUID NOT NULL REFERENCES users(id),
 
   lot_id INT REFERENCES parking_lots(id),
 
@@ -208,7 +208,7 @@ CREATE TABLE parking_spots (
 CREATE TABLE reservations (
   id SERIAL PRIMARY KEY,
 
-  driver_id INT NOT NULL REFERENCES users(id),
+  driver_id UUID NOT NULL REFERENCES users(id),
 
   spot_id INT NOT NULL REFERENCES parking_spots(id),
 
@@ -243,7 +243,7 @@ CREATE TABLE payments (
 
   reservation_id INT UNIQUE NOT NULL REFERENCES reservations(id),
 
-  payer_id INT NOT NULL REFERENCES users(id),
+  payer_id UUID NOT NULL REFERENCES users(id),
 
   amount FLOAT NOT NULL,
 
@@ -281,7 +281,7 @@ CREATE TABLE reviews (
 
   reservation_id INT UNIQUE NOT NULL REFERENCES reservations(id),
 
-  reviewer_id INT NOT NULL REFERENCES users(id),
+  reviewer_id UUID NOT NULL REFERENCES users(id),
 
   spot_id INT NOT NULL REFERENCES parking_spots(id),
 
@@ -305,7 +305,7 @@ CREATE TABLE reviews (
 CREATE TABLE notifications (
   id SERIAL PRIMARY KEY,
 
-  user_id INT NOT NULL REFERENCES users(id),
+  user_id UUID NOT NULL REFERENCES users(id),
 
   type notification_type NOT NULL,
 
@@ -333,7 +333,7 @@ CREATE TABLE notifications (
 CREATE TABLE reports (
   id SERIAL PRIMARY KEY,
 
-  reporter_id INT NOT NULL REFERENCES users(id),
+  reporter_id UUID NOT NULL REFERENCES users(id),
 
   target_id INT NOT NULL,
 
@@ -345,7 +345,7 @@ CREATE TABLE reports (
 
   status report_status NOT NULL DEFAULT 'PENDING',
 
-  resolved_by INT REFERENCES users(id),
+  resolved_by UUID REFERENCES users(id),
 
   resolution TEXT,
 
@@ -362,7 +362,7 @@ CREATE TABLE reports (
 CREATE TABLE wishlists (
   id SERIAL PRIMARY KEY,
 
-  user_id INT NOT NULL REFERENCES users(id),
+  user_id UUID NOT NULL REFERENCES users(id),
 
   spot_id INT NOT NULL REFERENCES parking_spots(id),
 

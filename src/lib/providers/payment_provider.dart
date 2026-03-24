@@ -3,6 +3,7 @@ import 'package:flutter_stripe/flutter_stripe.dart' hide PaymentMethod;
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/payment/models/payment_state.dart';
 import 'package:src/modules/payment/services/payment_service.dart';
+import 'package:src/modules/reservation/providers/reservation_providers.dart';
 
 class PaymentNotifier extends Notifier<PaymentState> {
   late final PaymentService _service;
@@ -15,7 +16,7 @@ class PaymentNotifier extends Notifier<PaymentState> {
 
   Future<bool> processPayment({
     required int reservationId,
-    required int payerId,
+    required String payerId,
     required double amount,
     required PaymentMethod method,
     String currency = 'MAD',
@@ -31,7 +32,12 @@ class PaymentNotifier extends Notifier<PaymentState> {
         currency: currency,
       );
 
+
       state = state.copyWith(status: PaymentStatus.succeeded, payment: payment);
+      
+      // Invalidate reservations to refresh statuses (CONFIRMED)
+      ref.invalidate(userReservationsProvider);
+      
       return true;
     } on StripeException catch (e) {
       if (e.error.code == FailureCode.Canceled) {

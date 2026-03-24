@@ -16,7 +16,7 @@ class PaymentRepository extends SupabaseRepository<PaymentModel> {
   PaymentModel fromJson(Map<String, dynamic> json) =>
       PaymentModel.fromJson(json);
 
-  Future<List<PaymentModel>> getByPayerId(int payerId) async {
+  Future<List<PaymentModel>> getByPayerId(String payerId) async {
     final response = await client
         .from(tableName)
         .select()
@@ -147,8 +147,37 @@ class PaymentRepository extends SupabaseRepository<PaymentModel> {
     return (response as List).map((e) => fromJson(e)).toList();
   }
 
+  Future<List<Map<String, dynamic>>> getOwnerEarningsData(
+    String ownerId, {
+    int days = 30,startDate,
+    DateTime? endDate,
+  }) async {
+    var query = client
+        .from(tableName)
+        .select('owner_payout')
+        .eq('owner_id', ownerId)
+        .eq('status', PaymentStatus.succeeded.toJson());
+
+    final now = DateTime.now();
+    final defaultStartDate = now.subtract(Duration(days: days));
+
+    if (startDate != null) {
+      query = query.gte('created_at', startDate.toIso8601String());
+    } else {
+      query = query.gte('created_at', defaultStartDate.toIso8601String());
+    }
+    if (endDate != null) {
+      query = query.lte('created_at', endDate.toIso8601String());
+    } else {
+      query = query.lte('created_at', now.toIso8601String());
+    }
+
+    final response = await query;
+    return (response as List).cast<Map<String, dynamic>>();
+  }
+
   Future<double> getTotalRevenueForOwner(
-    int ownerId, {
+    String ownerId, {
     DateTime? startDate,
     DateTime? endDate,
   }) async {

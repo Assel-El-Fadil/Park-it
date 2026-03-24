@@ -10,7 +10,7 @@ import 'package:src/shared/widgets/section_header.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/modules/payment/widgets/order_summary.dart';
-import 'package:src/modules/reservation/screens/reservations_screen.dart';
+import 'package:src/modules/reservation/providers/reservation_providers.dart';
 
 final reservationDetailProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, id) async {
   final repo = ref.read(reservationRepositoryProvider);

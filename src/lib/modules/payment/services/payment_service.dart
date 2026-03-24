@@ -40,7 +40,7 @@ class PaymentService {
 
   Future<PaymentModel> processPayment({
     required int reservationId,
-    required int payerId,
+    required String payerId,
     required double amount,
     required PaymentMethod method,
     String currency = 'MAD',

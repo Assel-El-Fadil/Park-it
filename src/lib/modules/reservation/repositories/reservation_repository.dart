@@ -21,7 +21,7 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
   Map<String, dynamic> toJson(ReservationModel item) => item.toJson();
 
   Future<ReservationModel> createReservation({
-    required int driverId,
+    required String driverId,
     required int spotId,
     required int vehicleId,
     required DateTime startTime,
@@ -34,13 +34,13 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
           'driver_id': driverId,
           'spot_id': spotId,
           'vehicle_id': vehicleId,
-          'start_time': startTime.toIso8601String(),
-          'end_time': endTime.toIso8601String(),
+          'start_time': startTime.toUtc().toIso8601String(),
+          'end_time': endTime.toUtc().toIso8601String(),
           'status': 'PENDING',
           'total_price': totalPrice,
           'platform_fee': double.parse((totalPrice * 0.15).toStringAsFixed(2)),
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
+          'created_at': DateTime.now().toUtc().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .select()
         .single();
@@ -48,7 +48,7 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
     return fromJson(response);
   }
 
-  Future<List<Map<String, dynamic>>> getReservationsWithSpots(int driverId) async {
+  Future<List<Map<String, dynamic>>> getReservationsWithSpots(String driverId) async {
     final response = await client
         .from(tableName)
         .select('*, parking_spots(*)')
@@ -63,7 +63,7 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
         .from(tableName)
         .update({
           'status': 'CANCELLED',
-          'updated_at': DateTime.now().toIso8601String()
+          'updated_at': DateTime.now().toUtc().toIso8601String()
         })
         .eq('id', reservationId);
   }

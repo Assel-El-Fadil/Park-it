@@ -47,8 +47,8 @@ class ParkingSpotRepository extends SupabaseRepository<ParkingSpotModel> {
         .from('reservations')
         .select('spot_id')
         .filter('spot_id', 'in', spotIds)
-        .lt('start_time', end.toIso8601String())
-        .gt('end_time', start.toIso8601String())
+        .lt('start_time', end.toUtc().toIso8601String())
+        .gt('end_time', start.toUtc().toIso8601String())
         .filter('status', 'in', ['CONFIRMED', 'ACTIVE', 'PENDING']);
 
     final reservedIds =

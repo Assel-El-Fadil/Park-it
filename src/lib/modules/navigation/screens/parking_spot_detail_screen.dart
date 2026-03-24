@@ -16,6 +16,8 @@ import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/navigation/routes/navigation_routes.dart';
 import 'package:src/shared/widgets/photo_carousel.dart';
 import 'package:src/core/config/routes/app_routes.dart';
+import 'package:src/modules/reservation/providers/reservation_providers.dart';
+import 'package:src/modules/navigation/screens/parking_results_screen.dart';
 
 final parkingSpotDetailProvider = FutureProvider.family<ParkingSpotModel?, String>((ref, id) {
   final repo = ref.read(parkingSpotRepositoryProvider);
@@ -292,13 +294,17 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                                   final reservationRepo = ref.read(reservationRepositoryProvider);
 
                                   final reservation = await reservationRepo.createReservation(
-                                    driverId: int.parse(currentUser.id),
+                                    driverId: currentUser.id,
                                     spotId: spot.id,
                                     vehicleId: int.parse(defaultVehicle.id),
                                     startTime: bookingTime.arriveTime,
                                     endTime: bookingTime.exitTime,
                                     totalPrice: spot.pricePerHour * duration,
                                   );
+
+                                  // Invalidate providers to refresh data
+                                  ref.invalidate(userReservationsProvider);
+                                  ref.invalidate(parkingSearchResultsProvider);
 
                                   if (context.mounted) {
                                     AppNavigator.pushNamed(

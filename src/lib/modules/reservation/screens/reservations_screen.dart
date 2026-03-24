@@ -10,15 +10,8 @@ import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/common_bottom_nav.dart';
 import 'package:src/shared/widgets/section_header.dart';
 import 'package:src/core/config/themes/app_theme.dart';
+import 'package:src/modules/reservation/providers/reservation_providers.dart';
 
-final userReservationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final user = ref.watch(currentUserProvider);
-  if (user == null) return [];
-  
-  final repo = ref.read(reservationRepositoryProvider);
-  final userId = int.tryParse(user.id) ?? 0;
-  return repo.getReservationsWithSpots(userId);
-});
 
 class ReservationsScreen extends ConsumerWidget {
   const ReservationsScreen({super.key});

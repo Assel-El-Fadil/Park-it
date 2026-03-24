@@ -1,6 +1,6 @@
 class AuthProviderModel {
   final int id;
-  final int userId;
+  final String userId;
   final String provider;
   final String providerUserId;
   final DateTime createdAt;
@@ -16,7 +16,7 @@ class AuthProviderModel {
   factory AuthProviderModel.fromJson(Map<String, dynamic> json) {
     return AuthProviderModel(
       id: json['id'] as int,
-      userId: json['user_id'] as int,
+      userId: json['user_id'].toString(),
       provider: json['provider'] as String,
       providerUserId: json['provider_user_id'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),

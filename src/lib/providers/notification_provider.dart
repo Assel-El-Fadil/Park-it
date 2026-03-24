@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:src/core/enums/app_enums.dart';
-import 'package:src/modules/notification/models/notification_model.dart';
-import 'package:src/modules/notification/services/notification_service.dart';
+import '../modules/notification/models/notification_model.dart';
+import '../modules/notification/services/notification_service.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
@@ -10,27 +10,31 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 
 // Notification provider
 final notificationProvider =
-    StateNotifierProvider<NotificationNotifier, List<NotificationModel>>((ref) {
-      final service = ref.watch(notificationServiceProvider);
-      return NotificationNotifier(service);
+    NotifierProvider<NotificationNotifier, List<NotificationModel>>(() {
+      return NotificationNotifier();
     });
 
-class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
-  final NotificationService _service;
+class NotificationNotifier extends Notifier<List<NotificationModel>> {
+  late final NotificationService _service;
+  String _userId = ''; // This should come from your auth provider
 
-  int _currentUserId = 123; // This should come from your auth provider
-
-  NotificationNotifier(this._service) : super([]) {
+  @override
+  List<NotificationModel> build() {
+    _service = ref.watch(notificationServiceProvider);
+    // Listen for changes in the user ID if it comes from another provider
+    // For now, we'll assume setCurrentUserId is called externally.
     _loadNotifications();
+    return [];
   }
 
   Future<void> _loadNotifications() async {
+    if (_userId.isEmpty) return;
     try {
-      final notifications = await _service.getUserNotifications(_currentUserId);
+      final notifications = await _service.getUserNotifications(_userId);
       state = notifications;
     } catch (e) {
+      print('Error loading notifications: $e');
       state = [];
-      throw Exception('Error loading notifications: $e');
     }
   }
 
@@ -38,55 +42,28 @@ class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
     await _loadNotifications();
   }
 
-  Future<void> markAsRead(int id) async {
+  Future<void> markAsRead(int notificationId) async {
     try {
-      await _service.markNotificationAsRead(id);
+      await _service.markNotificationAsRead(notificationId);
 
       // Update local state
-      state = state.map((notification) {
-        if (notification.id == id) {
-          return NotificationModel(
-            id: notification.id,
-            userId: notification.userId,
-            type: notification.type,
-            title: notification.title,
-            content: notification.content,
-            referenceId: notification.referenceId,
-            referenceType: notification.referenceType,
-            isRead: true,
-            channel: notification.channel,
-            sentAt: notification.sentAt,
-            createdAt: notification.createdAt,
-          );
-        }
-        return notification;
-      }).toList();
+      state = [
+        for (final n in state)
+          if (n.id == notificationId) n.copyWith(isRead: true) else n
+      ];
     } catch (e) {
-      throw Exception('Error marking notification as read: $e');
+      print('Error marking notification as read: $e');
     }
   }
 
   Future<void> markAllAsRead() async {
+    if (_userId.isEmpty) return;
     try {
-      await _service.markAllUserNotificationsAsRead(_currentUserId);
+      await _service.markAllUserNotificationsAsRead(_userId);
 
-      state = state.map((notification) {
-        return NotificationModel(
-          id: notification.id,
-          userId: notification.userId,
-          type: notification.type,
-          title: notification.title,
-          content: notification.content,
-          referenceId: notification.referenceId,
-          referenceType: notification.referenceType,
-          isRead: true,
-          channel: notification.channel,
-          sentAt: notification.sentAt,
-          createdAt: notification.createdAt,
-        );
-      }).toList();
+      state = [for (final n in state) n.copyWith(isRead: true)];
     } catch (e) {
-      throw Exception('Error marking all as read: $e');
+      print('Error marking all notifications as read: $e');
     }
   }
 
@@ -95,7 +72,7 @@ class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
       await _service.deleteNotification(id);
       state = state.where((notification) => notification.id != id).toList();
     } catch (e) {
-      throw Exception('Error deleting notification: $e');
+      print('Error deleting notification: $e');
     }
   }
 
@@ -104,7 +81,7 @@ class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
       await _service.clearAllNotifications();
       state = [];
     } catch (e) {
-      throw Exception('Error clearing notifications: $e');
+      print('Error clearing notifications: $e');
     }
   }
 
@@ -119,16 +96,26 @@ class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
 
   int get unreadCount => state.where((n) => !n.isRead).length;
 
-  void setCurrentUserId(int userId) {
-    _currentUserId = userId;
+  void setCurrentUserId(String userId) {
+    _userId = userId;
     _loadNotifications();
   }
 }
 
-// Filter provider
-final notificationFilterProvider = StateProvider<NotificationType?>(
-  (ref) => null,
-);
+// Filter notifier
+class NotificationFilterNotifier extends Notifier<NotificationType?> {
+  @override
+  NotificationType? build() => null;
+
+  void setFilter(NotificationType? filter) {
+    state = filter;
+  }
+}
+
+final notificationFilterProvider =
+    NotifierProvider<NotificationFilterNotifier, NotificationType?>(() {
+  return NotificationFilterNotifier();
+});
 
 // Filtered notifications provider
 final filteredNotificationsProvider = Provider<List<NotificationModel>>((ref) {

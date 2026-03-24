@@ -2,7 +2,7 @@ import 'package:src/core/enums/app_enums.dart';
 
 class VehicleModel {
   final int id;
-  final int ownerId;
+  final String ownerId;
   final String plateNumber;
   final VehicleType type;
   final String brand;
@@ -26,7 +26,7 @@ class VehicleModel {
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
     return VehicleModel(
       id: json['id'] as int,
-      ownerId: json['owner_id'] as int,
+      ownerId: json['owner_id'].toString(),
       plateNumber: json['plate_number'] as String,
       type: VehicleType.fromString(json['type'] as String),
       brand: json['brand'] as String,

@@ -3,7 +3,7 @@ import 'package:src/modules/navigation/models/spot_model.dart';
 
 class ParkingSpotModel {
   final int id;
-  final int ownerId;
+  final String ownerId;
   final int? lotId;
   final String title;
   final String? description;
@@ -59,7 +59,7 @@ class ParkingSpotModel {
   factory ParkingSpotModel.fromJson(Map<String, dynamic> json) {
     return ParkingSpotModel(
       id: json['id'] as int,
-      ownerId: json['owner_id'] as int,
+      ownerId: json['owner_id'].toString(),
       lotId: json['lot_id'] as int?,
       title: json['title'] as String,
       description: json['description'] as String?,

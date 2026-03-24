@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/modules/navigation/routes/navigation_routes.dart';
+import 'package:src/shared/widgets/common_bottom_nav.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -117,6 +118,10 @@ class _LandingPageState extends State<LandingPage> {
                                     child: TextField(
                                       controller: _searchController,
                                       onSubmitted: (_) => _onSearch(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
                                       decoration: const InputDecoration(
                                         hintText:
                                             'Search Address, Place or Event',
@@ -189,6 +194,7 @@ class _LandingPageState extends State<LandingPage> {
           ),
         ],
       ),
+      bottomNavigationBar: const CommonBottomNav(currentIndex: 0),
     );
   }
 }

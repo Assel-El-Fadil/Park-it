@@ -41,15 +41,15 @@ class NotificationService {
   }
 
   // User-specific methods
-  Future<List<NotificationModel>> getUserNotifications(int userId) async {
+  Future<List<NotificationModel>> getUserNotifications(String userId) async {
     return await _repository.getByUserId(userId);
   }
 
-  Future<List<NotificationModel>> getUserUnreadNotifications(int userId) async {
+  Future<List<NotificationModel>> getUserUnreadNotifications(String userId) async {
     return await _repository.getUnreadByUserId(userId);
   }
 
-  Future<int> getUserUnreadCount(int userId) async {
+  Future<int> getUserUnreadCount(String userId) async {
     return await _repository.getUnreadCount(userId);
   }
 
@@ -58,20 +58,20 @@ class NotificationService {
     await _repository.markAsRead(notificationId);
   }
 
-  Future<void> markAllUserNotificationsAsRead(int userId) async {
+  Future<void> markAllUserNotificationsAsRead(String userId) async {
     await _repository.markAllAsReadForUser(userId);
   }
 
   // Filter methods
   Future<List<NotificationModel>> getUserNotificationsByType(
-    int userId,
+    String userId,
     NotificationType type,
   ) async {
     return await _repository.getByType(userId, type);
   }
 
   Future<List<NotificationModel>> getUserNotificationsByReference(
-    int userId,
+    String userId,
     String referenceType,
     int referenceId,
   ) async {

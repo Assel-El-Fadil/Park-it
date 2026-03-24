@@ -2,7 +2,7 @@ import 'package:src/core/enums/app_enums.dart';
 
 class NotificationModel {
   final int id; //notification id
-  final int userId; // target user
+  final String userId; // target user
   final NotificationType type; //paymentFailed, paymentReceived e.t.c
   final String title;
   final String content;
@@ -30,7 +30,7 @@ class NotificationModel {
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] as int,
-      userId: json['user_id'] as int,
+      userId: json['user_id'].toString(),
       type: NotificationType.fromString(json['type'] as String),
       title: json['title'] as String,
       content: json['content'] as String,
@@ -76,5 +76,33 @@ class NotificationModel {
     } else {
       return 'Just now';
     }
+  }
+
+  NotificationModel copyWith({
+    int? id,
+    String? userId,
+    NotificationType? type,
+    String? title,
+    String? content,
+    int? referenceId,
+    String? referenceType,
+    bool? isRead,
+    NotificationChannel? channel,
+    DateTime? sentAt,
+    DateTime? createdAt,
+  }) {
+    return NotificationModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      referenceId: referenceId ?? this.referenceId,
+      referenceType: referenceType ?? this.referenceType,
+      isRead: isRead ?? this.isRead,
+      channel: channel ?? this.channel,
+      sentAt: sentAt ?? this.sentAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 }

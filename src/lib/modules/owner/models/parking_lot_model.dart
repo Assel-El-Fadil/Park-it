@@ -2,7 +2,7 @@ import 'package:src/core/enums/app_enums.dart';
 
 class ParkingLotModel {
   final int id;
-  final int ownerId;
+  final String ownerId;
   final String name;
   final String? description;
   final double latitude;
@@ -40,7 +40,7 @@ class ParkingLotModel {
   factory ParkingLotModel.fromJson(Map<String, dynamic> json) {
     return ParkingLotModel(
       id: json['id'] as int,
-      ownerId: json['owner_id'] as int,
+      ownerId: json['owner_id'].toString(),
       name: json['name'] as String,
       description: json['description'] as String?,
       latitude: (json['latitude'] as num).toDouble(),
