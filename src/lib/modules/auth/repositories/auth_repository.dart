@@ -424,6 +424,9 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       final user = client.auth.currentUser;
       if (user == null) throw AppException('No authenticated user found');
 
+      print('DEBUG: Attempting to delete account for user ID: ${user.id}');
+      print('DEBUG: User email: ${user.email}');
+
       // Call the RPC function to delete both Auth and public data.
       // This function MUST be created in the Supabase SQL Editor first.
       await client.rpc('delete_user_permanently');
@@ -431,6 +434,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       // Sign out locally
       await signOut();
     } on AuthException catch (e) {
+      print('DEBUG: AuthException: ${e.message}');
       throw AppException(e.message);
     } catch (e) {
       print('ERROR [AuthRepositoryImpl.deleteAccount]: $e');
