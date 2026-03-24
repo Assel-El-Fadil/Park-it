@@ -28,17 +28,6 @@ class OwnerParkingSpacesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Parking Spots'),
-        actions: [
-          IconButton(
-            tooltip: 'Search',
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Use the list below and tap a spot to open it.'),
-              ),
-            ),
-            icon: const Icon(Icons.search),
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed(OwnerRoutes.addParkingSpace),

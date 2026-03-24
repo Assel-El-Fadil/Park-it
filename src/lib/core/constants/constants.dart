@@ -301,7 +301,7 @@ class AppConstants {
 
   // ===== Regex Patterns =====
   static const String emailRegex = r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$';
-  static const String phoneRegex = r'^\+?[1-9]\d{1,14}$';
+  static const String phoneRegex = r'^\d{10}$';
   static const String passwordRegex = r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$';
 
   // ===== Feature Flags =====

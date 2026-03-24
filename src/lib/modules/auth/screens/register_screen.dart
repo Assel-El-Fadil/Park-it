@@ -9,7 +9,6 @@ import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/modules/auth/widgets/social_login_buttons.dart';
-import 'package:src/modules/owner/routes/owner_routes.dart';
 
 class RegisterScreen extends ConsumerWidget {
   const RegisterScreen({super.key});
@@ -23,8 +22,10 @@ class RegisterScreen extends ConsumerWidget {
         data: (state) {
           if (state.isAuthenticated) {
             final user = state.currentUser;
-            if (user != null && user.role == UserRole.owner) {
-              context.go(OwnerRoutes.ownerDashboardPath);
+            if (user != null && user.role == UserRole.superAdmin) {
+              context.go('/super-admin');
+            } else if (user != null && user.role == UserRole.owner) {
+              context.go(AuthRoutes.profile);
             } else {
               context.go(AuthRoutes.profile);
             }
@@ -143,24 +144,13 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
         );
 
     if (needsVerification && mounted) {
-      final phone = _phoneController.text.trim();
-      if (phone.isNotEmpty) {
-        // Email verification is handled via the confirmation link.
-        // Now also verify phone via SMS OTP.
-        context.goNamed(AuthRoutes.verifyOtp, extra: {
-          'email': _emailController.text.trim(),
-          'phone': phone,
-        });
-      } else {
-        // Email-only registration: email confirmation link is sent automatically.
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('A confirmation link has been sent to your email. Please verify your email to log in.'),
-            duration: Duration(seconds: 5),
-          ),
-        );
-        context.go(AuthRoutes.login);
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('A confirmation link has been sent to your email. Please verify your email to log in.'),
+          duration: Duration(seconds: 5),
+        ),
+      );
+      context.go(AuthRoutes.login);
     }
   }
 

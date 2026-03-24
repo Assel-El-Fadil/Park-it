@@ -1,3 +1,4 @@
+import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:src/core/constants/constants.dart';
@@ -46,6 +47,9 @@ class SessionService {
     await prefs.remove(AppConstants.prefKeyUserName);
     await prefs.remove(AppConstants.prefKeyIsLoggedIn);
     await prefs.remove(AppConstants.prefKeyAuthToken);
+    // Avoid showing the previous user's avatar after logout / account deletion
+    // when the same image URL is reused or the browser cache serves old bytes.
+    PaintingBinding.instance.imageCache.clear();
   }
 }
 

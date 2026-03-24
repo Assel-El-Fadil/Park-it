@@ -9,6 +9,8 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/notification/routes/notification_routes.dart';
+import 'package:src/modules/owner/routes/owner_routes.dart';
 import 'package:src/modules/user/routes/user_routes.dart';
 import 'package:src/shared/widgets/common_bottom_nav.dart';
 
@@ -71,38 +73,38 @@ class ProfileScreen extends ConsumerWidget {
                   context.push(UserRoutes.editProfilePath);
                 },
               ),
-              if (user.role == UserRole.driver || user.role == UserRole.owner) ...[
+              // Driver: véhicules + favoris (wishlists)
+              if (user.role == UserRole.driver) ...[
                 const SizedBox(height: 8),
                 _ProfileTile(
                   icon: Icons.directions_car_outlined,
                   title: 'My Vehicles',
+                  onTap: () => context.push(AuthRoutes.vehicles),
+                ),
+                const SizedBox(height: 8),
+                _ProfileTile(
+                  icon: Icons.bookmark_outline,
+                  title: 'Saved locations',
+                  onTap: () =>
+                      context.pushNamed(UserRoutes.savedLocations),
+                ),
+              ],
+              // Owner: gestion des parkings (lots + spots)
+              if (user.role == UserRole.owner) ...[
+                const SizedBox(height: 8),
+                _ProfileTile(
+                  icon: Icons.add,
+                  title: 'Ajouter parkings ou parking spots',
                   onTap: () {
-                    context.push(AuthRoutes.vehicles);
+                    context.push('/owner/spaces/add');
                   },
                 ),
                 const SizedBox(height: 8),
                 _ProfileTile(
-                  icon: Icons.credit_card_outlined,
-                  title: 'Payment Methods',
+                  icon: Icons.local_parking,
+                  title: 'Mes parkings',
                   onTap: () {
-                    // TODO: Navigate to payment methods
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Payment Methods coming soon'),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-                _ProfileTile(
-                  icon: Icons.location_on_outlined,
-                  title: 'Saved Locations',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Saved Locations coming soon'),
-                      ),
-                    );
+                    context.push('/owner/spaces');
                   },
                 ),
               ],
@@ -113,7 +115,7 @@ class ProfileScreen extends ConsumerWidget {
                 icon: Icons.notifications_outlined,
                 title: 'Notifications',
                 onTap: () {
-                  context.push(AppRoutes.settingsPath);
+                  context.pushNamed(NotificationRoutes.notifications);
                 },
               ),
               const SizedBox(height: 8),
@@ -138,6 +140,10 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 32),
               _LogoutButton(),
+              if (user.role == UserRole.driver || user.role == UserRole.owner) ...[
+                const SizedBox(height: 16),
+                _DeleteAccountButton(),
+              ],
               const SizedBox(height: 80),
             ],
           ),
@@ -164,6 +170,7 @@ class _ProfileHeader extends StatelessWidget {
           alignment: Alignment.bottomRight,
           children: [
             CircleAvatar(
+              key: ValueKey<String>('avatar_${user.id}_${user.profilePhoto ?? ''}'),
               radius: 56,
               backgroundColor: context.surfaceColor,
               backgroundImage:
@@ -351,6 +358,72 @@ class _LogoutButton extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _DeleteAccountButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+    final isLoading = authState.value?.isLoading ?? false;
+
+    return SizedBox(
+      height: 56,
+      child: TextButton.icon(
+        onPressed: isLoading
+            ? null
+            : () => _showDeleteConfirmation(context, ref),
+        icon: const Icon(Icons.delete_forever, size: 20),
+        label: const Text('Delete Account'),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.error,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showDeleteConfirmation(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Account?'),
+        content: const Text(
+          'This action is permanent and cannot be undone. All your personal data and parking history will be deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Delete My Account'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await ref.read(authNotifierProvider.notifier).deleteAccount();
+        if (context.mounted) {
+          context.go(AuthRoutes.login);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account successfully deleted.')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete account: ${e.toString()}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
   }
 }
 

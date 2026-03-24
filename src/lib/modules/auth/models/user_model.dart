@@ -76,18 +76,31 @@ class UserModel {
     User user,
     Map<String, dynamic> userRow,
   ) {
+    final metadata = user.userMetadata ?? {};
+    
+    // Name: metadata first (updateUser), then DB.
+    final String firstName = (metadata['first_name'] as String?) ?? (userRow['first_name'] as String?) ?? '';
+    final String lastName = (metadata['last_name'] as String?) ?? (userRow['last_name'] as String?) ?? '';
+    // Photo: DB first so a new `users` row after account deletion (null photo) is not
+    // overridden by stale profile_photo still stored in Auth user_metadata.
+    final String? rowPhoto = userRow['profile_photo'] as String?;
+    final String? metaPhoto = metadata['profile_photo'] as String?;
+    final String? profilePhoto = (rowPhoto != null && rowPhoto.trim().isNotEmpty)
+        ? rowPhoto.trim()
+        : (metaPhoto != null && metaPhoto.trim().isNotEmpty ? metaPhoto.trim() : null);
+
     return UserModel(
       id: (userRow['id'] ?? '').toString(),
-      firstName: (userRow['first_name'] as String?) ?? '',
-      lastName: (userRow['last_name'] as String?) ?? '',
+      firstName: firstName,
+      lastName: lastName,
       email: (userRow['email'] as String?) ?? user.email,
-      phone: userRow['phone'] as String? ?? user.phone,
-      profilePhoto: userRow['profile_photo'] as String?,
+      phone: (metadata['phone'] as String?) ?? (userRow['phone'] as String?) ?? user.phone,
+      profilePhoto: profilePhoto,
       averageRating:
           (userRow['average_rating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: userRow['total_reviews'] as int? ?? 0,
-      fcmToken: userRow['fcm_token'] as String?,
-      role: _roleFromString(userRow['role'] as String?),
+      fcmToken: (metadata['fcm_token'] as String?) ?? (userRow['fcm_token'] as String?),
+      role: _roleFromString((metadata['role'] as String?) ?? (userRow['role'] as String?)),
     );
   }
 

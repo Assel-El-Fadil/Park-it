@@ -1,12 +1,17 @@
 import 'package:go_router/go_router.dart';
+import 'package:src/modules/owner/screens/add_parking_lot_screen.dart';
 import 'package:src/modules/owner/screens/add_parking_space_screen.dart';
+import 'package:src/modules/owner/screens/add_spot_to_lot_screen.dart';
 import 'package:src/modules/owner/screens/edit_parking_space_screen.dart';
 import 'package:src/modules/owner/screens/owner_bookings_screen.dart';
 import 'package:src/modules/owner/screens/owner_earnings_screen.dart';
 import 'package:src/modules/owner/screens/owner_parking_space_detail_screen.dart';
+import 'package:src/modules/owner/screens/owner_parkings_hub_screen.dart';
 import 'package:src/modules/owner/screens/owner_parking_lots_screen.dart';
 import 'package:src/modules/owner/screens/owner_parking_lot_detail_screen.dart';
 import 'package:src/modules/owner/screens/owner_shell_screen.dart';
+import 'package:src/modules/owner/screens/owner_parking_spaces_screen.dart';
+import 'package:src/modules/owner/screens/owner_standalone_spot_screen.dart';
 import 'package:src/modules/owner/screens/owner_dynamic_pricing_screen.dart';
 import 'package:src/modules/owner/screens/owner_availability_screen.dart';
 
@@ -26,9 +31,17 @@ class OwnerRoutes {
   static const String ownerDynamicPricing = 'owner-dynamic-pricing';
   static const String ownerProfile = 'owner-profile';
   static const String ownerSettings = 'owner-settings';
+  static const String ownerMesParkings = 'owner-mes-parkings';
+  static const String ownerAddLot = 'owner-add-lot';
+  static const String ownerAddSpotToLot = 'owner-add-spot-to-lot';
+  static const String ownerStandaloneSpot = 'owner-standalone-spot';
 
   // Paths
   static const String ownerDashboardPath = '/owner';
+  static const String ownerMesParkingsPath = '/owner/parkings';
+  static const String addParkingLotPath = '/owner/parkings/lot/add';
+  static const String addSpotToLotPath = '/owner/parkings/lot/:lotId/spot/add';
+  static const String ownerStandaloneSpotPath = '/owner/parkings/spot/standalone';
   static const String parkingSpacesPath = '/owner/spaces';
   static const String parkingLotsPath = '/owner/lots';
   static const String addParkingSpacePath = '/owner/spaces/add';
@@ -71,10 +84,44 @@ List<GoRoute> getOwnerRoutes() {
 
     // Spots CRUD
     GoRoute(
+      path: OwnerRoutes.ownerMesParkingsPath,
+      name: OwnerRoutes.ownerMesParkings,
+      builder: (context, state) => const OwnerParkingsHubScreen(),
+    ),
+    GoRoute(
+      path: OwnerRoutes.addParkingLotPath,
+      name: OwnerRoutes.ownerAddLot,
+      builder: (context, state) => const AddParkingLotScreen(),
+    ),
+    GoRoute(
+      path: OwnerRoutes.addSpotToLotPath,
+      name: OwnerRoutes.ownerAddSpotToLot,
+      builder: (context, state) {
+        final lotId = int.tryParse(state.pathParameters['lotId'] ?? '') ?? 0;
+        return AddSpotToLotScreen(lotId: lotId);
+      },
+    ),
+    GoRoute(
+      path: OwnerRoutes.ownerStandaloneSpotPath,
+      name: OwnerRoutes.ownerStandaloneSpot,
+      builder: (context, state) => const OwnerStandaloneSpotScreen(),
+    ),
+
+    // Add Parking Space
+    GoRoute(
       path: OwnerRoutes.addParkingSpacePath,
       name: OwnerRoutes.addParkingSpace,
       builder: (context, state) => const AddParkingSpaceScreen(),
     ),
+
+    // Parking Spaces List
+    GoRoute(
+      path: OwnerRoutes.parkingSpacesPath,
+      name: OwnerRoutes.parkingSpaces,
+      builder: (context, state) => const OwnerParkingSpacesScreen(),
+    ),
+
+    // Spots CRUD
     GoRoute(
       path: OwnerRoutes.editParkingSpacePath,
       name: OwnerRoutes.editParkingSpace,
