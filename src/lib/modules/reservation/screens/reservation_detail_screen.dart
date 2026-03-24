@@ -44,7 +44,7 @@ class ReservationDetailScreen extends ConsumerWidget {
           final totalPrice = (data['total_price'] as num).toDouble();
           final platformFee = (data['platform_fee'] as num).toDouble();
           final user = ref.watch(currentUserProvider);
-          final userId = int.tryParse(user?.id ?? '');
+          final userId = user?.id;
           final reservationIntId = id;
           final spotId =
               (data['spot_id'] as int?) ?? (spot?['id'] as int?) ?? 0;
@@ -272,7 +272,7 @@ class ReservationDetailScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref, {
     required int reservationId,
-    required int reviewerId,
+    required String reviewerId,
     required int spotId,
   }) async {
     int rating = 5;
@@ -341,7 +341,7 @@ class ReservationDetailScreen extends ConsumerWidget {
   Future<void> _showReportDialog(
     BuildContext context,
     WidgetRef ref, {
-    required int reporterId,
+    required String reporterId,
     required int targetSpotId,
   }) async {
     ReportReason reason = ReportReason.fakeListing;

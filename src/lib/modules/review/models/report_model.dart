@@ -3,12 +3,12 @@ import 'package:src/core/enums/app_enums.dart';
 class ReportModel {
   final int id;
   final String reporterId;
-  final int targetId;
+  final String targetId;
   final ReportTargetType targetType;
   final ReportReason reason;
   final String? description;
   final ReportStatus status;
-  final int? resolvedBy;
+  final String? resolvedBy;
   final String? resolution;
   final DateTime createdAt;
   final DateTime? resolvedAt;
@@ -31,12 +31,12 @@ class ReportModel {
     return ReportModel(
       id: json['id'] as int,
       reporterId: json['reporter_id'] as String,
-      targetId: json['target_id'] as int,
+      targetId: json['target_id']?.toString() ?? '',
       targetType: ReportTargetType.fromString(json['target_type'] as String),
       reason: ReportReason.fromString(json['reason'] as String),
       description: json['description'] as String?,
       status: ReportStatus.fromString(json['status'] as String),
-      resolvedBy: json['resolved_by'] as int?,
+      resolvedBy: json['resolved_by']?.toString(),
       resolution: json['resolution'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       resolvedAt: json['resolved_at'] != null

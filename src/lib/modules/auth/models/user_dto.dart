@@ -4,7 +4,7 @@ class UserDTO {
   final String id;
   final String firstName;
   final String lastName;
-  final String email;
+  final String? email;
   final String? phone;
   final String? profilePhoto;
   final double averageRating;
@@ -16,7 +16,7 @@ class UserDTO {
     required this.id,
     required this.firstName,
     required this.lastName,
-    required this.email,
+    this.email,
     this.phone,
     this.profilePhoto,
     this.averageRating = 0.0,
@@ -30,7 +30,7 @@ class UserDTO {
       id: json['id'] as String,
       firstName: json['firstName'] as String,
       lastName: json['lastName'] as String,
-      email: json['email'] as String,
+      email: json['email'] as String?,
       phone: json['phone'] as String?,
       profilePhoto: json['profilePhoto'] as String?,
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
@@ -87,10 +87,14 @@ class UserDTO {
 }
 
 UserRole _roleFromString(String? value) {
-  switch (value) {
-    case 'owner':
+  final v = (value ?? '').toUpperCase();
+  switch (v) {
+    case 'OWNER':
       return UserRole.owner;
-    case 'driver':
+    case 'ADMIN':
+      return UserRole.admin;
+    case 'SUPER_ADMIN':
+      return UserRole.superAdmin;
     default:
       return UserRole.driver;
   }

@@ -6,7 +6,9 @@ import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/config/themes/text_styles.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/admin/routes/admin_routes.dart';
 import 'package:src/modules/auth/widgets/social_login_buttons.dart';
 
 class LoginScreen extends ConsumerWidget {
@@ -20,7 +22,16 @@ class LoginScreen extends ConsumerWidget {
       next.whenOrNull(
         data: (state) {
           if (state.isAuthenticated) {
-            context.go(AuthRoutes.profile);
+            final user = state.currentUser;
+            if (user != null && user.role == UserRole.superAdmin) {
+              context.go('/super-admin');
+            } else if (user != null && user.role == UserRole.admin) {
+              context.go(AdminRoutes.dashboardPath);
+            } else if (user != null && user.role == UserRole.owner) {
+              context.go(AuthRoutes.profile);
+            } else {
+              context.go(AuthRoutes.profile);
+            }
           }
         },
       );
@@ -61,7 +72,10 @@ class LoginScreen extends ConsumerWidget {
                     style: context.textTheme.bodyMedium,
                   ),
                   GestureDetector(
-                    onTap: () => context.go(AuthRoutes.register),
+                    onTap: () {
+                      ref.read(authNotifierProvider.notifier).clearError();
+                      context.go(AuthRoutes.register);
+                    },
                     child: Text(
                       'Register',
                       style: context.textTheme.bodyMedium?.copyWith(
@@ -89,15 +103,18 @@ class _LoginForm extends ConsumerStatefulWidget {
   ConsumerState<_LoginForm> createState() => _LoginFormState();
 }
 
+enum _LoginIdentifierType { email, phone }
+
 class _LoginFormState extends ConsumerState<_LoginForm> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  _LoginIdentifierType _identifierType = _LoginIdentifierType.email;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -106,7 +123,7 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
     if (!_formKey.currentState!.validate()) return;
 
     await ref.read(authNotifierProvider.notifier).signIn(
-          _emailController.text.trim(),
+          _identifierController.text.trim(),
           _passwordController.text,
         );
   }
@@ -121,20 +138,56 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: SegmentedButton<_LoginIdentifierType>(
+                  segments: const [
+                    ButtonSegment(
+                      value: _LoginIdentifierType.email,
+                      icon: Icon(Icons.email_outlined),
+                      label: Text('Email'),
+                    ),
+                    ButtonSegment(
+                      value: _LoginIdentifierType.phone,
+                      icon: Icon(Icons.phone_outlined),
+                      label: Text('Phone'),
+                    ),
+                  ],
+                  selected: {_identifierType},
+                  onSelectionChanged: (Set<_LoginIdentifierType> selected) {
+                    setState(() => _identifierType = selected.first);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
+            controller: _identifierController,
+            keyboardType: _identifierType == _LoginIdentifierType.email
+                ? TextInputType.emailAddress
+                : TextInputType.phone,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              hintText: 'Enter your email',
+            decoration: InputDecoration(
+              labelText: _identifierType == _LoginIdentifierType.email ? 'Email' : 'Phone',
+              hintText: _identifierType == _LoginIdentifierType.email
+                  ? 'Enter your email'
+                  : 'Enter your phone number',
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return AppConstants.validationRequired;
               }
-              if (!RegExp(AppConstants.emailRegex).hasMatch(value.trim())) {
-                return AppConstants.validationEmail;
+              if (value.trim() == 'admin') return null;
+              if (_identifierType == _LoginIdentifierType.email) {
+                if (!RegExp(AppConstants.emailRegex).hasMatch(value.trim())) {
+                  return AppConstants.validationEmail;
+                }
+              } else {
+                if (!RegExp(AppConstants.phoneRegex).hasMatch(value.trim())) {
+                  return AppConstants.validationPhone;
+                }
               }
               return null;
             },
@@ -174,6 +227,28 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
               ),
             ),
           ],
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                ref.read(authNotifierProvider.notifier).clearError();
+                context.goNamed(AuthRoutes.forgotPassword);
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Forgot Password?',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textLink,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
           SizedBox(
             height: 56,

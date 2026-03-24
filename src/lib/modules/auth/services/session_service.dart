@@ -1,3 +1,4 @@
+import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:src/core/constants/constants.dart';
@@ -10,13 +11,18 @@ class SessionService {
   Future<void> saveSession(UserModel user, String token) async {
     final prefs = await _prefs;
     await prefs.setString(AppConstants.prefKeyUserId, user.id);
-    await prefs.setString(AppConstants.prefKeyUserEmail, user.email);
+    await prefs.setString(AppConstants.prefKeyUserEmail, user.email ?? user.phone ?? '');
     await prefs.setString(
       AppConstants.prefKeyUserName,
       '${user.firstName} ${user.lastName}'.trim(),
     );
     await prefs.setBool(AppConstants.prefKeyIsLoggedIn, true);
     await prefs.setString(AppConstants.prefKeyAuthToken, token);
+  }
+
+  Future<void> saveUserEmail(String email) async {
+    final prefs = await _prefs;
+    await prefs.setString(AppConstants.prefKeyUserEmail, email);
   }
 
   Future<bool> isLoggedIn() async {
@@ -41,6 +47,9 @@ class SessionService {
     await prefs.remove(AppConstants.prefKeyUserName);
     await prefs.remove(AppConstants.prefKeyIsLoggedIn);
     await prefs.remove(AppConstants.prefKeyAuthToken);
+    // Avoid showing the previous user's avatar after logout / account deletion
+    // when the same image URL is reused or the browser cache serves old bytes.
+    PaintingBinding.instance.imageCache.clear();
   }
 }
 

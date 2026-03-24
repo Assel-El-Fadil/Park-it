@@ -17,28 +17,17 @@ class OwnerParkingSpacesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(currentUserProvider);
-    final ownerId = int.tryParse(currentUser?.id ?? '') ?? 1;
+    final ownerId = currentUser?.id ?? '';
 
     final spots = ref.watch(
       ownerStoreProvider.select(
-        (s) => s.spots.where((p) => p.ownerId == ownerId).toList(),
+        (s) => s.spots.where((p) => p.ownerId == ownerId && p.lotId == null).toList(),
       ),
     );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Parking Spots'),
-        actions: [
-          IconButton(
-            tooltip: 'Search',
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Use the list below and tap a spot to open it.'),
-              ),
-            ),
-            icon: const Icon(Icons.search),
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed(OwnerRoutes.addParkingSpace),

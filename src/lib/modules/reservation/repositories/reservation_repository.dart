@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/core/base/cloud/supabase_repo.dart';
 import 'package:src/modules/reservation/models/reservation_model.dart';
+import 'package:src/core/enums/app_enums.dart';
 
 final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
   return ReservationRepository();
@@ -48,29 +49,33 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
     return fromJson(response);
   }
 
-  Future<List<Map<String, dynamic>>> getReservationsWithSpots(int driverId) async {
+  Future<List<Map<String, dynamic>>> getReservationsWithSpots(
+    String driverId,
+  ) async {
     final response = await client
         .from(tableName)
         .select('*, parking_spots(*)')
         .eq('driver_id', driverId)
         .order('created_at', ascending: false);
-    
+
     return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<Map<String, dynamic>> getReservationWithDetails(int reservationId) async {
+  Future<Map<String, dynamic>> getReservationWithDetails(
+    int reservationId,
+  ) async {
     final response = await client
         .from(tableName)
         .select('*, parking_spots(*), vehicles(*)')
         .eq('id', reservationId)
         .single();
-    
+
     return response as Map<String, dynamic>;
   }
 
   Future<bool> canUserReviewOrReport({
     required int reservationId,
-    required int driverId,
+    required String driverId,
   }) async {
     final row = await client
         .from(tableName)
@@ -79,10 +84,10 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
         .maybeSingle();
 
     if (row == null) return false;
-    final rowDriver = row['driver_id'] as int?;
+    final rowDriver = row['driver_id'];
     final status = (row['status'] as String?)?.toUpperCase() ?? '';
     final endTimeStr = row['end_time'] as String?;
-    if (rowDriver != driverId) return false;
+    if (rowDriver?.toString() != driverId) return false;
     if (status != 'COMPLETED') return false;
     if (endTimeStr == null) return false;
     final endTime = DateTime.parse(endTimeStr);
@@ -98,9 +103,22 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
     return row != null;
   }
 
-  Future<void> seedExampleCompletedReservation({
-    required int driverId,
+  Future<bool> hasExistingReport({
+    required int targetId,
+    required String reporterId,
+    required ReportTargetType targetType,
   }) async {
+    final row = await client
+        .from('reports')
+        .select('id')
+        .eq('target_id', targetId)
+        .eq('reporter_id', reporterId)
+        .eq('target_type', targetType.toJson())
+        .maybeSingle();
+    return row != null;
+  }
+
+  Future<void> seedExampleCompletedReservation({required String driverId}) async {
     final existing = await client
         .from(tableName)
         .select('id')
