@@ -96,7 +96,7 @@ class ProfileScreen extends ConsumerWidget {
                   icon: Icons.add,
                   title: 'Ajouter parkings ou parking spots',
                   onTap: () {
-                    // Rendu non cliquable pour le moment
+                    context.push('/owner/spaces/add');
                   },
                 ),
                 const SizedBox(height: 8),
@@ -104,7 +104,7 @@ class ProfileScreen extends ConsumerWidget {
                   icon: Icons.local_parking,
                   title: 'Mes parkings',
                   onTap: () {
-                    // Rendu non cliquable pour le moment
+                    context.push('/owner/spaces');
                   },
                 ),
               ],

@@ -61,7 +61,7 @@ class _SavedLocationsScreenState extends ConsumerState<SavedLocationsScreen> {
       body: uid <= 0
           ? Center(
               child: Text(
-                'Sign in to see your saved parkings.',
+                'no saved parkings',
                 style: context.textTheme.bodyLarge,
               ),
             )

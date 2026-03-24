@@ -9,7 +9,6 @@ import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/modules/auth/widgets/social_login_buttons.dart';
-import 'package:src/modules/owner/routes/owner_routes.dart';
 
 class RegisterScreen extends ConsumerWidget {
   const RegisterScreen({super.key});
@@ -24,7 +23,7 @@ class RegisterScreen extends ConsumerWidget {
           if (state.isAuthenticated) {
             final user = state.currentUser;
             if (user != null && user.role == UserRole.owner) {
-              context.go(OwnerRoutes.ownerDashboardPath);
+              context.go(AuthRoutes.profile);
             } else {
               context.go(AuthRoutes.profile);
             }
