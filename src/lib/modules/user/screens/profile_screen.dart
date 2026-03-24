@@ -126,18 +126,6 @@ class ProfileScreen extends ConsumerWidget {
                   context.push(AppRoutes.settingsPath);
                 },
               ),
-              const SizedBox(height: 24),
-              _SectionHeader(title: 'SUPPORT'),
-              const SizedBox(height: 8),
-              _ProfileTile(
-                icon: Icons.help_outline,
-                title: 'Help Center',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Help Center coming soon')),
-                  );
-                },
-              ),
               const SizedBox(height: 32),
               _LogoutButton(),
               if (user.role == UserRole.driver || user.role == UserRole.owner) ...[
