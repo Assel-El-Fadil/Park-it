@@ -22,7 +22,9 @@ class RegisterScreen extends ConsumerWidget {
         data: (state) {
           if (state.isAuthenticated) {
             final user = state.currentUser;
-            if (user != null && user.role == UserRole.owner) {
+            if (user != null && user.role == UserRole.superAdmin) {
+              context.go('/super-admin');
+            } else if (user != null && user.role == UserRole.owner) {
               context.go(AuthRoutes.profile);
             } else {
               context.go(AuthRoutes.profile);
