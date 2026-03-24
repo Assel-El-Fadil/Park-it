@@ -85,7 +85,7 @@ class AppNavigator {
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: AppNavigator.navigatorKey,
-  initialLocation: PaymentRoutes.paymentTestPath,
+  initialLocation: NavigationRoutes.parkingMapTestPath,
   debugLogDiagnostics: true,
   routes: [
     // Landing Page
