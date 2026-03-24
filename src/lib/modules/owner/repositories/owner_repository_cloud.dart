@@ -82,7 +82,9 @@ class OwnerRepositoryCloud implements OwnerRepository {
       final response = await _client
           .from('availabilities')
           .select()
-          .inFilter('spot_id', spotIds);
+          .inFilter('spot_id', spotIds)
+          // Only load weekly (recurring) rows; ignore legacy date-specific rows.
+          .not('day_of_week', 'is', null);
 
       return (response as List).map((e) {
         return AvailabilityModel.fromJson(e as Map<String, dynamic>);
@@ -260,33 +262,29 @@ class OwnerRepositoryCloud implements OwnerRepository {
   }
 
   @override
-  Future<void> setAvailabilityException({
+  Future<void> setWeeklyAvailability({
     required int spotId,
-    required DateTime day,
-    required bool blocked,
+    required int dayOfWeek,
+    required bool isBlocked,
     required String openTime,
     required String closeTime,
   }) async {
-    // The DB column is a DATE; pass it as YYYY-MM-DD.
-    final dayKey = DateTime(day.year, day.month, day.day);
-    final isoDay =
-        '${dayKey.year.toString().padLeft(4, '0')}-${dayKey.month.toString().padLeft(2, '0')}-${dayKey.day.toString().padLeft(2, '0')}';
-
     try {
       final existing = await _client
           .from('availabilities')
           .select()
           .eq('spot_id', spotId)
-          .eq('specific_date', isoDay)
+          .eq('day_of_week', dayOfWeek)
+          .isFilter('specific_date', null)
           .maybeSingle();
 
       final data = {
         'spot_id': spotId,
-        'day_of_week': null,
-        'specific_date': isoDay,
+        'day_of_week': dayOfWeek,
+        'specific_date': null,
         'open_time': openTime,
         'close_time': closeTime,
-        'is_blocked': blocked,
+        'is_blocked': isBlocked,
       };
 
       if (existing == null) {
@@ -298,7 +296,7 @@ class OwnerRepositoryCloud implements OwnerRepository {
     } on PostgrestException catch (e) {
       throw AppException(e.message);
     } catch (_) {
-      throw const AppException('Failed to update availability.');
+      throw const AppException('Failed to update weekly availability.');
     }
   }
 

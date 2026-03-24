@@ -15,7 +15,7 @@ import 'package:src/shared/widgets/rating_stars.dart';
 /// In this project we primarily use it for the owner flow (manage reviews).
 final userReviewsProvider = FutureProvider<List<ReviewModel>>((ref) async {
   final user = ref.watch(currentUserProvider);
-  final userId = int.tryParse(user?.id ?? '');
+  final userId = user?.id;
   if (userId == null) return const <ReviewModel>[];
   return ref.read(reviewRepositoryProvider).getReviewsByReviewer(userId);
 });

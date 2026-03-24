@@ -92,7 +92,7 @@ class ReportDetailScreen extends ConsumerWidget {
                             icon: Icons.check_circle_outline_rounded,
                             onPressed: () async {
                               final user = ref.read(currentUserProvider);
-                              final resolvedBy = int.tryParse(user?.id ?? '');
+                              final resolvedBy = user?.id;
                               if (resolvedBy == null) return;
                               await ref.read(reportRepositoryProvider).resolveReport(
                                     reportId: report.id,

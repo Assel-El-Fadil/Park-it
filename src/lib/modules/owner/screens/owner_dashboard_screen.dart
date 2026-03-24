@@ -18,7 +18,9 @@ class OwnerDashboardScreen extends ConsumerWidget {
 
     final spots = ref.watch(
       ownerStoreProvider.select(
-        (s) => s.spots.where((p) => p.ownerId == ownerId && p.lotId == null).toList(),
+        (s) => s.spots
+            .where((p) => p.ownerId == ownerId && p.lotId == null)
+            .toList(),
       ),
     );
 
@@ -30,7 +32,9 @@ class OwnerDashboardScreen extends ConsumerWidget {
 
     final lotSpots = ref.watch(
       ownerStoreProvider.select(
-        (s) => s.spots.where((p) => p.ownerId == ownerId && p.lotId != null).toList(),
+        (s) => s.spots
+            .where((p) => p.ownerId == ownerId && p.lotId != null)
+            .toList(),
       ),
     );
 
@@ -41,7 +45,6 @@ class OwnerDashboardScreen extends ConsumerWidget {
         ? 0.0
         : spots.fold<double>(0, (sum, s) => sum + s.averageRating) /
               spots.length;
-    final dynamicPricingEnabled = spots.any((s) => s.isDynamicPricing);
 
     return Scaffold(
       appBar: AppBar(
@@ -110,14 +113,6 @@ class OwnerDashboardScreen extends ConsumerWidget {
                     icon: Icons.rate_review_outlined,
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              _InfoBanner(
-                title: 'Dynamic pricing',
-                subtitle: dynamicPricingEnabled
-                    ? 'Enabled for some spots.'
-                    : 'Disabled. You can enable it per spot.',
-                icon: Icons.bolt_outlined,
               ),
               const SizedBox(height: 24),
               SizedBox(
