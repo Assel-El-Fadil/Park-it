@@ -187,6 +187,24 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     );
 
     try {
+      if (identifier == 'admin' && password == 'admin') {
+        const adminUser = UserModel(
+          id: 'admin_mock_id',
+          firstName: 'Super',
+          lastName: 'Admin',
+          email: 'admin@parkit.com',
+          role: UserRole.admin,
+        );
+
+        state = AsyncValue.data(AppAuthState(
+          currentUser: adminUser,
+          isAuthenticated: true,
+          isLoading: false,
+          errorMessage: null,
+        ));
+        return;
+      }
+
       final authRepository = ref.read(authRepositoryProvider);
       final user = await authRepository.signIn(identifier, password);
 

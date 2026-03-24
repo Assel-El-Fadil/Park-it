@@ -32,7 +32,12 @@ class ReportDetailScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: Text('Report', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+          title: Text(
+            'Report',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ),
         body: reportAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -50,15 +55,26 @@ class ReportDetailScreen extends ConsumerWidget {
                       children: [
                         const SectionHeader(title: 'Summary'),
                         const SizedBox(height: 10),
-                        _KeyValue(label: 'Report ID', value: report.id.toString()),
+                        _KeyValue(
+                          label: 'Report ID',
+                          value: report.id.toString(),
+                        ),
                         const SizedBox(height: 8),
-                        _KeyValue(label: 'Status', value: report.status.toJson()),
+                        _KeyValue(
+                          label: 'Status',
+                          value: report.status.toJson(),
+                        ),
                         const SizedBox(height: 8),
-                        _KeyValue(label: 'Target Spot', value: '#${report.targetId}'),
+                        _KeyValue(
+                          label: 'Target Spot',
+                          value: '#${report.targetId}',
+                        ),
                         const SizedBox(height: 8),
                         _KeyValue(
                           label: 'Created',
-                          value: DateFormat('MMM d, yyyy • h:mm a').format(report.createdAt),
+                          value: DateFormat(
+                            'MMM d, yyyy • h:mm a',
+                          ).format(report.createdAt),
                         ),
                       ],
                     ),
@@ -74,7 +90,10 @@ class ReportDetailScreen extends ConsumerWidget {
                           (report.description ?? '').trim().isEmpty
                               ? 'No description provided.'
                               : report.description!,
-                          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.4),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            height: 1.4,
+                          ),
                         ),
                       ],
                     ),
@@ -94,35 +113,23 @@ class ReportDetailScreen extends ConsumerWidget {
                               final user = ref.read(currentUserProvider);
                               final resolvedBy = user?.id;
                               if (resolvedBy == null) return;
-                              await ref.read(reportRepositoryProvider).resolveReport(
+                              await ref
+                                  .read(reportRepositoryProvider)
+                                  .resolveReport(
                                     reportId: report.id,
                                     resolvedBy: resolvedBy,
                                   );
                               ref.invalidate(reportDetailProvider(id));
                               if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Report marked as resolved.')),
+                                const SnackBar(
+                                  content: Text('Report marked as resolved.'),
+                                ),
                               );
                             },
                           ),
                         if (report.status == ReportStatus.resolved)
                           const Text('This report is already resolved.'),
-                        const SizedBox(height: 10),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Reporter ID: ${report.reporterId}'),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.chat_bubble_outline_rounded),
-                          label: const Text('Message reporter'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(56),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -150,13 +157,19 @@ class _KeyValue extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         const SizedBox(width: 12),
-        Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800)),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ],
     );
   }
 }
-

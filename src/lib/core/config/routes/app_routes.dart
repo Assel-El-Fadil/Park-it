@@ -7,8 +7,10 @@ import 'package:src/modules/owner/routes/owner_routes.dart';
 import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/reservation/routes/reservation_routes.dart';
 import 'package:src/modules/review/routes/review_routes.dart';
+import 'package:src/modules/admin/routes/admin_routes.dart';
 import 'package:src/modules/super_admin/routes/super_admin_routes.dart';
 import 'package:src/modules/user/routes/user_routes.dart';
+import 'package:src/modules/report/routes/report_routes.dart';
 import 'package:src/shared/screens/landing_page.dart';
 import 'package:src/shared/screens/privacy_policy_screen.dart';
 import 'package:src/shared/screens/settings_screen.dart';
@@ -132,6 +134,8 @@ final GoRouter appRouter = GoRouter(
     if (getUserRoutes().isNotEmpty) ...getUserRoutes(),
     if (getReservationRoutes().isNotEmpty) ...getReservationRoutes(),
     if (getNotificationRoutes().isNotEmpty) ...getNotificationRoutes(),
+    if (getReportRoutes().isNotEmpty) ...getReportRoutes(),
+    if (getAdminRoutes().isNotEmpty) ...getAdminRoutes(),
     if (getSuperAdminRoutes().isNotEmpty) ...getSuperAdminRoutes(),
   ],
 );

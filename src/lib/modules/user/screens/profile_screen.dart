@@ -93,6 +93,14 @@ class ProfileScreen extends ConsumerWidget {
               if (user.role == UserRole.owner) ...[
                 const SizedBox(height: 8),
                 _ProfileTile(
+                  icon: Icons.dashboard_outlined,
+                  title: 'Dashboard',
+                  onTap: () {
+                    context.go(OwnerRoutes.ownerDashboardPath);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ProfileTile(
                   icon: Icons.add,
                   title: 'Ajouter parkings ou parking spots',
                   onTap: () {
@@ -149,7 +157,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: user.role == UserRole.admin || user.role == UserRole.superAdmin 
+      bottomNavigationBar: user.role == UserRole.admin || user.role == UserRole.superAdmin || user.role == UserRole.owner
           ? null 
           : const CommonBottomNav(currentIndex: 3),
     );

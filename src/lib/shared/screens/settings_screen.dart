@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/core/config/routes/app_routes.dart';
+import 'package:src/modules/admin/routes/admin_routes.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/core/enums/app_enums.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/notification/routes/notification_routes.dart';
 import 'package:src/providers/theme_provider.dart';
@@ -49,6 +52,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final themeNotifier = ref.watch(themeProvider.notifier);
+    final user = ref.watch(currentUserProvider);
+    final isAdmin = user?.role == UserRole.admin;
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -80,6 +85,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // Account Section
           _buildSectionHeader('Account'),
           _buildAccountTile(),
+
+          if (isAdmin) ...[
+            _buildSectionHeader('Admin Options'),
+            _buildLinkTile('Admin Panel', Icons.admin_panel_settings, () {
+              AppNavigator.pushNamed(context, AdminRoutes.dashboard);
+            }),
+          ],
 
           // Preferences Section
           _buildSectionHeader('Preferences'),

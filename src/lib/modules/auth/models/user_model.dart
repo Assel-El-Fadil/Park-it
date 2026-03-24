@@ -13,6 +13,8 @@ class UserModel {
   final int totalReviews;
   final String? fcmToken;
   final UserRole role;
+  final bool isBanned;
+  final bool isSuspended;
 
   const UserModel({
     required this.id,
@@ -25,6 +27,8 @@ class UserModel {
     this.totalReviews = 0,
     this.fcmToken,
     required this.role,
+    this.isBanned = false,
+    this.isSuspended = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +43,8 @@ class UserModel {
       totalReviews: json['totalReviews'] as int? ?? 0,
       fcmToken: json['fcmToken'] as String?,
       role: _roleFromString(json['role'] as String?),
+      isBanned: json['isBanned'] as bool? ?? false,
+      isSuspended: json['isSuspended'] as bool? ?? false,
     );
   }
 
@@ -69,6 +75,9 @@ class UserModel {
       'total_reviews': totalReviews,
       'fcm_token': fcmToken,
       'role': role.name.toUpperCase(),
+      // Read-only generally, but keep them for full row mapping
+      'is_banned': isBanned,
+      'is_suspended': isSuspended,
     };
   }
 
@@ -101,6 +110,8 @@ class UserModel {
       totalReviews: userRow['total_reviews'] as int? ?? 0,
       fcmToken: (metadata['fcm_token'] as String?) ?? (userRow['fcm_token'] as String?),
       role: _roleFromString((metadata['role'] as String?) ?? (userRow['role'] as String?)),
+      isBanned: userRow['is_banned'] as bool? ?? false,
+      isSuspended: userRow['is_suspended'] as bool? ?? false,
     );
   }
 
@@ -117,6 +128,8 @@ class UserModel {
       totalReviews: data['total_reviews'] as int? ?? 0,
       fcmToken: data['fcm_token'] as String?,
       role: _roleFromString(data['role'] as String?),
+      isBanned: data['is_banned'] as bool? ?? false,
+      isSuspended: data['is_suspended'] as bool? ?? false,
     );
   }
 
@@ -131,6 +144,8 @@ class UserModel {
     int? totalReviews,
     String? fcmToken,
     UserRole? role,
+    bool? isBanned,
+    bool? isSuspended,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -143,6 +158,8 @@ class UserModel {
       totalReviews: totalReviews ?? this.totalReviews,
       fcmToken: fcmToken ?? this.fcmToken,
       role: role ?? this.role,
+      isBanned: isBanned ?? this.isBanned,
+      isSuspended: isSuspended ?? this.isSuspended,
     );
   }
 }
