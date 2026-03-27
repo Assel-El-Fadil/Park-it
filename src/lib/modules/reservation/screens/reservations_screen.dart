@@ -12,6 +12,7 @@ import 'package:src/modules/review/repositories/review_repository.dart';
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/common_bottom_nav.dart';
+import 'package:src/shared/widgets/custom_appbar.dart';
 
 final userReservationsProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
@@ -52,13 +53,9 @@ class ReservationsScreen extends ConsumerWidget {
     final reservationsAsync = ref.watch(userReservationsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'My Bookings',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: 'My Bookings',
+
         centerTitle: true,
         elevation: 0,
         actions: [
@@ -197,7 +194,8 @@ class ReservationsScreen extends ConsumerWidget {
                                       );
                                     },
                                     style: TextButton.styleFrom(
-                                      foregroundColor: theme.colorScheme.primary,
+                                      foregroundColor:
+                                          theme.colorScheme.primary,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 12,
                                       ),
@@ -224,16 +222,19 @@ class ReservationsScreen extends ConsumerWidget {
                                   .watch(reviewedReservationIdsProvider)
                                   .when(
                                     data: (reviewedIds) {
-                                      final resId = (res['id'] as num?)?.toInt();
-                                      final isReviewed = resId != null && reviewedIds.contains(resId);
+                                      final resId = (res['id'] as num?)
+                                          ?.toInt();
+                                      final isReviewed =
+                                          resId != null &&
+                                          reviewedIds.contains(resId);
                                       return OutlinedButton.icon(
                                         onPressed: isReviewed
                                             ? null
                                             : () => _showReviewSheet(
-                                                  context,
-                                                  ref,
-                                                  res,
-                                                ),
+                                                context,
+                                                ref,
+                                                res,
+                                              ),
                                         icon: Icon(
                                           isReviewed
                                               ? Icons.check_circle_outline
@@ -251,7 +252,7 @@ class ReservationsScreen extends ConsumerWidget {
                                             color: isReviewed
                                                 ? Colors.green.withOpacity(0.5)
                                                 : theme.colorScheme.primary
-                                                    .withOpacity(0.5),
+                                                      .withOpacity(0.5),
                                           ),
                                         ),
                                       );
@@ -263,11 +264,8 @@ class ReservationsScreen extends ConsumerWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () => _showReportSheet(
-                                  context,
-                                  ref,
-                                  res,
-                                ),
+                                onPressed: () =>
+                                    _showReportSheet(context, ref, res),
                                 icon: const Icon(
                                   Icons.report_problem_outlined,
                                   size: 18,
@@ -276,8 +274,9 @@ class ReservationsScreen extends ConsumerWidget {
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: theme.colorScheme.error,
                                   side: BorderSide(
-                                    color: theme.colorScheme.error
-                                        .withOpacity(0.5),
+                                    color: theme.colorScheme.error.withOpacity(
+                                      0.5,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -340,7 +339,8 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final spotTitle = widget.reservation['parking_spots']?['title'] ?? 'Parking';
+    final spotTitle =
+        widget.reservation['parking_spots']?['title'] ?? 'Parking';
 
     return Container(
       padding: EdgeInsets.only(
@@ -440,21 +440,26 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
       if (user == null) throw const AppException('User not found');
 
       final resId = (widget.reservation['id'] as num?)?.toInt();
-      final spotId = (widget.reservation['spot_id'] as num?)?.toInt() ?? 
-                     (widget.reservation['parking_spots']?['id'] as num?)?.toInt();
+      final spotId =
+          (widget.reservation['spot_id'] as num?)?.toInt() ??
+          (widget.reservation['parking_spots']?['id'] as num?)?.toInt();
 
       if (resId == null || spotId == null) {
         throw AppException('Missing IDs: res=$resId, spot=$spotId');
       }
 
       // Final check to prevent duplicate key error
-      final hasExisting = await ref.read(reservationRepositoryProvider).hasExistingReview(resId);
+      final hasExisting = await ref
+          .read(reservationRepositoryProvider)
+          .hasExistingReview(resId);
       if (hasExisting) {
         ref.invalidate(reviewedReservationIdsProvider);
         throw const AppException('You have already reviewed this reservation.');
       }
 
-      await ref.read(reviewRepositoryProvider).createReview(
+      await ref
+          .read(reviewRepositoryProvider)
+          .createReview(
             reservationId: resId,
             reviewerId: user.id,
             spotId: spotId,
@@ -471,9 +476,9 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
     } catch (e) {
       debugPrint('Review Error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -539,10 +544,12 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
             items: ReportReason.values.map((r) {
               return DropdownMenuItem(
                 value: r,
-                child: Text(r.name
-                    .replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[1]}')
-                    .trim()
-                    .capitalize()),
+                child: Text(
+                  r.name
+                      .replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[1]}')
+                      .trim()
+                      .capitalize(),
+                ),
               );
             }).toList(),
             onChanged: (val) {
@@ -591,14 +598,17 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
       final user = ref.read(currentUserProvider);
       if (user == null) throw const AppException('User not found');
 
-      final spotId = (widget.reservation['spot_id'] as num?)?.toInt() ?? 
-                     (widget.reservation['parking_spots']?['id'] as num?)?.toInt();
+      final spotId =
+          (widget.reservation['spot_id'] as num?)?.toInt() ??
+          (widget.reservation['parking_spots']?['id'] as num?)?.toInt();
 
       if (spotId == null) {
         throw const AppException('Parking spot ID not found');
       }
 
-      await ref.read(reportRepositoryProvider).createSpotReport(
+      await ref
+          .read(reportRepositoryProvider)
+          .createSpotReport(
             reporterId: user.id,
             targetSpotId: spotId,
             reason: _reason,
@@ -613,9 +623,9 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
     } catch (e) {
       debugPrint('Report Error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

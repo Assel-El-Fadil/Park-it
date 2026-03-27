@@ -4,12 +4,10 @@ import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/config/themes/text_styles.dart';
+import 'package:src/modules/payment/routes/payment_routes.dart';
 
 class CommonBottomNav extends StatelessWidget {
-  const CommonBottomNav({
-    super.key,
-    required this.currentIndex,
-  });
+  const CommonBottomNav({super.key, required this.currentIndex});
 
   final int currentIndex;
 
@@ -45,9 +43,9 @@ class CommonBottomNav extends StatelessWidget {
             ),
             _NavItem(
               icon: Icons.account_balance_wallet_outlined,
-              label: 'Wallet',
+              label: 'Payments',
               isSelected: currentIndex == 2,
-              onTap: () => _placeholder(context, 'Wallet'),
+              onTap: () => context.go(PaymentRoutes.myPaymentsPath),
             ),
             _NavItem(
               icon: Icons.person_outline,
@@ -62,9 +60,9 @@ class CommonBottomNav extends StatelessWidget {
   }
 
   void _placeholder(BuildContext context, String name) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name coming soon')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$name coming soon')));
   }
 }
 

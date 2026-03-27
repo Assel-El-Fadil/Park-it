@@ -88,11 +88,7 @@ class AppNavigator {
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: AppNavigator.navigatorKey,
-<<<<<<< HEAD
-  initialLocation: NavigationRoutes.parkingMapTestPath,
-=======
   initialLocation: AppRoutes.login,
->>>>>>> 154e06a8613303aa547e2324570df980ab03ac6a
   debugLogDiagnostics: true,
   routes: [
     // Landing Page

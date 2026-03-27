@@ -30,7 +30,9 @@ class AppAuthState {
     return AppAuthState(
       isLoading: isLoading ?? this.isLoading,
       currentUser: currentUser ?? this.currentUser,
-      errorMessage: errorMessage == _sentinel ? this.errorMessage : errorMessage as String?,
+      errorMessage: errorMessage == _sentinel
+          ? this.errorMessage
+          : errorMessage as String?,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
     );
   }
@@ -67,21 +69,21 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       final provider = sbUser?.appMetadata['provider'];
       final restrictedProviders = ['google', 'facebook'];
       final isRestrictedAuth = restrictedProviders.contains(provider);
-      final isAdmin = userModel.role == UserRole.admin || userModel.role == UserRole.superAdmin;
+      final isAdmin =
+          userModel.role == UserRole.admin ||
+          userModel.role == UserRole.superAdmin;
 
       if (isRestrictedAuth && isAdmin) {
         // Block the session and force sign out
         await authRepository.signOut();
         return const AppAuthState(
           isAuthenticated: false,
-          errorMessage: 'La connexion via les réseaux sociaux est bloquée pour les administrateurs.',
+          errorMessage:
+              'La connexion via les réseaux sociaux est bloquée pour les administrateurs.',
         );
       }
 
-      return AppAuthState(
-        currentUser: userModel,
-        isAuthenticated: true,
-      );
+      return AppAuthState(currentUser: userModel, isAuthenticated: true);
     } catch (_) {
       return const AppAuthState();
     }
@@ -89,9 +91,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
 
   void clearError() {
     if (state.value?.errorMessage != null) {
-      state = AsyncValue.data(
-        state.value!.copyWith(errorMessage: null),
-      );
+      state = AsyncValue.data(state.value!.copyWith(errorMessage: null));
     }
   }
 
@@ -121,30 +121,29 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
 
       final sessionService = ref.read(sessionServiceProvider);
       final isLoggedIn = await sessionService.isLoggedIn();
-      final needsVerification = !isLoggedIn; // If no session was created, verification is required
+      final needsVerification =
+          !isLoggedIn; // If no session was created, verification is required
 
-      state = AsyncValue.data(AppAuthState(
-        currentUser: user,
-        isAuthenticated: isLoggedIn,
-        isLoading: false,
-        errorMessage: null,
-      ));
+      state = AsyncValue.data(
+        AppAuthState(
+          currentUser: user,
+          isAuthenticated: isLoggedIn,
+          isLoading: false,
+          errorMessage: null,
+        ),
+      );
 
       return needsVerification;
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
       return false;
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
       return false;
     }
@@ -165,17 +164,13 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       );
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
     }
   }
@@ -196,37 +191,37 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           role: UserRole.admin,
         );
 
-        state = AsyncValue.data(AppAuthState(
-          currentUser: adminUser,
-          isAuthenticated: true,
-          isLoading: false,
-          errorMessage: null,
-        ));
+        state = AsyncValue.data(
+          AppAuthState(
+            currentUser: adminUser,
+            isAuthenticated: true,
+            isLoading: false,
+            errorMessage: null,
+          ),
+        );
         return;
       }
 
       final authRepository = ref.read(authRepositoryProvider);
       final user = await authRepository.signIn(identifier, password);
 
-      state = AsyncValue.data(AppAuthState(
-        currentUser: user,
-        isAuthenticated: true,
-        isLoading: false,
-        errorMessage: null,
-      ));
+      state = AsyncValue.data(
+        AppAuthState(
+          currentUser: user,
+          isAuthenticated: true,
+          isLoading: false,
+          errorMessage: null,
+        ),
+      );
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
     }
   }
@@ -244,17 +239,13 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       state = const AsyncValue.data(AppAuthState());
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
     }
   }
@@ -275,18 +266,14 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       );
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
       rethrow; // Rethrow to let the UI show a snackbar/dialog
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
       rethrow;
     }
@@ -312,26 +299,24 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
         type: type,
       );
 
-      state = AsyncValue.data(AppAuthState(
-        currentUser: user,
-        isAuthenticated: true,
-        isLoading: false,
-        errorMessage: null,
-      ));
+      state = AsyncValue.data(
+        AppAuthState(
+          currentUser: user,
+          isAuthenticated: true,
+          isLoading: false,
+          errorMessage: null,
+        ),
+      );
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
       rethrow;
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
       rethrow;
     }
@@ -347,25 +332,23 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       final authRepository = ref.read(authRepositoryProvider);
       await authRepository.updateProfile(user);
 
-      state = AsyncValue.data(AppAuthState(
-        currentUser: user,
-        isAuthenticated: true,
-        isLoading: false,
-        errorMessage: null,
-      ));
+      state = AsyncValue.data(
+        AppAuthState(
+          currentUser: user,
+          isAuthenticated: true,
+          isLoading: false,
+          errorMessage: null,
+        ),
+      );
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
     }
   }
@@ -392,18 +375,14 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       );
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
       rethrow;
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
       rethrow;
     }
@@ -428,18 +407,14 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       );
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
       rethrow;
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
       rethrow;
     }
@@ -461,18 +436,14 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       );
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
       rethrow;
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
       rethrow;
     }
@@ -494,18 +465,14 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       );
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
       rethrow;
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
       rethrow;
     }
@@ -525,18 +492,14 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       state = const AsyncValue.data(AppAuthState());
     } on AppException catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.message,
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.message),
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
       );
       rethrow;
     } catch (e) {
       state = AsyncValue.data(
-        state.value?.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-        ) ?? AppAuthState(isLoading: false, errorMessage: e.toString()),
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
       );
       rethrow;
     }
@@ -547,8 +510,10 @@ final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AppAuthState>(
   AuthNotifier.new,
 );
 
-final currentUserProvider = Provider<UserModel?>((ref) =>
-    ref.watch(authNotifierProvider).value?.currentUser);
+final currentUserProvider = Provider<UserModel?>(
+  (ref) => ref.watch(authNotifierProvider).value?.currentUser,
+);
 
-final isAuthenticatedProvider = Provider<bool>((ref) =>
-    ref.watch(authNotifierProvider).value?.isAuthenticated ?? false);
+final isAuthenticatedProvider = Provider<bool>(
+  (ref) => ref.watch(authNotifierProvider).value?.isAuthenticated ?? false,
+);

@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/payment/models/payment_model.dart';
 import 'package:src/shared/widgets/custom_card.dart';
 import 'package:src/shared/widgets/detail_row.dart';
 
-class PaymentDetailsCard extends StatelessWidget {
+class PaymentDetailsCard extends ConsumerWidget {
   final PaymentModel payment;
 
   const PaymentDetailsCard({super.key, required this.payment});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    final currentUser = ref.watch(currentUserProvider);
 
     return CustomCard(
       child: Column(
@@ -28,14 +32,17 @@ class PaymentDetailsCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // TODO: Fetch payer name/email using payerId from your user provider
           DetailRow(
             icon: Icons.person_outline,
-            label: 'Payer ID',
-            value: '#${payment.payerId}',
+            label: 'Full Name',
+            value: '${currentUser!.firstName} ${currentUser.lastName}',
+          ),
+          DetailRow(
+            icon: Icons.email_outlined,
+            label: 'Email',
+            value: '${currentUser.email}',
           ),
 
-          // TODO: Fetch reservation details using reservationId from your reservation provider
           DetailRow(
             icon: Icons.calendar_today_outlined,
             label: 'Reservation',
