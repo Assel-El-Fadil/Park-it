@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:src/modules/payment/models/payment_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DownloadButton extends StatelessWidget {
   final PaymentModel payment;
@@ -9,9 +10,7 @@ class DownloadButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
-      onPressed: () {
-        // TODO: Open payment.invoiceUrl with url_launcher
-      },
+      onPressed: () => _downloadInvoice(context),
       icon: const Icon(Icons.download_outlined),
       label: const Text('Download invoice PDF'),
       style: OutlinedButton.styleFrom(
@@ -19,5 +18,23 @@ class DownloadButton extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+  }
+
+  Future<void> _downloadInvoice(BuildContext context) async {
+    if (payment.invoiceUrl == null) {
+      return;
+    } else {
+      final uri = Uri.parse(payment.invoiceUrl as String);
+      if (!await canLaunchUrl(uri)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open invoice URL')),
+          );
+        }
+        return;
+      }
+
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }

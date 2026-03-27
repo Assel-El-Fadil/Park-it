@@ -9,7 +9,9 @@ import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/reservation/repositories/reservation_repository.dart';
 import 'package:src/modules/review/repositories/review_repository.dart';
 import 'package:src/modules/report/repositories/report_repository.dart';
+import 'package:src/providers/payment_provider.dart';
 import 'package:src/shared/widgets/app_card.dart';
+import 'package:src/shared/widgets/custom_modal.dart';
 import 'package:src/shared/widgets/section_header.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 
@@ -24,11 +26,19 @@ class ReservationDetailScreen extends ConsumerWidget {
 
   final String reservationId;
 
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final id = int.tryParse(reservationId) ?? 0;
     final detailAsync = ref.watch(reservationDetailProvider(id));
+    final paymentServiceNotifier = ref.watch(paymentProvider.notifier);
+    final paymentService = ref.watch(paymentServiceProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Booking Details'), centerTitle: true),
@@ -150,8 +160,7 @@ class ReservationDetailScreen extends ConsumerWidget {
                       const Divider(height: 24),
                       _DetailRow(
                         label: 'Total Paid',
-                        value:
-                            '\$${(totalPrice + platformFee).toStringAsFixed(2)}',
+                        value: '\$${(totalPrice).toStringAsFixed(2)}',
                         isBold: true,
                         valueColor: theme.colorScheme.primary,
                       ),
@@ -179,7 +188,71 @@ class ReservationDetailScreen extends ConsumerWidget {
                     status.toUpperCase() == 'CONFIRMED')
                   OutlinedButton(
                     onPressed: () {
-                      // TODO: Implement cancel
+                      CustomModal.show(
+                        context: context,
+                        message:
+                            "Are you sure you want to cancel the reservation ?",
+                        confirmText: "Yes",
+                        onConfirm: () async {
+                          if (status ==
+                              ReservationStatus.cancelled.toString()) {
+                            _showSnackBar(
+                              context,
+                              'Reservation is already cancelled',
+                            );
+                            return;
+                          }
+
+                          if (status ==
+                              ReservationStatus.completed.toString()) {
+                            _showSnackBar(
+                              context,
+                              'Cannot cancel an already completed reservation',
+                            );
+                            return;
+                          }
+
+                          if (status ==
+                              ReservationStatus.confirmed.toString()) {
+                            final scaffoldMessenger = ScaffoldMessenger.of(
+                              context,
+                            ); // capture before async gap
+
+                            final payment = await paymentService
+                                .getByReservationId(id);
+                            if (payment == null) {
+                              scaffoldMessenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'No payment found for this reservation',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            final success = await paymentServiceNotifier
+                                .refundPayment(
+                                  paymentId: payment.id,
+                                  refundAmount: payment.amount,
+                                );
+
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success
+                                      ? 'Refund processed successfully'
+                                      : 'Error processing refund',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
@@ -287,18 +360,18 @@ class ReservationDetailScreen extends ConsumerWidget {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // DropdownButtonFormField<int>(
-                  //   initialValue: rating,
-                  //   decoration: const InputDecoration(labelText: 'Rating'),
-                  //   items: List.generate(
-                  //     5,
-                  //     (i) => DropdownMenuItem(
-                  //       value: i + 1,
-                  //       child: Text('${i + 1} stars'),
-                  //     ),
-                  //   ),
-                  //   onChanged: (v) => setLocalState(() => rating = v ?? 5),
-                  // ),
+                  DropdownButtonFormField<int>(
+                    value: rating,
+                    decoration: const InputDecoration(labelText: 'Rating'),
+                    items: List.generate(
+                      5,
+                      (i) => DropdownMenuItem(
+                        value: i + 1,
+                        child: Text('${i + 1} stars'),
+                      ),
+                    ),
+                    onChanged: (v) => setLocalState(() => rating = v ?? 5),
+                  ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: controller,
@@ -356,21 +429,21 @@ class ReservationDetailScreen extends ConsumerWidget {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // DropdownButtonFormField<ReportReason>(
-                  //   initialValue: reason,
-                  //   decoration: const InputDecoration(labelText: 'Reason'),
-                  //   items: ReportReason.values
-                  //       .map(
-                  //         (e) => DropdownMenuItem(
-                  //           value: e,
-                  //           child: Text(e.toJson()),
-                  //         ),
-                  //       )
-                  //       .toList(),
-                  //   onChanged: (v) => setLocalState(
-                  //     () => reason = v ?? ReportReason.fakeListing,
-                  //   ),
-                  // ),
+                  DropdownButtonFormField<ReportReason>(
+                    value: reason,
+                    decoration: const InputDecoration(labelText: 'Reason'),
+                    items: ReportReason.values
+                        .map(
+                          (e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(e.toJson()),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setLocalState(
+                      () => reason = v ?? ReportReason.fakeListing,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: controller,

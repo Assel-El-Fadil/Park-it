@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/modules/payment/screens/invoice_screen.dart';
+import 'package:src/modules/payment/screens/my_payments_screen.dart';
 import 'package:src/modules/payment/screens/payment_screen.dart';
 import 'package:src/modules/payment/screens/payment_test.dart';
 import 'package:src/modules/reservation/models/reservation_model.dart';
@@ -11,11 +12,13 @@ class PaymentRoutes {
   static const String payment = 'payment';
   static const String paymentTest = 'payment-test';
   static const String paymentDetails = 'payment-details';
+  static const String myPayments = 'my-payments';
 
   // Paths
   static const String paymentPath = '/payment';
   static const String paymentTestPath = '/payment-test';
   static const String paymentDetailsPath = '/payment-details';
+  static const String myPaymentsPath = '/my-payments';
 }
 
 /// Payment module route configuration
@@ -30,6 +33,14 @@ List<GoRoute> getPaymentRoutes() {
           return const Scaffold(body: Center(child: Text('No booking data')));
         }
         return PaymentScreen(booking: booking);
+      },
+    ),
+
+    GoRoute(
+      path: PaymentRoutes.myPaymentsPath,
+      name: PaymentRoutes.myPayments,
+      builder: (context, state) {
+        return MyPaymentsScreen();
       },
     ),
 

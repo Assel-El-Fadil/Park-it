@@ -22,7 +22,7 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
   Map<String, dynamic> toJson(ReservationModel item) => item.toJson();
 
   Future<ReservationModel> createReservation({
-    required int driverId,
+    required String driverId,
     required int spotId,
     required int vehicleId,
     required DateTime startTime,
@@ -118,7 +118,9 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
     return row != null;
   }
 
-  Future<void> seedExampleCompletedReservation({required String driverId}) async {
+  Future<void> seedExampleCompletedReservation({
+    required String driverId,
+  }) async {
     final existing = await client
         .from(tableName)
         .select('id')

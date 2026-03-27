@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/notification/models/notification_model.dart';
 import 'package:src/modules/notification/services/notification_service.dart';
 
@@ -12,22 +13,29 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 final notificationProvider =
     StateNotifierProvider<NotificationNotifier, List<NotificationModel>>((ref) {
       final service = ref.watch(notificationServiceProvider);
-      return NotificationNotifier(service);
+      final userId = ref.watch(currentUserProvider)?.id;
+      return NotificationNotifier(service, userId);
     });
 
 class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
   final NotificationService _service;
+  String? _currentUserId;
 
-  String _currentUserId =
-      "00000000-0000-0000-0000-000000000005"; // This should come from your auth provider
-
-  NotificationNotifier(this._service) : super([]) {
-    _loadNotifications();
+  NotificationNotifier(this._service, this._currentUserId) : super([]) {
+    if (_currentUserId != null) {
+      _loadNotifications();
+    }
   }
 
   Future<void> _loadNotifications() async {
+    if (_currentUserId == null) {
+      state = [];
+      return;
+    }
     try {
-      final notifications = await _service.getUserNotifications(_currentUserId);
+      final notifications = await _service.getUserNotifications(
+        _currentUserId!,
+      );
       state = notifications;
     } catch (e) {
       state = [];
@@ -43,7 +51,6 @@ class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
     try {
       await _service.markNotificationAsRead(id);
 
-      // Update local state
       state = state.map((notification) {
         if (notification.id == id) {
           return NotificationModel(
@@ -69,7 +76,7 @@ class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
 
   Future<void> markAllAsRead() async {
     try {
-      await _service.markAllUserNotificationsAsRead(_currentUserId);
+      await _service.markAllUserNotificationsAsRead(_currentUserId!);
 
       state = state.map((notification) {
         return NotificationModel(
