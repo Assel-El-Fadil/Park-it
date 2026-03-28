@@ -110,15 +110,13 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
           );
 
       if (mounted) {
-        final state = ref.read(authNotifierProvider).value;
-        final user = state?.currentUser;
-        if (user != null && user.role == UserRole.superAdmin) {
-          context.go('/super-admin');
-        } else if (user != null && user.role == UserRole.owner) {
-          context.go(AuthRoutes.profile);
-        } else {
-          context.go(AuthRoutes.profile);
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account verified successfully! Please log in.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        context.go(AuthRoutes.login);
       }
     } catch (e) {
       // Error handled by AuthNotifier state

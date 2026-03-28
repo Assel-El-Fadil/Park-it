@@ -14,29 +14,47 @@ import 'package:src/providers/theme_provider.dart';
 Uri? initialLaunchUri;
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('[main] Starting initialization...');
 
-  // Capture the full URL before GoRouter replaces it with a clean path.
-  if (kIsWeb) {
-    initialLaunchUri = Uri.base;
-    debugPrint('[main] initialLaunchUri = $initialLaunchUri');
+    // Capture the full URL before GoRouter replaces it with a clean path.
+    if (kIsWeb) {
+      initialLaunchUri = Uri.base;
+      debugPrint('[main] initialLaunchUri = $initialLaunchUri');
+    }
+
+    await dotenv.load(fileName: "lib/.env");
+    debugPrint('[main] Dotenv loaded');
+
+    if (!kIsWeb) {
+      Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
+      await Stripe.instance.applySettings();
+      debugPrint('[main] Stripe initialized (Mobile)');
+    } else {
+      // For Web, Stripe might need different initialization or it's handled via JS
+      // For now, we skip mobile-specific Stripe setup to prevent crashes
+      debugPrint('[main] Stripe initialization skipped on Web');
+    }
+
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL'] ?? AppConstants.supabaseUrl,
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+      authOptions: FlutterAuthClientOptions(
+        authFlowType: kIsWeb ? AuthFlowType.implicit : AuthFlowType.pkce,
+        detectSessionInUri: true,
+      ),
+    );
+    debugPrint('[main] Supabase initialized');
+
+    runApp(const ProviderScope(child: MyApp()));
+  } catch (e, s) {
+    debugPrint('[main] FATAL ERROR: $e');
+    debugPrint('[main] STACK TRACE: $s');
+    // Still run the app, let it handle its own errors if possible, 
+    // but at least we have the logs.
+    runApp(const ProviderScope(child: MyApp()));
   }
-
-  await dotenv.load(fileName: "lib/.env");
-
-  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
-  await Stripe.instance.applySettings();
-
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? AppConstants.supabaseUrl,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-    authOptions: FlutterAuthClientOptions(
-      authFlowType: kIsWeb ? AuthFlowType.implicit : AuthFlowType.pkce,
-      detectSessionInUri: true,
-    ),
-  );
-
-  runApp(const ProviderScope(child: MyApp()));
 }
 
 

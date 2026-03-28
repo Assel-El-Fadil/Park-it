@@ -113,7 +113,6 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
@@ -125,7 +124,6 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -139,18 +137,15 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
           _passwordController.text,
           _firstNameController.text.trim(),
           _lastNameController.text.trim(),
-          _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+          null,
           _selectedRole,
         );
 
     if (needsVerification && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('A confirmation link has been sent to your email. Please verify your email to log in.'),
-          duration: Duration(seconds: 5),
-        ),
+      context.go(
+        AuthRoutes.verifyOtpPath,
+        extra: {'email': _emailController.text.trim()},
       );
-      context.go(AuthRoutes.login);
     }
   }
 
@@ -213,15 +208,6 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
             },
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'Phone (optional)',
-              hintText: 'e.g. +212612345678',
-            ),
-          ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _passwordController,
@@ -246,6 +232,12 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
               }
               if (value.length < AppConstants.minPasswordLength) {
                 return AppConstants.validationPassword;
+              }
+              if (!RegExp(r'(?=.*[A-Za-z])').hasMatch(value)) {
+                return 'Password must contain at least one letter';
+              }
+              if (!RegExp(r'(?=.*\d)').hasMatch(value)) {
+                return 'Password must contain at least one number';
               }
               return null;
             },
