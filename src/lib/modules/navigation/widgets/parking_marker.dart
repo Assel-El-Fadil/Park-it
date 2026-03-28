@@ -62,10 +62,10 @@ class ParkingMarker extends ConsumerWidget {
             size: isSelected ? 22 : 18,
           ),
           Text(
-            '\$${total.toStringAsFixed(0)}',
+            '${total.toStringAsFixed(0)} MAD',
             style: TextStyle(
               color: Colors.white,
-              fontSize: isSelected ? 9 : 8,
+              fontSize: isSelected ? 8 : 7,
               fontWeight: FontWeight.w700,
               height: 1,
             ),
