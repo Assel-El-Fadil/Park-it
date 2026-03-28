@@ -165,6 +165,7 @@ class _EditParkingSpaceScreenState
                       const SizedBox(height: 12),
                       TextField(
                         controller: _streetCtrl,
+                        enabled: false,
                         decoration: const InputDecoration(
                           labelText: 'Street',
                           prefixIcon: Icon(Icons.location_on_outlined),
@@ -173,6 +174,7 @@ class _EditParkingSpaceScreenState
                       const SizedBox(height: 12),
                       TextField(
                         controller: _cityCtrl,
+                        enabled: false,
                         decoration: const InputDecoration(labelText: 'City'),
                       ),
                       const SizedBox(height: 12),
@@ -181,6 +183,7 @@ class _EditParkingSpaceScreenState
                           Expanded(
                             child: TextField(
                               controller: _countryCtrl,
+                              enabled: false,
                               decoration: const InputDecoration(
                                 labelText: 'Country',
                               ),
@@ -190,6 +193,7 @@ class _EditParkingSpaceScreenState
                           Expanded(
                             child: TextField(
                               controller: _postalCtrl,
+                              enabled: false,
                               decoration: const InputDecoration(
                                 labelText: 'Postal code',
                               ),
