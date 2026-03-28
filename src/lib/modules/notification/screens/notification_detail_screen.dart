@@ -229,7 +229,9 @@ class _NotificationDetailScreenState
           _buildMetadataRow(
             Icons.access_time_rounded,
             'Received',
-            _formatFullDateTime(notification.createdAt),
+            notification.createdAt != null
+                ? _formatFullDateTime(notification.createdAt!)
+                : 'Unknown',
             theme,
           ),
           if (notification.sentAt != null) ...[

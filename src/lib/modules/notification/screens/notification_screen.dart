@@ -242,10 +242,11 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                 onLongPress: () => _handleLongPress(notification),
                 onCheckboxChanged: (selected) {
                   setState(() {
+                    if (notification.id == null) return;
                     if (selected) {
-                      _selectedIds.add(notification.id);
+                      _selectedIds.add(notification.id!);
                     } else {
-                      _selectedIds.remove(notification.id);
+                      _selectedIds.remove(notification.id!);
                     }
                   });
                 },
@@ -336,9 +337,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     for (var notification in notifications) {
       String dateKey;
       final notificationDate = DateTime(
-        notification.createdAt.year,
-        notification.createdAt.month,
-        notification.createdAt.day,
+        notification.createdAt!.year,
+        notification.createdAt!.month,
+        notification.createdAt!.day,
       );
 
       if (notificationDate == today) {
@@ -360,15 +361,18 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   void _handleNotificationTap(NotificationModel notification) {
     if (_isSelectionMode) {
       setState(() {
-        if (_selectedIds.contains(notification.id)) {
-          _selectedIds.remove(notification.id);
+        if (notification.id == null) return;
+        if (_selectedIds.contains(notification.id!)) {
+          _selectedIds.remove(notification.id!);
         } else {
-          _selectedIds.add(notification.id);
+          _selectedIds.add(notification.id!);
         }
       });
     } else {
       // Mark as read
-      ref.read(notificationProvider.notifier).markAsRead(notification.id);
+      if (notification.id != null) {
+        ref.read(notificationProvider.notifier).markAsRead(notification.id!);
+      }
 
       // Navigate based on reference type
       if (notification.referenceType != null &&
@@ -404,15 +408,18 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   }
 
   void _handleLongPress(NotificationModel notification) {
+    if (notification.id == null) return;
     setState(() {
       _isSelectionMode = true;
-      _selectedIds.add(notification.id);
+      _selectedIds.add(notification.id!);
     });
   }
 
   void _selectAll() {
     setState(() {
-      _selectedIds = {...filteredNotifications.map((n) => n.id)};
+      _selectedIds = {
+        ...filteredNotifications.where((n) => n.id != null).map((n) => n.id!),
+      };
     });
   }
 
