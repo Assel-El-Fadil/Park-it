@@ -45,7 +45,7 @@ class PaymentNotifier extends Notifier<PaymentState> {
       notificationService.addNotification(
         NotificationModel(
           userId: payerId,
-          type: NotificationType.paymentReceived,
+          type: NotificationType.paymentSuccess,
           title: 'Payment Successful',
           content:
               'Your payment of $amount $currency has been processed successfully.',
