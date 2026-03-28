@@ -160,12 +160,12 @@ class _OwnerSpotCard extends StatelessWidget {
                 ),
                 _Badge(
                   icon: Icons.attach_money,
-                  label: '${spot.pricePerHour.toStringAsFixed(0)} /h',
+                  label: '${spot.pricePerHour.toStringAsFixed(0)} MAD/h',
                 ),
                 if (spot.pricePerDay != null)
                   _Badge(
                     icon: Icons.calendar_today_outlined,
-                    label: '${spot.pricePerDay!.toStringAsFixed(0)} /day',
+                    label: '${spot.pricePerDay!.toStringAsFixed(0)} MAD/day',
                   ),
                 _Badge(
                   icon: Icons.star,

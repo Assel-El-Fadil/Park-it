@@ -20,7 +20,7 @@ class OwnerEarningsScreen extends ConsumerWidget {
     final ownerId = currentUser?.id ?? '';
 
     final spots = ref.watch(
-      ownerStoreProvider.select((s) => s.spots.where((p) => p.ownerId == ownerId && p.lotId == null).toList()),
+      ownerStoreProvider.select((s) => s.spots.where((p) => p.ownerId == ownerId).toList()),
     );
     final ownedSpotIds = spots.map((s) => s.id).toSet();
 
@@ -51,19 +51,19 @@ class OwnerEarningsScreen extends ConsumerWidget {
             _KpiCard(
               icon: Icons.monetization_on_outlined,
               label: 'Total payout',
-              value: '${totalPayout.toStringAsFixed(2)}',
+              value: '${totalPayout.toStringAsFixed(2)} MAD',
             ),
             const SizedBox(height: 12),
             _KpiCard(
               icon: Icons.account_balance_wallet_outlined,
               label: 'Total amount',
-              value: '${totalAmount.toStringAsFixed(2)}',
+              value: '${totalAmount.toStringAsFixed(2)} MAD',
             ),
             const SizedBox(height: 12),
             _KpiCard(
               icon: Icons.payment_outlined,
               label: 'Platform fee',
-              value: '${totalPlatformFee.toStringAsFixed(2)}',
+              value: '${totalPlatformFee.toStringAsFixed(2)} MAD',
             ),
             const SizedBox(height: 20),
             Text(
@@ -192,12 +192,12 @@ class _PayoutCard extends StatelessWidget {
             children: [
               _InlineChip(
                 icon: Icons.monetization_on_outlined,
-                label: '${reservation.ownerPayout.toStringAsFixed(2)} payout',
+                label: '${reservation.ownerPayout.toStringAsFixed(2)} MAD payout',
               ),
               const SizedBox(width: 8),
               _InlineChip(
                 icon: Icons.payment_outlined,
-                label: '${reservation.totalPrice.toStringAsFixed(2)} total',
+                label: '${reservation.totalPrice.toStringAsFixed(2)} MAD total',
               ),
               const Spacer(),
               IconButton(

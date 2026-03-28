@@ -47,7 +47,8 @@ CREATE TYPE notification_type AS ENUM (
   'REVIEW_RECEIVED',
   'EXPIRY_REMINDER',
   'ACCOUNT_VERIFIED',
-  'DISPUTE_UPDATE'
+  'DISPUTE_UPDATE',
+  'SYSTEM'
 );
 
 CREATE TYPE notification_channel AS ENUM ('PUSH', 'EMAIL', 'IN_APP');

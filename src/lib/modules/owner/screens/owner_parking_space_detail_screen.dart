@@ -102,13 +102,13 @@ class OwnerParkingSpaceDetailScreen extends ConsumerWidget {
                         ),
                         _Chip(
                           label:
-                              '${spot.pricePerHour.toStringAsFixed(0)} /h',
+                              '${spot.pricePerHour.toStringAsFixed(0)} MAD/h',
                           icon: Icons.attach_money,
                         ),
                         if (spot.pricePerDay != null)
                           _Chip(
                             label:
-                                '${spot.pricePerDay!.toStringAsFixed(0)} /day',
+                                '${spot.pricePerDay!.toStringAsFixed(0)} MAD/day',
                             icon: Icons.calendar_today_outlined,
                           ),
                         _Chip(

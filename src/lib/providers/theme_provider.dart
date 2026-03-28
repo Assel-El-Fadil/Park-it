@@ -10,12 +10,12 @@ class ThemeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
     _loadTheme();
-    return ThemeMode.system;
+    return ThemeMode.light;
   }
 
   Future<void> _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    final themeIndex = prefs.getInt('theme_mode') ?? 0;
+    final themeIndex = prefs.getInt('theme_mode') ?? 1;
     if (themeIndex < 0 || themeIndex >= ThemeMode.values.length) {
       state = ThemeMode.system;
       return;

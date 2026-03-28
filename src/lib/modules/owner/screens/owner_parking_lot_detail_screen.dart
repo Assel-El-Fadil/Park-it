@@ -44,52 +44,62 @@ class _OwnerParkingLotDetailScreenState
     if (lotId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Parking Lot Detail')),
-        body: const Center(
-          child: Text('Invalid parking lot ID'),
-        ),
+        body: const Center(child: Text('Invalid parking lot ID')),
       );
     }
 
     final lot = ref.watch(
       ownerStoreProvider.select(
-        (s) => s.lots.where((l) => l.id == lotId && l.ownerId == ownerId).firstOrNull,
+        (s) => s.lots
+            .where((l) => l.id == lotId && l.ownerId == ownerId)
+            .firstOrNull,
       ),
     );
 
     final spots = ref.watch(
       ownerStoreProvider.select(
-        (s) => s.spots.where((s) => s.lotId == lotId && s.ownerId == ownerId).toList(),
+        (s) => s.spots
+            .where((s) => s.lotId == lotId && s.ownerId == ownerId)
+            .toList(),
       ),
     );
 
     if (lot == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Parking Lot Detail')),
-        body: const Center(
-          child: Text('Parking lot not found'),
-        ),
+        body: const Center(child: Text('Parking lot not found')),
       );
     }
 
     // Initialize controllers with current average prices
     if (_priceHourCtrl.text.isEmpty && spots.isNotEmpty) {
-      final avgPriceHour = spots.fold<double>(0, (sum, s) => sum + s.pricePerHour) / spots.length;
+      final avgPriceHour =
+          spots.fold<double>(0, (sum, s) => sum + s.pricePerHour) /
+          spots.length;
       _priceHourCtrl.text = avgPriceHour.toStringAsFixed(2);
-      
+
       final spotsWithDayPrice = spots.where((s) => s.pricePerDay != null);
       if (spotsWithDayPrice.isNotEmpty) {
-        final avgPriceDay = spotsWithDayPrice.fold<double>(0, (sum, s) => sum + s.pricePerDay!) / spotsWithDayPrice.length;
+        final avgPriceDay =
+            spotsWithDayPrice.fold<double>(
+              0,
+              (sum, s) => sum + s.pricePerDay!,
+            ) /
+            spotsWithDayPrice.length;
         _priceDayCtrl.text = avgPriceDay.toStringAsFixed(2);
       }
-      
+
       _dynamicPricing = spots.any((s) => s.isDynamicPricing);
     }
 
-    final availableSpots = spots.where((s) => s.status == SpotStatus.available).length;
+    final availableSpots = spots
+        .where((s) => s.status == SpotStatus.available)
+        .length;
     final totalBookings = spots.fold<int>(0, (sum, s) => sum + s.totalBookings);
     final averageRating = spots.isEmpty
         ? 0.0
-        : spots.fold<double>(0, (sum, s) => sum + s.averageRating) / spots.length;
+        : spots.fold<double>(0, (sum, s) => sum + s.averageRating) /
+              spots.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -97,11 +107,7 @@ class _OwnerParkingLotDetailScreenState
         actions: [
           IconButton(
             tooltip: 'Edit Lot',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit lot functionality coming soon.')),
-              );
-            },
+            onPressed: () {},
             icon: const Icon(Icons.edit_outlined),
           ),
         ],
@@ -190,7 +196,8 @@ class _OwnerParkingLotDetailScreenState
                     controller: _priceHourCtrl,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Price per hour',
+                      labelText: 'Price per hour (min 6 MAD)',
+                      prefixText: 'MAD ',
                       suffixText: '/h',
                       helperText: 'This will update all spots in the lot',
                     ),
@@ -201,6 +208,7 @@ class _OwnerParkingLotDetailScreenState
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Price per day (optional)',
+                      prefixText: 'MAD ',
                       suffixText: '/day',
                       helperText: 'Leave empty to remove day pricing',
                     ),
@@ -209,9 +217,12 @@ class _OwnerParkingLotDetailScreenState
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Dynamic pricing for all spots'),
-                    subtitle: const Text('Enable/disable dynamic pricing uniformly'),
+                    subtitle: const Text(
+                      'Enable/disable dynamic pricing uniformly',
+                    ),
                     value: _dynamicPricing,
-                    onChanged: (value) => setState(() => _dynamicPricing = value),
+                    onChanged: (value) =>
+                        setState(() => _dynamicPricing = value),
                   ),
                   const SizedBox(height: 16),
                   PrimaryButton(
@@ -247,19 +258,12 @@ class _OwnerParkingLotDetailScreenState
                         child: OutlinedButton.icon(
                           onPressed: _isSubmitting
                               ? null
-                              : () => _updateAllSpotsStatus(spots, SpotStatus.available),
+                              : () => _updateAllSpotsStatus(
+                                  spots,
+                                  SpotStatus.available,
+                                ),
                           icon: const Icon(Icons.check_circle),
                           label: const Text('Set All Available'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _isSubmitting
-                              ? null
-                              : () => _updateAllSpotsStatus(spots, SpotStatus.suspended),
-                          icon: const Icon(Icons.pause_circle),
-                          label: const Text('Set All Suspended'),
                         ),
                       ),
                     ],
@@ -270,7 +274,10 @@ class _OwnerParkingLotDetailScreenState
                     child: OutlinedButton.icon(
                       onPressed: _isSubmitting
                           ? null
-                          : () => _updateAllSpotsStatus(spots, SpotStatus.archived),
+                          : () => _updateAllSpotsStatus(
+                              spots,
+                              SpotStatus.archived,
+                            ),
                       icon: const Icon(Icons.archive),
                       label: const Text('Set All Archived'),
                     ),
@@ -303,127 +310,111 @@ class _OwnerParkingLotDetailScreenState
     );
   }
 
-  Future<void> _updateAllSpotPricing(List<ParkingSpotModel> spots) async {
-    setState(() => _isSubmitting = true);
-    
-    try {
-      final priceHour = double.tryParse(_priceHourCtrl.text);
-      final priceDay = _priceDayCtrl.text.isNotEmpty 
-          ? double.tryParse(_priceDayCtrl.text) 
-          : null;
+  void _updateAllSpotPricing(List<ParkingSpotModel> spots) {
+    if (_isSubmitting) return;
 
-      if (priceHour == null || priceHour <= 0) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid price per hour')),
-        );
-        return;
-      }
+    final priceHour = double.tryParse(_priceHourCtrl.text);
+    final priceDay = _priceDayCtrl.text.isNotEmpty
+        ? double.tryParse(_priceDayCtrl.text)
+        : null;
 
-      // Update all spots with new pricing
-      for (final spot in spots) {
-        final updatedSpot = ParkingSpotModel(
-          id: spot.id,
-          ownerId: spot.ownerId,
-          lotId: spot.lotId,
-          title: spot.title,
-          description: spot.description,
-          latitude: spot.latitude,
-          longitude: spot.longitude,
-          altitude: spot.altitude,
-          street: spot.street,
-          city: spot.city,
-          country: spot.country,
-          postalCode: spot.postalCode,
-          photos: spot.photos,
-          pricePerHour: priceHour,
-          pricePerDay: priceDay,
-          spotType: spot.spotType,
-          vehicleTypes: spot.vehicleTypes,
-          amenities: spot.amenities,
-          status: spot.status,
-          averageRating: spot.averageRating,
-          totalReviews: spot.totalReviews,
-          totalBookings: spot.totalBookings,
-          isDynamicPricing: _dynamicPricing,
-          createdAt: spot.createdAt,
-          updatedAt: DateTime.now(),
-        );
-
-        await ref.read(ownerStoreProvider.notifier).updateSpot(updatedSpot);
-      }
-
-      if (!mounted) return;
+    if (priceHour == null || priceHour < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Updated pricing for ${spots.length} spots'),
-        ),
+        const SnackBar(content: Text('Minimum price is 6.00 MAD (Stripe requires at least ≈ \$0.50 USD).')),
       );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update pricing: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Updating pricing for ${spots.length} spots in the background...')),
+    );
+
+    Future(() async {
+      try {
+        for (final spot in spots) {
+          final updatedSpot = ParkingSpotModel(
+            id: spot.id,
+            ownerId: spot.ownerId,
+            lotId: spot.lotId,
+            title: spot.title,
+            description: spot.description,
+            latitude: spot.latitude,
+            longitude: spot.longitude,
+            altitude: spot.altitude,
+            street: spot.street,
+            city: spot.city,
+            country: spot.country,
+            postalCode: spot.postalCode,
+            photos: spot.photos,
+            pricePerHour: priceHour,
+            pricePerDay: priceDay,
+            spotType: spot.spotType,
+            vehicleTypes: spot.vehicleTypes,
+            amenities: spot.amenities,
+            status: spot.status,
+            averageRating: spot.averageRating,
+            totalReviews: spot.totalReviews,
+            totalBookings: spot.totalBookings,
+            isDynamicPricing: _dynamicPricing,
+            createdAt: spot.createdAt,
+            updatedAt: DateTime.now(),
+          );
+
+          await ref.read(ownerStoreProvider.notifier).updateSpot(updatedSpot);
+        }
+      } catch (e) {
+        debugPrint('Failed to update pricing: $e');
+      }
+    });
   }
 
-  Future<void> _updateAllSpotsStatus(List<ParkingSpotModel> spots, SpotStatus status) async {
-    setState(() => _isSubmitting = true);
-    
-    try {
-      // Update all spots with new status
-      for (final spot in spots) {
-        final updatedSpot = ParkingSpotModel(
-          id: spot.id,
-          ownerId: spot.ownerId,
-          lotId: spot.lotId,
-          title: spot.title,
-          description: spot.description,
-          latitude: spot.latitude,
-          longitude: spot.longitude,
-          altitude: spot.altitude,
-          street: spot.street,
-          city: spot.city,
-          country: spot.country,
-          postalCode: spot.postalCode,
-          photos: spot.photos,
-          pricePerHour: spot.pricePerHour,
-          pricePerDay: spot.pricePerDay,
-          spotType: spot.spotType,
-          vehicleTypes: spot.vehicleTypes,
-          amenities: spot.amenities,
-          status: status,
-          averageRating: spot.averageRating,
-          totalReviews: spot.totalReviews,
-          totalBookings: spot.totalBookings,
-          isDynamicPricing: spot.isDynamicPricing,
-          createdAt: spot.createdAt,
-          updatedAt: DateTime.now(),
-        );
+  void _updateAllSpotsStatus(
+    List<ParkingSpotModel> spots,
+    SpotStatus status,
+  ) {
+    if (_isSubmitting) return;
 
-        await ref.read(ownerStoreProvider.notifier).updateSpot(updatedSpot);
-      }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Setting ${spots.length} spots to ${status.toJson()} in the background...')),
+    );
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Set ${spots.length} spots to ${status.toJson()}'),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update status: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
+    Future(() async {
+      try {
+        for (final spot in spots) {
+          final updatedSpot = ParkingSpotModel(
+            id: spot.id,
+            ownerId: spot.ownerId,
+            lotId: spot.lotId,
+            title: spot.title,
+            description: spot.description,
+            latitude: spot.latitude,
+            longitude: spot.longitude,
+            altitude: spot.altitude,
+            street: spot.street,
+            city: spot.city,
+            country: spot.country,
+            postalCode: spot.postalCode,
+            photos: spot.photos,
+            pricePerHour: spot.pricePerHour,
+            pricePerDay: spot.pricePerDay,
+            spotType: spot.spotType,
+            vehicleTypes: spot.vehicleTypes,
+            amenities: spot.amenities,
+            status: status,
+            averageRating: spot.averageRating,
+            totalReviews: spot.totalReviews,
+            totalBookings: spot.totalBookings,
+            isDynamicPricing: spot.isDynamicPricing,
+            createdAt: spot.createdAt,
+            updatedAt: DateTime.now(),
+          );
+
+          await ref.read(ownerStoreProvider.notifier).updateSpot(updatedSpot);
+        }
+      } catch (e) {
+        debugPrint('Failed to update status: $e');
       }
-    }
+    });
   }
 }
 
@@ -504,11 +495,7 @@ class _SpotListItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.local_parking,
-            color: statusColor(),
-            size: 20,
-          ),
+          Icon(Icons.local_parking, color: statusColor(), size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -521,7 +508,7 @@ class _SpotListItem extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${spot.pricePerHour.toStringAsFixed(0)} /h',
+                  '${spot.pricePerHour.toStringAsFixed(0)} MAD/h',
                   style: context.textTheme.bodySmall?.copyWith(
                     color: context.colorScheme.textSecondary,
                   ),

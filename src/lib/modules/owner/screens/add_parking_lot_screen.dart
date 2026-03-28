@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/owner/repositories/parking_lot_repository.dart';
 import 'package:src/modules/owner/repositories/parking_spot_repository.dart';
+import 'package:src/modules/owner/screens/confirm_location_screen.dart';
+import 'package:src/providers/GeoCodingNotifier.dart';
+import 'package:src/providers/location_provider.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/app_layout.dart';
 import 'package:src/shared/widgets/frosted_bar.dart';
@@ -81,14 +85,69 @@ class _AddParkingLotScreenState extends ConsumerState<AddParkingLotScreen> {
     }
 
     final amenities = _amenities.entries.where((e) => e.value).map((e) => e.key).toList();
+
+    // Validate min price
+    final priceHour = double.tryParse(_priceHour.text.trim()) ?? 0;
+    if (priceHour < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Minimum price is 6.00 MAD (Stripe requires at least ≈ \$0.50 USD).'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
     try {
+      // Use geocoding to resolve lat/lng from address
+      final geocoding = ref.read(geocodingProvider.notifier);
+      await geocoding.getFromFields(
+        street: _street.text.trim(),
+        city: _city.text.trim(),
+        country: _country.text.trim(),
+        postalCode: _postal.text.trim(),
+      );
+
+      final geoResult = geocoding.lastKnown();
+      double? lat = geoResult?.latitude ?? double.tryParse(_lat.text.trim());
+      double? lng = geoResult?.longitude ?? double.tryParse(_lng.text.trim());
+
+      if (lat == null || lng == null) {
+        // Fallback to user's GPS location
+        final userLoc = ref.read(locationProvider).value;
+        if (userLoc != null) {
+          lat = userLoc.latitude;
+          lng = userLoc.longitude;
+        }
+      }
+
+      // Build initial LatLng for map
+      final initialLatLng = (lat != null && lng != null)
+          ? LatLng(lat, lng)
+          : const LatLng(31.6295, -7.9811);
+
+      // Navigate to map confirmation screen
+      if (!mounted) return;
+      final LatLng? confirmedLatLng = await Navigator.push<LatLng>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ConfirmLocationScreen(initial: initialLatLng),
+        ),
+      );
+
+      if (confirmedLatLng == null) {
+        // User cancelled
+        return;
+      }
+
+      lat = confirmedLatLng.latitude;
+      lng = confirmedLatLng.longitude;
       final lotId = await ref.read(parkingLotRepositoryProvider).insertLot(
             ownerId: ownerId,
             name: _lotName.text.trim(),
             description: _lotDescription.text.trim().isEmpty ? null : _lotDescription.text.trim(),
-            latitude: double.parse(_lat.text.trim()),
-            longitude: double.parse(_lng.text.trim()),
+            latitude: lat,
+            longitude: lng,
             street: _street.text.trim(),
             city: _city.text.trim(),
             country: _country.text.trim(),
@@ -103,8 +162,8 @@ class _AddParkingLotScreenState extends ConsumerState<AddParkingLotScreen> {
             lotId: lotId,
             title: _spotTitle.text.trim(),
             description: _spotDescription.text.trim().isEmpty ? null : _spotDescription.text.trim(),
-            latitude: double.parse(_lat.text.trim()),
-            longitude: double.parse(_lng.text.trim()),
+            latitude: lat,
+            longitude: lng,
             street: _street.text.trim(),
             city: _city.text.trim(),
             country: _country.text.trim(),
@@ -226,7 +285,7 @@ class _AddParkingLotScreenState extends ConsumerState<AddParkingLotScreen> {
                         const SizedBox(height: 10),
                         TextFormField(controller: _spotDescription, maxLines: 2, decoration: const InputDecoration(labelText: 'Spot description')),
                         const SizedBox(height: 10),
-                        TextFormField(controller: _priceHour, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price per hour *', prefixText: 'MAD ', suffixText: '/hr'), validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid number' : null),
+                        TextFormField(controller: _priceHour, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price per hour (min 6 MAD) *', prefixText: 'MAD ', suffixText: '/hr'), validator: (v) { final val = double.tryParse(v ?? ''); if (val == null) return 'Invalid number'; if (val < 6) return 'Minimum is 6.00 MAD'; return null; }),
                         const SizedBox(height: 10),
                         TextFormField(controller: _priceDay, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price per day (optional)', prefixText: 'MAD ', suffixText: '/day')),
                       ],

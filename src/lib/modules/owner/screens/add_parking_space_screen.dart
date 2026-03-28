@@ -1,12 +1,21 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/owner/data/owner_store.dart';
 import 'package:src/modules/owner/models/parking_lot_model.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
+import 'package:src/modules/owner/screens/confirm_location_screen.dart';
+import 'package:src/modules/notification/models/notification_model.dart';
+import 'package:src/modules/notification/services/notification_service.dart';
+import 'package:src/providers/notification_provider.dart';
+import 'package:src/providers/GeoCodingNotifier.dart';
+import 'package:src/providers/location_provider.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/app_layout.dart';
 import 'package:src/shared/widgets/frosted_bar.dart';
@@ -28,7 +37,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
   final _cityCtrl = TextEditingController();
   final _countryCtrl = TextEditingController(text: 'MOROCCO');
   final _postalCodeCtrl = TextEditingController();
-  final _priceHourCtrl = TextEditingController(text: '5');
+  final _priceHourCtrl = TextEditingController(text: '6');
   final _priceDayCtrl = TextEditingController();
   final _totalSpotsCtrl = TextEditingController();
   final _latCtrl = TextEditingController(
@@ -43,7 +52,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
   SpotType _spotType = SpotType.outdoor;
   SpotStatus _status = SpotStatus.available;
   bool _dynamicPricing = false;
-  List<String> _photos = <String>[];
+  List<PlatformFile> _photos = <PlatformFile>[];
   bool _isSubmitting = false;
 
   final _amenities = <String, bool>{
@@ -160,15 +169,15 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          for (final path in _photos)
+                          for (final file in _photos)
                             InputChip(
                               label: Text(
-                                path.split('\\').last,
+                                file.name,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               onDeleted: () {
                                 setState(() {
-                                  _photos.remove(path);
+                                  _photos.remove(file);
                                 });
                               },
                             ),
@@ -188,12 +197,11 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                           final result = await FilePicker.platform.pickFiles(
                             allowMultiple: true,
                             type: FileType.image,
+                            withData: true,
                           );
                           if (result == null) return;
-                          final picked = result.paths
-                              .whereType<String>()
-                              .toList();
-                          final merged = <String>{
+                          final picked = result.files;
+                          final merged = <PlatformFile>{
                             ..._photos,
                             ...picked,
                           }.toList();
@@ -364,7 +372,8 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                           controller: _priceHourCtrl,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                            labelText: 'Price per hour',
+                            labelText: 'Price per hour (min 6 MAD)',
+                            prefixText: 'MAD ',
                             suffixText: '/h',
                           ),
                         ),
@@ -374,6 +383,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
                             labelText: 'Price per day (optional)',
+                            prefixText: 'MAD ',
                             suffixText: '/day',
                           ),
                         ),
@@ -444,23 +454,6 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                             final currentUser = ref.read(currentUserProvider);
                             final ownerId = currentUser?.id;
 
-                            // Check if controllers are still valid before accessing their text
-                            if (!mounted ||
-                                _latCtrl.text.isEmpty ||
-                                _lngCtrl.text.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Location coordinates are required.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-
-                            final lat = double.tryParse(_latCtrl.text);
-                            final lng = double.tryParse(_lngCtrl.text);
-
                             if (ownerId == null || ownerId.isEmpty) {
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -470,23 +463,86 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                               );
                               return;
                             }
-                            if (lat == null || lng == null) {
+
+                            // Use geocoding to resolve lat/lng from address fields
+                            final geocoding = ref.read(
+                              geocodingProvider.notifier,
+                            );
+                            final street = _streetCtrl.text.trim();
+                            final city = _cityCtrl.text.trim();
+                            final country = _countryCtrl.text.trim();
+                            final postal = _postalCodeCtrl.text.trim();
+
+                            if (street.isEmpty ||
+                                city.isEmpty ||
+                                country.isEmpty ||
+                                postal.isEmpty) {
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
-                                    'Invalid location coordinates.',
+                                    'Street, city, country and postal code are required.',
                                   ),
                                 ),
                               );
                               return;
                             }
 
+                            await geocoding.getFromFields(
+                              street: street,
+                              city: city,
+                              country: country,
+                              postalCode: postal,
+                            );
+
+                            final geoResult = geocoding.lastKnown();
+                            double? lat;
+                            double? lng;
+
+                            if (geoResult != null) {
+                              lat = geoResult.latitude;
+                              lng = geoResult.longitude;
+                            } else {
+                              // Fallback to manual controller values
+                              lat = double.tryParse(_latCtrl.text);
+                              lng = double.tryParse(_lngCtrl.text);
+                            }
+
+                            if (lat == null || lng == null) {
+                              // Fallback to user's GPS location
+                              final userLoc = ref.read(locationProvider).value;
+                              if (userLoc != null) {
+                                lat = userLoc.latitude;
+                                lng = userLoc.longitude;
+                              }
+                            }
+
+                            // Build initial LatLng for map (fallback to Marrakesh)
+                            final initialLatLng = (lat != null && lng != null)
+                                ? LatLng(lat, lng)
+                                : const LatLng(31.6295, -7.9811);
+
+                            // Navigate to map confirmation screen
+                            if (!mounted) return;
+                            final LatLng? confirmedLatLng =
+                                await Navigator.push<LatLng>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ConfirmLocationScreen(
+                                      initial: initialLatLng,
+                                    ),
+                                  ),
+                                );
+
+                            if (confirmedLatLng == null) {
+                              // User cancelled
+                              return;
+                            }
+
+                            lat = confirmedLatLng.latitude;
+                            lng = confirmedLatLng.longitude;
+
                             final name = _nameCtrl.text.trim();
-                            final street = _streetCtrl.text.trim();
-                            final city = _cityCtrl.text.trim();
-                            final country = _countryCtrl.text.trim();
-                            final postal = _postalCodeCtrl.text.trim();
                             final desc = _descCtrl.text.trim();
                             final totalSpots =
                                 int.tryParse(_totalSpotsCtrl.text.trim()) ?? 1;
@@ -501,17 +557,11 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                               );
                               return;
                             }
-                            if (name.isEmpty ||
-                                street.isEmpty ||
-                                city.isEmpty ||
-                                country.isEmpty ||
-                                postal.isEmpty) {
+                            if (name.isEmpty) {
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                    'Name, street, city, country and postal code are required.',
-                                  ),
+                                  content: Text('Name is required.'),
                                 ),
                               );
                               return;
@@ -521,6 +571,31 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                                 .where((e) => e.value)
                                 .map((e) => Amenity.fromString(e.key))
                                 .toList();
+
+                            if (!mounted) return;
+                            final uploadedUrls = <String>[];
+                            if (_photos.isNotEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Uploading photos...')),
+                              );
+                              final storage = Supabase.instance.client.storage.from('parking_spots');
+                              for (final file in _photos) {
+                                final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+                                try {
+                                  if (file.bytes != null) {
+                                    await storage.uploadBinary(fileName, file.bytes!);
+                                  } else if (file.path != null) {
+                                    await storage.upload(fileName, File(file.path!));
+                                  } else {
+                                    continue;
+                                  }
+                                  final url = storage.getPublicUrl(fileName);
+                                  uploadedUrls.add(url);
+                                } catch (e) {
+                                  debugPrint('Failed to upload photo: $e');
+                                }
+                              }
+                            }
 
                             if (_isLotMode) {
                               await ref
@@ -538,7 +613,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                                       city: city,
                                       country: country,
                                       postalCode: postal,
-                                      photos: _photos.isEmpty ? null : _photos,
+                                      photos: uploadedUrls.isEmpty ? null : uploadedUrls,
                                       amenities: amenities.isEmpty
                                           ? null
                                           : amenities,
@@ -571,13 +646,11 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                               final priceHour =
                                   double.tryParse(_priceHourCtrl.text.trim()) ??
                                   0;
-                              if (priceHour <= 0) {
+                              if (priceHour < 6) {
                                 if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text(
-                                      'Price per hour must be greater than 0.',
-                                    ),
+                                    content: Text('Minimum price is 6.00 MAD.'),
                                   ),
                                 );
                                 return;
@@ -605,7 +678,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                                       city: city,
                                       country: country,
                                       postalCode: postal,
-                                      photos: _photos.isEmpty ? null : _photos,
+                                      photos: uploadedUrls.isEmpty ? null : uploadedUrls,
                                       pricePerHour: priceHour,
                                       pricePerDay: priceDay,
                                       spotType: _spotType,
@@ -626,6 +699,25 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                                   );
                             }
                             if (!mounted) return;
+
+                            try {
+                              final notificationService = ref.read(notificationServiceProvider);
+                              final spotOrLot = _isLotMode ? 'Parking lot' : 'Parking spot';
+                              await notificationService.addNotification(
+                                NotificationModel(
+                                  userId: ownerId,
+                                  type: NotificationType.system,
+                                  title: '$spotOrLot Created',
+                                  content: 'Your $spotOrLot "$name" has been successfully published and is now live.',
+                                  isRead: false,
+                                  channel: NotificationChannel.inApp,
+                                  sentAt: DateTime.now(),
+                                ),
+                              );
+                            } catch (e) {
+                              debugPrint('Failed to send notification: $e');
+                            }
+
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(

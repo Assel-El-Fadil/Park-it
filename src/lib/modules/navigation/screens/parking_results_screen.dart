@@ -62,10 +62,14 @@ class ParkingFiltersNotifier extends Notifier<ParkingFilters> {
   @override
   ParkingFilters build() => ParkingFilters();
 
-  void setVehicleType(VehicleType? type) => state = state.copyWith(vehicleType: type, clearVehicleType: type == null);
-  void setSpotType(SpotType? type) => state = state.copyWith(spotType: type, clearSpotType: type == null);
-  void setPriceRange(double min, double max) => state = state.copyWith(minPrice: min, maxPrice: max);
-  void setMinRating(double? rating) => state = state.copyWith(minRating: rating, clearMinRating: rating == null);
+  void setVehicleType(VehicleType? type) =>
+      state = state.copyWith(vehicleType: type, clearVehicleType: type == null);
+  void setSpotType(SpotType? type) =>
+      state = state.copyWith(spotType: type, clearSpotType: type == null);
+  void setPriceRange(double min, double max) =>
+      state = state.copyWith(minPrice: min, maxPrice: max);
+  void setMinRating(double? rating) =>
+      state = state.copyWith(minRating: rating, clearMinRating: rating == null);
   void toggleAmenity(Amenity amenity) {
     final amenities = List<Amenity>.from(state.amenities);
     if (amenities.contains(amenity)) {
@@ -79,9 +83,10 @@ class ParkingFiltersNotifier extends Notifier<ParkingFilters> {
   void clearAll() => state = ParkingFilters();
 }
 
-final parkingFiltersProvider = NotifierProvider<ParkingFiltersNotifier, ParkingFilters>(() {
-  return ParkingFiltersNotifier();
-});
+final parkingFiltersProvider =
+    NotifierProvider<ParkingFiltersNotifier, ParkingFilters>(() {
+      return ParkingFiltersNotifier();
+    });
 
 enum ParkingSort { closest, cheapest }
 
@@ -92,63 +97,77 @@ class ParkingSortNotifier extends Notifier<ParkingSort> {
   void setSort(ParkingSort sort) => state = sort;
 }
 
-final parkingSortProvider = NotifierProvider<ParkingSortNotifier, ParkingSort>(() {
-  return ParkingSortNotifier();
-});
+final parkingSortProvider = NotifierProvider<ParkingSortNotifier, ParkingSort>(
+  () {
+    return ParkingSortNotifier();
+  },
+);
 
-final parkingSearchResultsProvider = FutureProvider.family<List<ParkingSpotModel>, String>((ref, cityQuery) async {
-  final repo = ref.read(parkingSpotRepositoryProvider);
-  final bookingTime = ref.watch(bookingTimeProvider);
-  final sort = ref.watch(parkingSortProvider);
-  final filters = ref.watch(parkingFiltersProvider);
-  final location = ref.watch(locationProvider).value;
+final parkingSearchResultsProvider =
+    FutureProvider.family<List<ParkingSpotModel>, String>((
+      ref,
+      cityQuery,
+    ) async {
+      final repo = ref.read(parkingSpotRepositoryProvider);
+      final bookingTime = ref.watch(bookingTimeProvider);
+      final sort = ref.watch(parkingSortProvider);
+      final filters = ref.watch(parkingFiltersProvider);
+      final location = ref.watch(locationProvider).value;
 
-  var spots = await repo.searchAvailableByCity(
-    cityQuery,
-    bookingTime.arriveTime,
-    bookingTime.exitTime,
-  );
+      var spots = await repo.searchAvailableByCity(
+        cityQuery,
+        bookingTime.arriveTime,
+        bookingTime.exitTime,
+      );
 
-  // Apply filters
-  if (!filters.isEmpty) {
-    spots = spots.where((spot) {
-      if (filters.vehicleType != null && !(spot.vehicleTypes?.contains(filters.vehicleType) ?? true)) {
-        return false;
+      // Apply filters
+      if (!filters.isEmpty) {
+        spots = spots.where((spot) {
+          if (filters.vehicleType != null &&
+              !(spot.vehicleTypes?.contains(filters.vehicleType) ?? true)) {
+            return false;
+          }
+          if (filters.spotType != null && spot.spotType != filters.spotType) {
+            return false;
+          }
+          if (filters.amenities.isNotEmpty) {
+            for (final amenity in filters.amenities) {
+              if (!(spot.amenities?.contains(amenity) ?? false)) return false;
+            }
+          }
+          if (filters.minPrice != null &&
+              spot.pricePerHour < filters.minPrice!) {
+            return false;
+          }
+          if (filters.maxPrice != null &&
+              spot.pricePerHour > filters.maxPrice!) {
+            return false;
+          }
+          if (filters.minRating != null &&
+              spot.averageRating < filters.minRating!) {
+            return false;
+          }
+          return true;
+        }).toList();
       }
-      if (filters.spotType != null && spot.spotType != filters.spotType) {
-        return false;
-      }
-      if (filters.amenities.isNotEmpty) {
-        for (final amenity in filters.amenities) {
-          if (!(spot.amenities?.contains(amenity) ?? false)) return false;
-        }
-      }
-      if (filters.minPrice != null && spot.pricePerHour < filters.minPrice!) {
-        return false;
-      }
-      if (filters.maxPrice != null && spot.pricePerHour > filters.maxPrice!) {
-        return false;
-      }
-      if (filters.minRating != null && spot.averageRating < filters.minRating!) {
-        return false;
-      }
-      return true;
-    }).toList();
-  }
 
-  if (sort == ParkingSort.cheapest) {
-    spots.sort((a, b) => a.pricePerHour.compareTo(b.pricePerHour));
-  } else if (sort == ParkingSort.closest && location != null) {
-    final notifier = ref.read(locationProvider.notifier);
-    spots.sort((a, b) {
-      final d1 = notifier.distanceTo(a.latitude ?? 0, a.longitude ?? 0) ?? double.infinity;
-      final d2 = notifier.distanceTo(b.latitude ?? 0, b.longitude ?? 0) ?? double.infinity;
-      return d1.compareTo(d2);
+      if (sort == ParkingSort.cheapest) {
+        spots.sort((a, b) => a.pricePerHour.compareTo(b.pricePerHour));
+      } else if (sort == ParkingSort.closest && location != null) {
+        final notifier = ref.read(locationProvider.notifier);
+        spots.sort((a, b) {
+          final d1 =
+              notifier.distanceTo(a.latitude ?? 0, a.longitude ?? 0) ??
+              double.infinity;
+          final d2 =
+              notifier.distanceTo(b.latitude ?? 0, b.longitude ?? 0) ??
+              double.infinity;
+          return d1.compareTo(d2);
+        });
+      }
+
+      return spots;
     });
-  }
-
-  return spots;
-});
 
 class ParkingResultsScreen extends ConsumerStatefulWidget {
   final String cityQuery;
@@ -156,7 +175,8 @@ class ParkingResultsScreen extends ConsumerStatefulWidget {
   const ParkingResultsScreen({super.key, required this.cityQuery});
 
   @override
-  ConsumerState<ParkingResultsScreen> createState() => _ParkingResultsScreenState();
+  ConsumerState<ParkingResultsScreen> createState() =>
+      _ParkingResultsScreenState();
 }
 
 class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
@@ -164,21 +184,23 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
   void initState() {
     super.initState();
     // Start fetching location immediately to enable "Closest" sorting
-    Future.microtask(() => ref.read(locationProvider.notifier).getCurrentLocation());
+    Future.microtask(
+      () => ref.read(locationProvider.notifier).getCurrentLocation(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final spotsAsyncValue = ref.watch(parkingSearchResultsProvider(widget.cityQuery));
+    final spotsAsyncValue = ref.watch(
+      parkingSearchResultsProvider(widget.cityQuery),
+    );
     final duration = ref.watch(bookingTimeProvider).durationHours;
     final theme = Theme.of(context);
 
     // ... updated body ...
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Parking in ${widget.cityQuery}'),
-      ),
+      appBar: AppBar(title: Text('Parking in ${widget.cityQuery}')),
       body: Column(
         children: [
           const TimeSelectionBar(),
@@ -200,7 +222,9 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
                   itemBuilder: (context, index) {
                     final spot = spots[index];
                     final total = spot.pricePerHour * duration;
-                    final distance = ref.read(locationProvider.notifier).distanceLabel(spot.latitude ?? 0, spot.longitude ?? 0);
+                    final distance = ref
+                        .read(locationProvider.notifier)
+                        .distanceLabel(spot.latitude ?? 0, spot.longitude ?? 0);
 
                     return ListTile(
                       leading: const Icon(Icons.local_parking),
@@ -208,9 +232,13 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${total.toStringAsFixed(2)} MAD for $duration hours'),
+                          Text(
+                            '${total.toStringAsFixed(2)} MAD for $duration hours',
+                          ),
                           if (distance != null)
-                            Text('$distance away • ${spot.street ?? "Unknown street"}')
+                            Text(
+                              '$distance away • ${spot.street ?? "Unknown street"}',
+                            )
                           else
                             Text(spot.street ?? "Unknown street"),
                         ],
@@ -233,7 +261,8 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
           ),
         ],
       ),
-      floatingActionButton: spotsAsyncValue.value != null && spotsAsyncValue.value!.isNotEmpty
+      floatingActionButton:
+          spotsAsyncValue.value != null && spotsAsyncValue.value!.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () {
                 AppNavigator.pushNamed(
@@ -261,7 +290,9 @@ class _SortBar extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: theme.dividerColor, width: 0.5)),
+        border: Border(
+          bottom: BorderSide(color: theme.dividerColor, width: 0.5),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -277,13 +308,17 @@ class _SortBar extends ConsumerWidget {
           _SortTab(
             label: 'CLOSEST',
             isSelected: currentSort == ParkingSort.closest,
-            onTap: () => ref.read(parkingSortProvider.notifier).setSort(ParkingSort.closest),
+            onTap: () => ref
+                .read(parkingSortProvider.notifier)
+                .setSort(ParkingSort.closest),
           ),
           const SizedBox(width: 16),
           _SortTab(
             label: 'CHEAPEST',
             isSelected: currentSort == ParkingSort.cheapest,
-            onTap: () => ref.read(parkingSortProvider.notifier).setSort(ParkingSort.cheapest),
+            onTap: () => ref
+                .read(parkingSortProvider.notifier)
+                .setSort(ParkingSort.cheapest),
           ),
         ],
       ),
@@ -305,7 +340,9 @@ class _SortTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant.withOpacity(0.5);
+    final color = isSelected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant.withOpacity(0.5);
 
     return GestureDetector(
       onTap: onTap,
@@ -362,7 +399,9 @@ class _FilterBar extends ConsumerWidget {
             _FilterChip(
               label: filters.vehicleType!.name.toUpperCase(),
               isSelected: true,
-              onDeleted: () => ref.read(parkingFiltersProvider.notifier).setVehicleType(null),
+              onDeleted: () => ref
+                  .read(parkingFiltersProvider.notifier)
+                  .setVehicleType(null),
             ),
             const SizedBox(width: 8),
           ],
@@ -370,23 +409,31 @@ class _FilterBar extends ConsumerWidget {
             _FilterChip(
               label: filters.spotType!.name.toUpperCase(),
               isSelected: true,
-              onDeleted: () => ref.read(parkingFiltersProvider.notifier).setSpotType(null),
+              onDeleted: () =>
+                  ref.read(parkingFiltersProvider.notifier).setSpotType(null),
             ),
             const SizedBox(width: 8),
           ],
-          ...filters.amenities.map((amenity) => Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _FilterChip(
-              label: amenity.name.toUpperCase(),
-              isSelected: true,
-              onDeleted: () => ref.read(parkingFiltersProvider.notifier).toggleAmenity(amenity),
+          ...filters.amenities.map(
+            (amenity) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _FilterChip(
+                label: amenity.name.toUpperCase(),
+                isSelected: true,
+                onDeleted: () => ref
+                    .read(parkingFiltersProvider.notifier)
+                    .toggleAmenity(amenity),
+              ),
             ),
-          )),
+          ),
           if (filters.minPrice != null && filters.maxPrice != null) ...[
             _FilterChip(
-              label: '${filters.minPrice!.toInt()} MAD - ${filters.maxPrice!.toInt()} MAD',
+              label:
+                  '${filters.minPrice!.toInt()} MAD - ${filters.maxPrice!.toInt()} MAD',
               isSelected: true,
-              onDeleted: () => ref.read(parkingFiltersProvider.notifier).setPriceRange(0, 50),
+              onDeleted: () => ref
+                  .read(parkingFiltersProvider.notifier)
+                  .setPriceRange(0, 50),
             ),
             const SizedBox(width: 8),
           ],
@@ -395,7 +442,8 @@ class _FilterBar extends ConsumerWidget {
               label: '${filters.minRating!.toInt()}+ Stars',
               icon: Icons.star,
               isSelected: true,
-              onDeleted: () => ref.read(parkingFiltersProvider.notifier).setMinRating(null),
+              onDeleted: () =>
+                  ref.read(parkingFiltersProvider.notifier).setMinRating(null),
             ),
             const SizedBox(width: 8),
           ],
@@ -435,18 +483,28 @@ class _FilterChip extends StatelessWidget {
     return RawChip(
       label: Text(label),
       labelStyle: TextStyle(
-        color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+        color: isSelected
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.onSurface,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         fontSize: 12,
       ),
-      avatar: icon != null ? Icon(icon, size: 16, color: isSelected ? theme.colorScheme.onPrimary : null) : null,
+      avatar: icon != null
+          ? Icon(
+              icon,
+              size: 16,
+              color: isSelected ? theme.colorScheme.onPrimary : null,
+            )
+          : null,
       selected: isSelected,
       onPressed: onTap,
       onDeleted: onDeleted,
       deleteIconColor: isSelected ? theme.colorScheme.onPrimary : null,
       selectedColor: theme.colorScheme.primary,
       backgroundColor: theme.colorScheme.surface,
-      shape: StadiumBorder(side: BorderSide(color: theme.dividerColor, width: 0.5)),
+      shape: StadiumBorder(
+        side: BorderSide(color: theme.dividerColor, width: 0.5),
+      ),
       showCheckmark: false,
     );
   }
@@ -487,7 +545,12 @@ class _FilterSheet extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Filters', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                'Filters',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               TextButton(
                 onPressed: () {
                   ref.read(parkingFiltersProvider.notifier).clearAll();
@@ -507,11 +570,17 @@ class _FilterSheet extends ConsumerWidget {
                     title: 'Vehicle Type',
                     child: Wrap(
                       spacing: 8,
-                      children: VehicleType.values.map((type) => FilterChip(
-                        label: Text(type.name.toUpperCase()),
-                        selected: filters.vehicleType == type,
-                        onSelected: (selected) => ref.read(parkingFiltersProvider.notifier).setVehicleType(selected ? type : null),
-                      )).toList(),
+                      children: VehicleType.values
+                          .map(
+                            (type) => FilterChip(
+                              label: Text(type.name.toUpperCase()),
+                              selected: filters.vehicleType == type,
+                              onSelected: (selected) => ref
+                                  .read(parkingFiltersProvider.notifier)
+                                  .setVehicleType(selected ? type : null),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -519,11 +588,17 @@ class _FilterSheet extends ConsumerWidget {
                     title: 'Spot Type',
                     child: Wrap(
                       spacing: 8,
-                      children: SpotType.values.map((type) => FilterChip(
-                        label: Text(type.name.toUpperCase()),
-                        selected: filters.spotType == type,
-                        onSelected: (selected) => ref.read(parkingFiltersProvider.notifier).setSpotType(selected ? type : null),
-                      )).toList(),
+                      children: SpotType.values
+                          .map(
+                            (type) => FilterChip(
+                              label: Text(type.name.toUpperCase()),
+                              selected: filters.spotType == type,
+                              onSelected: (selected) => ref
+                                  .read(parkingFiltersProvider.notifier)
+                                  .setSpotType(selected ? type : null),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -531,11 +606,17 @@ class _FilterSheet extends ConsumerWidget {
                     title: 'Amenities',
                     child: Wrap(
                       spacing: 8,
-                      children: Amenity.values.map((amenity) => FilterChip(
-                        label: Text(amenity.name.toUpperCase()),
-                        selected: filters.amenities.contains(amenity),
-                        onSelected: (selected) => ref.read(parkingFiltersProvider.notifier).toggleAmenity(amenity),
-                      )).toList(),
+                      children: Amenity.values
+                          .map(
+                            (amenity) => FilterChip(
+                              label: Text(amenity.name.toUpperCase()),
+                              selected: filters.amenities.contains(amenity),
+                              onSelected: (selected) => ref
+                                  .read(parkingFiltersProvider.notifier)
+                                  .toggleAmenity(amenity),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -544,7 +625,10 @@ class _FilterSheet extends ConsumerWidget {
                     child: Column(
                       children: [
                         RangeSlider(
-                          values: RangeValues(filters.minPrice ?? 0, filters.maxPrice ?? 50),
+                          values: RangeValues(
+                            filters.minPrice ?? 0,
+                            filters.maxPrice ?? 50,
+                          ),
                           min: 0,
                           max: 50,
                           divisions: 10,
@@ -553,7 +637,9 @@ class _FilterSheet extends ConsumerWidget {
                             '${(filters.maxPrice ?? 50).toInt()} MAD',
                           ),
                           onChanged: (values) {
-                            ref.read(parkingFiltersProvider.notifier).setPriceRange(values.start, values.end);
+                            ref
+                                .read(parkingFiltersProvider.notifier)
+                                .setPriceRange(values.start, values.end);
                           },
                         ),
                         Padding(
@@ -575,23 +661,32 @@ class _FilterSheet extends ConsumerWidget {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: [1, 2, 3, 4, 5].map((rating) => Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ChoiceChip(
-                            label: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('$rating'),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.star, size: 14),
-                              ],
-                            ),
-                            selected: filters.minRating == rating.toDouble(),
-                            onSelected: (selected) {
-                              ref.read(parkingFiltersProvider.notifier).setMinRating(selected ? rating.toDouble() : null);
-                            },
-                          ),
-                        )).toList(),
+                        children: [1, 2, 3, 4, 5]
+                            .map(
+                              (rating) => Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: ChoiceChip(
+                                  label: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('$rating'),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.star, size: 14),
+                                    ],
+                                  ),
+                                  selected:
+                                      filters.minRating == rating.toDouble(),
+                                  onSelected: (selected) {
+                                    ref
+                                        .read(parkingFiltersProvider.notifier)
+                                        .setMinRating(
+                                          selected ? rating.toDouble() : null,
+                                        );
+                                  },
+                                ),
+                              ),
+                            )
+                            .toList(),
                       ),
                     ),
                   ),
@@ -609,9 +704,14 @@ class _FilterSheet extends ConsumerWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: theme.colorScheme.onPrimary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
-              child: const Text('Apply Filters', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Apply Filters',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ],
@@ -634,7 +734,9 @@ class _FilterSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         child,
@@ -642,4 +744,3 @@ class _FilterSection extends StatelessWidget {
     );
   }
 }
-
