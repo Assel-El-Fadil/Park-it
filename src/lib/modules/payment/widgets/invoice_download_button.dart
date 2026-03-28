@@ -12,7 +12,7 @@ class DownloadButton extends StatelessWidget {
     return OutlinedButton.icon(
       onPressed: () => _downloadInvoice(context),
       icon: const Icon(Icons.download_outlined),
-      label: const Text('Download invoice PDF'),
+      label: const Text('Invoice'),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
