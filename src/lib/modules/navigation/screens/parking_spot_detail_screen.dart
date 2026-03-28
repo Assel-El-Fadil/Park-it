@@ -174,7 +174,7 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                                     child: _InfoTile(
                                       title: 'Hourly rate',
                                       value:
-                                          '\$${spot.pricePerHour.toStringAsFixed(2)}/hr',
+                                          '${spot.pricePerHour.toStringAsFixed(2)} MAD/hr',
                                       valueColor: theme.colorScheme.primary,
                                     ),
                                   ),
@@ -183,7 +183,7 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                                     child: _InfoTile(
                                       title: 'Daily rate',
                                       value: spot.pricePerDay != null
-                                          ? '\$${spot.pricePerDay!.toStringAsFixed(2)}/d'
+                                          ? '${spot.pricePerDay!.toStringAsFixed(2)} MAD/d'
                                           : 'N/A',
                                       valueColor: theme.colorScheme.primary,
                                     ),
@@ -311,7 +311,7 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '\$${(spot.pricePerHour * duration).toStringAsFixed(2)}',
+                                '${(spot.pricePerHour * duration).toStringAsFixed(2)} MAD',
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.w900,
                                   color: theme.colorScheme.primary,

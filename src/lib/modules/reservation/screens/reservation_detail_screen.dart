@@ -150,17 +150,17 @@ class ReservationDetailScreen extends ConsumerWidget {
                     children: [
                       _DetailRow(
                         label: 'Rate',
-                        value: '\$${totalPrice.toStringAsFixed(2)}',
+                        value: '${totalPrice.toStringAsFixed(2)} MAD',
                       ),
                       const SizedBox(height: 8),
                       _DetailRow(
                         label: 'Platform Fee',
-                        value: '\$${platformFee.toStringAsFixed(2)}',
+                        value: '${platformFee.toStringAsFixed(2)} MAD',
                       ),
                       const Divider(height: 24),
                       _DetailRow(
                         label: 'Total Paid',
-                        value: '\$${(totalPrice).toStringAsFixed(2)}',
+                        value: '${(totalPrice).toStringAsFixed(2)} MAD',
                         isBold: true,
                         valueColor: theme.colorScheme.primary,
                       ),

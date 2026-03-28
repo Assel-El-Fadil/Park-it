@@ -208,7 +208,7 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('\$${total.toStringAsFixed(2)} for $duration hours'),
+                          Text('${total.toStringAsFixed(2)} MAD for $duration hours'),
                           if (distance != null)
                             Text('$distance away • ${spot.street ?? "Unknown street"}')
                           else
@@ -384,7 +384,7 @@ class _FilterBar extends ConsumerWidget {
           )),
           if (filters.minPrice != null && filters.maxPrice != null) ...[
             _FilterChip(
-              label: '\$${filters.minPrice!.toInt()} - \$${filters.maxPrice!.toInt()}',
+              label: '${filters.minPrice!.toInt()} MAD - ${filters.maxPrice!.toInt()} MAD',
               isSelected: true,
               onDeleted: () => ref.read(parkingFiltersProvider.notifier).setPriceRange(0, 50),
             ),
@@ -549,8 +549,8 @@ class _FilterSheet extends ConsumerWidget {
                           max: 50,
                           divisions: 10,
                           labels: RangeLabels(
-                            '\$${(filters.minPrice ?? 0).toInt()}',
-                            '\$${(filters.maxPrice ?? 50).toInt()}',
+                            '${(filters.minPrice ?? 0).toInt()} MAD',
+                            '${(filters.maxPrice ?? 50).toInt()} MAD',
                           ),
                           onChanged: (values) {
                             ref.read(parkingFiltersProvider.notifier).setPriceRange(values.start, values.end);
@@ -561,8 +561,8 @@ class _FilterSheet extends ConsumerWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('\$0', style: theme.textTheme.labelSmall),
-                              Text('\$50', style: theme.textTheme.labelSmall),
+                              Text('0 MAD', style: theme.textTheme.labelSmall),
+                              Text('50 MAD', style: theme.textTheme.labelSmall),
                             ],
                           ),
                         ),
