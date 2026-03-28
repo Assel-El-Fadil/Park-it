@@ -258,8 +258,8 @@ class _EditParkingSpaceScreenState
                         controller: _priceCtrl,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          labelText: 'Hourly rate',
-                          prefixText: '\$ ',
+                          labelText: 'Hourly rate (min 6 MAD)',
+                          prefixText: 'MAD ',
                           suffixText: '/hr',
                         ),
                       ),
@@ -269,6 +269,7 @@ class _EditParkingSpaceScreenState
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Price per day (optional)',
+                          prefixText: 'MAD ',
                           suffixText: '/day',
                         ),
                       ),
@@ -312,7 +313,17 @@ class _EditParkingSpaceScreenState
                         double.tryParse(_priceCtrl.text.trim()) ?? 0;
                     final pricePerDay = double.tryParse(_priceDayCtrl.text.trim());
 
-                    if (title.isEmpty || pricePerHour <= 0) return;
+                    if (title.isEmpty) return;
+                    if (pricePerHour < 6) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Minimum price is 6.00 MAD (Stripe requires at least ≈ \$0.50 USD).',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
 
                     final spotType = _spotType;
 
