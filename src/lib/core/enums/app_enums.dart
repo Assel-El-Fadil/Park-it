@@ -229,6 +229,7 @@ enum NotificationType {
   bookingCancelled,
   paymentReceived,
   refundProcessed,
+  paymentSuccess,
   messageReceived,
   promotion,
   system,
@@ -237,9 +238,10 @@ enum NotificationType {
   specialOffer;
 
   static NotificationType fromString(String value) {
+    final normalized = value.replaceAll('_', '').toUpperCase();
     return values.firstWhere(
-      (e) => e.name.toUpperCase() == value.toUpperCase(),
-      orElse: () => NotificationType.bookingCancelled,
+      (e) => e.name.toUpperCase() == normalized,
+      orElse: () => NotificationType.paymentReceived,
     );
   }
 
@@ -271,6 +273,8 @@ enum NotificationType {
         return Icons.person_rounded;
       case NotificationType.specialOffer:
         return Icons.card_giftcard_rounded;
+      case NotificationType.paymentSuccess:
+        return Icons.payment_rounded;
     }
   }
 
@@ -280,6 +284,7 @@ enum NotificationType {
       case NotificationType.bookingConfirmed:
       case NotificationType.paymentReceived:
       case NotificationType.refundProcessed:
+      case NotificationType.paymentSuccess:
         return Colors.green;
       case NotificationType.bookingReminder:
         return Colors.orange;
@@ -331,10 +336,17 @@ enum NotificationType {
         return 'Host Response';
       case NotificationType.specialOffer:
         return 'Exclusive Offer';
+      case NotificationType.paymentSuccess:
+        return 'Payment Success';
     }
   }
 
-  String toJson() => name.toUpperCase();
+  String toJson() {
+    final snake = name
+        .replaceAllMapped(RegExp(r'[A-Z]'), (m) => '_${m.group(0)}')
+        .toUpperCase();
+    return snake;
+  }
 }
 
 enum NotificationChannel {
@@ -349,7 +361,12 @@ enum NotificationChannel {
     );
   }
 
-  String toJson() => name.toUpperCase();
+  String toJson() {
+    final snake = name
+        .replaceAllMapped(RegExp(r'[A-Z]'), (m) => '_${m.group(0)}')
+        .toUpperCase();
+    return snake;
+  }
 }
 
 enum ReportTargetType {
