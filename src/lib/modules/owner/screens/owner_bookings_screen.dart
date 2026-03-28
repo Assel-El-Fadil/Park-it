@@ -19,7 +19,7 @@ class OwnerBookingsScreen extends ConsumerWidget {
     final ownerId = currentUser?.id ?? '';
 
     final spots = ref.watch(
-      ownerStoreProvider.select((s) => s.spots.where((p) => p.ownerId == ownerId && p.lotId == null).toList()),
+      ownerStoreProvider.select((s) => s.spots.where((p) => p.ownerId == ownerId).toList()),
     );
     final ownedSpotIds = spots.map((s) => s.id).toSet();
 
@@ -116,7 +116,7 @@ class _ReservationCard extends StatelessWidget {
               const SizedBox(width: 8),
               _InlineChip(
                 icon: Icons.attach_money,
-                label: '${reservation.totalPrice.toStringAsFixed(0)}',
+                label: '${reservation.totalPrice.toStringAsFixed(0)} MAD',
               ),
               const Spacer(),
               IconButton(

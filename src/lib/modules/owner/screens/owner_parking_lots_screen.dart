@@ -182,7 +182,7 @@ class _OwnerLotCard extends StatelessWidget {
                 ),
                 _Badge(
                   icon: Icons.attach_money,
-                  label: '${averagePrice.toStringAsFixed(0)} /h avg',
+                  label: '${averagePrice.toStringAsFixed(0)} MAD/h avg',
                   color: AppColors.primary,
                 ),
                 if (lot.totalSpots != null)
