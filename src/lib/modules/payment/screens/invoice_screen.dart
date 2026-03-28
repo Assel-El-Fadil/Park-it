@@ -246,8 +246,8 @@ class _StatusBanner extends StatelessWidget {
       PaymentStatus.succeeded => (
         Icons.check_circle_outline,
         'Payment successful',
-        cs.primaryContainer,
-        cs.primary,
+        cs.secondaryContainer,
+        cs.secondary,
       ),
       PaymentStatus.refunded => (
         Icons.currency_exchange,

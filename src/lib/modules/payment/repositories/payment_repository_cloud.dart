@@ -16,7 +16,7 @@ class PaymentRepository extends SupabaseRepository<PaymentModel> {
   PaymentModel fromJson(Map<String, dynamic> json) =>
       PaymentModel.fromJson(json);
 
-  Future<List<PaymentModel>> getByPayerId(int payerId) async {
+  Future<List<PaymentModel>> getByPayerId(String payerId) async {
     final response = await client
         .from(tableName)
         .select()

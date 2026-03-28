@@ -58,7 +58,8 @@ class ParkingSpotRepository extends SupabaseRepository<ParkingSpotModel> {
     final availabilityResponse = await client
         .from('availabilities')
         .select()
-        .filter('spot_id', 'in', spotIds);
+        .filter('spot_id', 'in', spotIds)
+        .not('day_of_week', 'is', null);
 
     final allAvailabilities = (availabilityResponse as List)
         .map((a) => AvailabilityModel.fromJson(a))

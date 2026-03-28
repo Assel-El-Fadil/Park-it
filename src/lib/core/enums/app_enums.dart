@@ -358,13 +358,20 @@ enum ReportTargetType {
   review;
 
   static ReportTargetType fromString(String value) {
+    final normalized = value.replaceAll('_', '').toUpperCase();
     return values.firstWhere(
-      (e) => e.name.toUpperCase() == value.toUpperCase(),
+      (e) => e.name.toUpperCase() == normalized,
       orElse: () => ReportTargetType.user,
     );
   }
 
-  String toJson() => name.toUpperCase();
+  String toJson() {
+    return switch (this) {
+      ReportTargetType.user => 'USER',
+      ReportTargetType.parkingSpot => 'PARKING_SPOT',
+      ReportTargetType.review => 'REVIEW',
+    };
+  }
 }
 
 enum ReportReason {
@@ -375,13 +382,22 @@ enum ReportReason {
   wrongLocation;
 
   static ReportReason fromString(String value) {
+    final normalized = value.replaceAll('_', '').toUpperCase();
     return values.firstWhere(
-      (e) => e.name.toUpperCase() == value.toUpperCase(),
+      (e) => e.name.toUpperCase() == normalized,
       orElse: () => ReportReason.fakeListing,
     );
   }
 
-  String toJson() => name.toUpperCase();
+  String toJson() {
+    return switch (this) {
+      ReportReason.fakeListing => 'FAKE_LISTING',
+      ReportReason.spam => 'SPAM',
+      ReportReason.inappropriate => 'INAPPROPRIATE',
+      ReportReason.fraud => 'FRAUD',
+      ReportReason.wrongLocation => 'WRONG_LOCATION',
+    };
+  }
 }
 
 enum ReportStatus {

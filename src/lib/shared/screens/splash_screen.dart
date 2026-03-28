@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/core/config/themes/color_palette.dart';
+import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/admin/routes/admin_routes.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -28,7 +30,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final isAuthenticated = ref.read(isAuthenticatedProvider);
 
     if (isAuthenticated) {
-      context.go(AuthRoutes.profile);
+      final user = ref.read(currentUserProvider);
+      if (user?.role == UserRole.superAdmin) {
+        context.go('/super-admin');
+      } else if (user?.role == UserRole.admin) {
+        context.go(AdminRoutes.dashboardPath);
+      } else {
+        context.go(AuthRoutes.profile);
+      }
     } else {
       context.go(AuthRoutes.login);
     }

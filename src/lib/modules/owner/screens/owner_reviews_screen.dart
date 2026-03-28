@@ -136,8 +136,10 @@ class _OwnerReviewsScreenState extends ConsumerState<OwnerReviewsScreen> {
                           review: _ReviewCardModel(
                             id: r.id.toString(),
                             spotName: spotNameById[r.spotId] ?? 'Spot #${r.spotId}',
-                            reviewerName: 'User ${r.reviewerId}',
-                            reviewerInitials: r.reviewerId.padLeft(2, '0').substring(0, 2),
+                            reviewerName: r.reviewerName ?? 'User ${r.reviewerId}',
+                            reviewerInitials: (r.reviewerName?.isNotEmpty == true)
+                                ? r.reviewerName!.substring(0, 1).toUpperCase()
+                                : r.reviewerId.substring(0, 2).toUpperCase(),
                             rating: r.rating,
                             timeAgo: DateFormat('MMM d, yyyy').format(r.createdAt),
                             text: (r.comment ?? '').trim().isEmpty ? 'No comment provided.' : r.comment!,

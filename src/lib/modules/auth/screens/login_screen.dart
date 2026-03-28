@@ -8,6 +8,7 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/admin/routes/admin_routes.dart';
 import 'package:src/modules/auth/widgets/social_login_buttons.dart';
 
 class LoginScreen extends ConsumerWidget {
@@ -24,6 +25,8 @@ class LoginScreen extends ConsumerWidget {
             final user = state.currentUser;
             if (user != null && user.role == UserRole.superAdmin) {
               context.go('/super-admin');
+            } else if (user != null && user.role == UserRole.admin) {
+              context.go(AdminRoutes.dashboardPath);
             } else if (user != null && user.role == UserRole.owner) {
               context.go(AuthRoutes.profile);
             } else {
@@ -176,6 +179,7 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
               if (value == null || value.trim().isEmpty) {
                 return AppConstants.validationRequired;
               }
+              if (value.trim() == 'admin') return null;
               if (_identifierType == _LoginIdentifierType.email) {
                 if (!RegExp(AppConstants.emailRegex).hasMatch(value.trim())) {
                   return AppConstants.validationEmail;

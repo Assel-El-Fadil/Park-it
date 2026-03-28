@@ -8,7 +8,7 @@ class ReviewRepository {
 
   Future<ReviewModel> createReview({
     required int reservationId,
-    required int reviewerId,
+    required String reviewerId,
     required int spotId,
     required int rating,
     required String? comment,
@@ -29,7 +29,7 @@ class ReviewRepository {
     }
   }
 
-  Future<List<ReviewModel>> getReviewsByReviewer(int reviewerId) async {
+  Future<List<ReviewModel>> getReviewsByReviewer(String reviewerId) async {
     try {
       final rows = await _client
           .from('reviews')

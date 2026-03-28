@@ -177,7 +177,7 @@ class PaymentService {
     return _repo.getById(id.toString());
   }
 
-  Future<List<PaymentModel>> getByPayerId(int payerId) {
+  Future<List<PaymentModel>> getByPayerId(String payerId) {
     return _repo.getByPayerId(payerId);
   }
 

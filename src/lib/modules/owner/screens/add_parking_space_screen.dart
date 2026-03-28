@@ -249,7 +249,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                       if (!_isLotMode && lots.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         DropdownButtonFormField<int?>(
-                          initialValue: _lotId,
+                          value: _lotId,
                           decoration: const InputDecoration(
                             labelText: 'Parent lot (optional)',
                           ),
@@ -321,7 +321,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                         const SectionHeader(title: 'Spot setup'),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<SpotType>(
-                          initialValue: _spotType,
+                          value: _spotType,
                           decoration: const InputDecoration(
                             labelText: 'Spot type',
                           ),
@@ -338,7 +338,7 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<SpotStatus>(
-                          initialValue: _status,
+                          value: _status,
                           decoration: const InputDecoration(
                             labelText: 'Status',
                           ),
@@ -443,17 +443,21 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                           try {
                             final currentUser = ref.read(currentUserProvider);
                             final ownerId = currentUser?.id;
-                            
+
                             // Check if controllers are still valid before accessing their text
-                            if (!mounted || _latCtrl.text.isEmpty || _lngCtrl.text.isEmpty) {
+                            if (!mounted ||
+                                _latCtrl.text.isEmpty ||
+                                _lngCtrl.text.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Location coordinates are required.'),
+                                  content: Text(
+                                    'Location coordinates are required.',
+                                  ),
                                 ),
                               );
                               return;
                             }
-                            
+
                             final lat = double.tryParse(_latCtrl.text);
                             final lng = double.tryParse(_lngCtrl.text);
 

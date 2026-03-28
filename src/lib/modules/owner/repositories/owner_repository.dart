@@ -41,10 +41,10 @@ abstract class OwnerRepository {
     required String ownerReply,
   });
 
-  Future<void> setAvailabilityException({
+  Future<void> setWeeklyAvailability({
     required int spotId,
-    required DateTime day,
-    required bool blocked,
+    required int dayOfWeek,
+    required bool isBlocked,
     required String openTime,
     required String closeTime,
   });

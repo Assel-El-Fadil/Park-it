@@ -8,7 +8,7 @@ class ReportRepository {
   SupabaseClient get _client => Supabase.instance.client;
 
   Future<ReportModel> createSpotReport({
-    required int reporterId,
+    required String reporterId,
     required int targetSpotId,
     required ReportReason reason,
     required String? description,
@@ -75,7 +75,7 @@ class ReportRepository {
 
   Future<void> resolveReport({
     required int reportId,
-    required int resolvedBy,
+    required String resolvedBy,
     String? resolution,
   }) async {
     try {

@@ -7,6 +7,8 @@ import 'package:src/modules/notification/routes/notification_routes.dart';
 import 'package:src/modules/notification/widgets/notification_filter_chip.dart';
 import 'package:src/modules/notification/widgets/notification_tile.dart';
 import 'package:src/modules/payment/routes/payment_routes.dart';
+import 'package:src/modules/reservation/routes/reservation_routes.dart';
+import 'package:src/modules/review/routes/review_routes.dart';
 import 'package:src/providers/notification_provider.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
 
@@ -373,10 +375,11 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
           notification.referenceId != null) {
         switch (notification.referenceType) {
           case 'booking':
-            // context.pushNamed(
-            //   AppRoutes.bookingDetails,
-            //   pathParameters: {'id': notification.referenceId.toString()},
-            // );
+            AppNavigator.pushNamed(
+              context,
+              ReservationRoutes.reservationDetail,
+              pathParameters: {'id': notification.referenceId.toString()},
+            );
             break;
           case 'payment':
             AppNavigator.pushNamed(
@@ -386,16 +389,11 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
             );
             break;
           case 'review':
-            // context.pushNamed(
-            //   AppRoutes.reviewDetails,
-            //   pathParameters: {'id': notification.referenceId.toString()},
-            // );
-            break;
-          case 'message':
-            // context.pushNamed(
-            //   AppRoutes.messages,
-            //   extra: {'conversationId': notification.referenceId},
-            // );
+            AppNavigator.pushNamed(
+              context,
+              ReviewRoutes.reviewDetailPath,
+              pathParameters: {'id': notification.referenceId.toString()},
+            );
             break;
         }
       } else {

@@ -16,7 +16,7 @@ class NotificationRepository extends SupabaseRepository<NotificationModel> {
   NotificationModel fromJson(Map<String, dynamic> json) =>
       NotificationModel.fromJson(json);
 
-  Future<List<NotificationModel>> getByUserId(int userId) async {
+  Future<List<NotificationModel>> getByUserId(String userId) async {
     final response = await client
         .from(tableName)
         .select()
@@ -26,7 +26,7 @@ class NotificationRepository extends SupabaseRepository<NotificationModel> {
     return (response as List).map((e) => fromJson(e)).toList();
   }
 
-  Future<List<NotificationModel>> getUnreadByUserId(int userId) async {
+  Future<List<NotificationModel>> getUnreadByUserId(String userId) async {
     final response = await client
         .from(tableName)
         .select()
@@ -44,7 +44,7 @@ class NotificationRepository extends SupabaseRepository<NotificationModel> {
         .eq('id', notificationId);
   }
 
-  Future<void> markAllAsReadForUser(int userId) async {
+  Future<void> markAllAsReadForUser(String userId) async {
     await client
         .from(tableName)
         .update({'is_read': true})
@@ -52,7 +52,7 @@ class NotificationRepository extends SupabaseRepository<NotificationModel> {
         .eq('is_read', false);
   }
 
-  Future<int> getUnreadCount(int userId) async {
+  Future<int> getUnreadCount(String userId) async {
     final response = await client
         .from(tableName)
         .select('id')
@@ -63,7 +63,7 @@ class NotificationRepository extends SupabaseRepository<NotificationModel> {
   }
 
   Future<List<NotificationModel>> getByType(
-    int userId,
+    String userId,
     NotificationType type,
   ) async {
     final response = await client
@@ -77,7 +77,7 @@ class NotificationRepository extends SupabaseRepository<NotificationModel> {
   }
 
   Future<List<NotificationModel>> getByReference(
-    int userId,
+    String userId,
     String referenceType,
     int referenceId,
   ) async {

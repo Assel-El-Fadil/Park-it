@@ -9,31 +9,39 @@ import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/reservation/repositories/reservation_repository.dart';
 import 'package:src/modules/review/repositories/review_repository.dart';
 import 'package:src/modules/report/repositories/report_repository.dart';
+import 'package:src/providers/payment_provider.dart';
 import 'package:src/shared/widgets/app_card.dart';
+import 'package:src/shared/widgets/custom_modal.dart';
 import 'package:src/shared/widgets/section_header.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 
-final reservationDetailProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, id) async {
-  final repo = ref.read(reservationRepositoryProvider);
-  return repo.getReservationWithDetails(id);
-});
+final reservationDetailProvider =
+    FutureProvider.family<Map<String, dynamic>, int>((ref, id) async {
+      final repo = ref.read(reservationRepositoryProvider);
+      return repo.getReservationWithDetails(id);
+    });
 
 class ReservationDetailScreen extends ConsumerWidget {
   const ReservationDetailScreen({super.key, required this.reservationId});
 
   final String reservationId;
 
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final id = int.tryParse(reservationId) ?? 0;
     final detailAsync = ref.watch(reservationDetailProvider(id));
+    final paymentServiceNotifier = ref.watch(paymentProvider.notifier);
+    final paymentService = ref.watch(paymentServiceProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Booking Details'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Booking Details'), centerTitle: true),
       body: detailAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
@@ -46,9 +54,10 @@ class ReservationDetailScreen extends ConsumerWidget {
           final totalPrice = (data['total_price'] as num).toDouble();
           final platformFee = (data['platform_fee'] as num).toDouble();
           final user = ref.watch(currentUserProvider);
-          final userId = int.tryParse(user?.id ?? '');
+          final userId = user?.id;
           final reservationIntId = id;
-          final spotId = (data['spot_id'] as int?) ?? (spot?['id'] as int?) ?? 0;
+          final spotId =
+              (data['spot_id'] as int?) ?? (spot?['id'] as int?) ?? 0;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -57,7 +66,7 @@ class ReservationDetailScreen extends ConsumerWidget {
               children: [
                 _StatusBanner(status: status),
                 const SizedBox(height: 24),
-                
+
                 const SectionHeader(title: 'PARKING SPOT'),
                 const SizedBox(height: 12),
                 AppCard(
@@ -66,17 +75,25 @@ class ReservationDetailScreen extends ConsumerWidget {
                     children: [
                       Text(
                         spot?['title'] ?? 'Parking Spot',
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.location_on, size: 16, color: theme.colorScheme.primary),
+                          Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               '${spot?['street'] ?? ''}, ${spot?['city'] ?? ''}',
-                              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         ],
@@ -84,7 +101,7 @@ class ReservationDetailScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
                 const SectionHeader(title: 'TIME & DURATION'),
                 const SizedBox(height: 12),
@@ -93,12 +110,16 @@ class ReservationDetailScreen extends ConsumerWidget {
                     children: [
                       _DetailRow(
                         label: 'Start',
-                        value: DateFormat('MMM dd, yyyy • hh:mm a').format(startTime),
+                        value: DateFormat(
+                          'MMM dd, yyyy • hh:mm a',
+                        ).format(startTime),
                       ),
                       const Divider(height: 24),
                       _DetailRow(
                         label: 'End',
-                        value: DateFormat('MMM dd, yyyy • hh:mm a').format(endTime),
+                        value: DateFormat(
+                          'MMM dd, yyyy • hh:mm a',
+                        ).format(endTime),
                       ),
                       const Divider(height: 24),
                       _DetailRow(
@@ -114,7 +135,9 @@ class ReservationDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 AppCard(
                   child: _DetailRow(
-                    label: vehicle != null ? '${vehicle['brand']} ${vehicle['model']}' : 'Vehicle',
+                    label: vehicle != null
+                        ? '${vehicle['brand']} ${vehicle['model']}'
+                        : 'Vehicle',
                     value: vehicle?['plate_number'] ?? 'N/A',
                   ),
                 ),
@@ -137,14 +160,14 @@ class ReservationDetailScreen extends ConsumerWidget {
                       const Divider(height: 24),
                       _DetailRow(
                         label: 'Total Paid',
-                        value: '\$${(totalPrice + platformFee).toStringAsFixed(2)}',
+                        value: '\$${(totalPrice).toStringAsFixed(2)}',
                         isBold: true,
                         valueColor: theme.colorScheme.primary,
                       ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
                 if (status.toUpperCase() == 'PENDING') ...[
                   ElevatedButton(
@@ -161,10 +184,83 @@ class ReservationDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                 ],
-                if (status.toUpperCase() == 'PENDING' || status.toUpperCase() == 'CONFIRMED')
+                if (status.toUpperCase() == 'PENDING' ||
+                    status.toUpperCase() == 'CONFIRMED')
                   OutlinedButton(
                     onPressed: () {
-                      // TODO: Implement cancel
+                      CustomModal.show(
+                        context: context,
+                        message:
+                            "Are you sure you want to cancel the reservation ?",
+                        confirmText: "Yes",
+                        onConfirm: () async {
+                          try {
+                            final reservationStatus =
+                                ReservationStatus.fromString(
+                                  status,
+                                ); // parse once
+
+                            if (reservationStatus ==
+                                ReservationStatus.cancelled) {
+                              _showSnackBar(
+                                context,
+                                'Reservation is already cancelled',
+                              );
+                              return;
+                            }
+
+                            if (reservationStatus ==
+                                ReservationStatus.completed) {
+                              _showSnackBar(
+                                context,
+                                'Cannot cancel an already completed reservation',
+                              );
+                              return;
+                            }
+
+                            if (reservationStatus ==
+                                ReservationStatus.confirmed) {
+                              final scaffoldMessenger = ScaffoldMessenger.of(
+                                context,
+                              );
+
+                              final payment = await paymentService
+                                  .getByReservationId(id);
+                              if (payment == null) {
+                                scaffoldMessenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'No payment found for this reservation',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final success = await paymentServiceNotifier
+                                  .refundPayment(
+                                    paymentId: payment.id,
+                                    refundAmount: payment.amount,
+                                  );
+
+                              if (!context.mounted) return;
+
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    success
+                                        ? 'Refund processed successfully'
+                                        : 'Error processing refund',
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            _showSnackBar(context, 'Something went wrong: $e');
+                          }
+                        },
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
@@ -197,7 +293,9 @@ class ReservationDetailScreen extends ConsumerWidget {
                                 if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('You already reviewed this booking.'),
+                                    content: Text(
+                                      'You already reviewed this booking.',
+                                    ),
                                   ),
                                 );
                                 return;
@@ -255,7 +353,7 @@ class ReservationDetailScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref, {
     required int reservationId,
-    required int reviewerId,
+    required String reviewerId,
     required int spotId,
   }) async {
     int rating = 5;
@@ -271,7 +369,7 @@ class ReservationDetailScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<int>(
-                    initialValue: rating,
+                    value: rating,
                     decoration: const InputDecoration(labelText: 'Rating'),
                     items: List.generate(
                       5,
@@ -286,9 +384,7 @@ class ReservationDetailScreen extends ConsumerWidget {
                   TextField(
                     controller: controller,
                     maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Comment',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Comment'),
                   ),
                 ],
               );
@@ -308,7 +404,9 @@ class ReservationDetailScreen extends ConsumerWidget {
       },
     );
     if (result != true) return;
-    await ref.read(reviewRepositoryProvider).createReview(
+    await ref
+        .read(reviewRepositoryProvider)
+        .createReview(
           reservationId: reservationId,
           reviewerId: reviewerId,
           spotId: spotId,
@@ -316,15 +414,15 @@ class ReservationDetailScreen extends ConsumerWidget {
           comment: controller.text,
         );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Review submitted.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Review submitted.')));
   }
 
   Future<void> _showReportDialog(
     BuildContext context,
     WidgetRef ref, {
-    required int reporterId,
+    required String reporterId,
     required int targetSpotId,
   }) async {
     ReportReason reason = ReportReason.fakeListing;
@@ -340,7 +438,7 @@ class ReservationDetailScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<ReportReason>(
-                    initialValue: reason,
+                    value: reason,
                     decoration: const InputDecoration(labelText: 'Reason'),
                     items: ReportReason.values
                         .map(
@@ -378,16 +476,18 @@ class ReservationDetailScreen extends ConsumerWidget {
       },
     );
     if (result != true) return;
-    await ref.read(reportRepositoryProvider).createSpotReport(
+    await ref
+        .read(reportRepositoryProvider)
+        .createSpotReport(
           reporterId: reporterId,
           targetSpotId: targetSpotId,
           reason: reason,
           description: controller.text,
         );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Report submitted.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Report submitted.')));
   }
 }
 
@@ -399,7 +499,7 @@ class _StatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     Color color;
     IconData icon;
     switch (status.toUpperCase()) {
@@ -467,7 +567,9 @@ class _DetailRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         Text(
           value,

@@ -188,10 +188,10 @@ class OwnerStoreController extends Notifier<OwnerStoreState> {
     await _loadForOwner(ownerId);
   }
 
-  Future<void> setAvailabilityForDay({
+  Future<void> setWeeklyAvailability({
     required int spotId,
-    required DateTime day,
-    required bool blocked,
+    required int dayOfWeek,
+    required bool isBlocked,
     String openTime = '08:00:00',
     String closeTime = '22:00:00',
   }) async {
@@ -199,10 +199,10 @@ class OwnerStoreController extends Notifier<OwnerStoreState> {
     if (ownerId == null) return;
     await ref
         .read(ownerRepositoryProvider)
-        .setAvailabilityException(
+        .setWeeklyAvailability(
           spotId: spotId,
-          day: day,
-          blocked: blocked,
+          dayOfWeek: dayOfWeek,
+          isBlocked: isBlocked,
           openTime: openTime,
           closeTime: closeTime,
         );
