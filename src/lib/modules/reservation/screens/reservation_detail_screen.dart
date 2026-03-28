@@ -194,62 +194,70 @@ class ReservationDetailScreen extends ConsumerWidget {
                             "Are you sure you want to cancel the reservation ?",
                         confirmText: "Yes",
                         onConfirm: () async {
-                          if (status ==
-                              ReservationStatus.cancelled.toString()) {
-                            _showSnackBar(
-                              context,
-                              'Reservation is already cancelled',
-                            );
-                            return;
-                          }
+                          try {
+                            final reservationStatus =
+                                ReservationStatus.fromString(
+                                  status,
+                                ); // parse once
 
-                          if (status ==
-                              ReservationStatus.completed.toString()) {
-                            _showSnackBar(
-                              context,
-                              'Cannot cancel an already completed reservation',
-                            );
-                            return;
-                          }
-
-                          if (status ==
-                              ReservationStatus.confirmed.toString()) {
-                            final scaffoldMessenger = ScaffoldMessenger.of(
-                              context,
-                            ); // capture before async gap
-
-                            final payment = await paymentService
-                                .getByReservationId(id);
-                            if (payment == null) {
-                              scaffoldMessenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'No payment found for this reservation',
-                                  ),
-                                ),
+                            if (reservationStatus ==
+                                ReservationStatus.cancelled) {
+                              _showSnackBar(
+                                context,
+                                'Reservation is already cancelled',
                               );
                               return;
                             }
 
-                            final success = await paymentServiceNotifier
-                                .refundPayment(
-                                  paymentId: payment.id,
-                                  refundAmount: payment.amount,
-                                );
-
-                            if (!context.mounted) {
+                            if (reservationStatus ==
+                                ReservationStatus.completed) {
+                              _showSnackBar(
+                                context,
+                                'Cannot cancel an already completed reservation',
+                              );
                               return;
                             }
 
-                            scaffoldMessenger.showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  success
-                                      ? 'Refund processed successfully'
-                                      : 'Error processing refund',
+                            if (reservationStatus ==
+                                ReservationStatus.confirmed) {
+                              final scaffoldMessenger = ScaffoldMessenger.of(
+                                context,
+                              );
+
+                              final payment = await paymentService
+                                  .getByReservationId(id);
+                              if (payment == null) {
+                                scaffoldMessenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'No payment found for this reservation',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final success = await paymentServiceNotifier
+                                  .refundPayment(
+                                    paymentId: payment.id,
+                                    refundAmount: payment.amount,
+                                  );
+
+                              if (!context.mounted) return;
+
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    success
+                                        ? 'Refund processed successfully'
+                                        : 'Error processing refund',
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            _showSnackBar(context, 'Something went wrong: $e');
                           }
                         },
                       );
