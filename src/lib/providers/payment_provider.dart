@@ -1,10 +1,14 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide PaymentMethod;
 
 import 'package:src/core/enums/app_enums.dart';
+import 'package:src/modules/notification/models/notification_model.dart';
 
 import 'package:src/modules/payment/models/payment_state.dart';
 import 'package:src/modules/payment/services/payment_service.dart';
+import 'package:src/providers/notification_provider.dart';
 
 class PaymentNotifier extends Notifier<PaymentState> {
   late final PaymentService _service;
@@ -34,6 +38,24 @@ class PaymentNotifier extends Notifier<PaymentState> {
       );
 
       state = state.copyWith(status: PaymentStatus.succeeded, payment: payment);
+
+      //Create notification
+      final notificationService = ref.read(notificationServiceProvider);
+
+      notificationService.addNotification(
+        NotificationModel(
+          userId: payerId,
+          type: NotificationType.paymentReceived,
+          title: 'Payment Successful',
+          content:
+              'Your payment of $amount $currency has been processed successfully.',
+          isRead: false,
+          channel: NotificationChannel.inApp,
+          sentAt: DateTime.now(),
+          referenceId: payment.id,
+          referenceType: 'payment',
+        ),
+      );
 
       return true;
     } on StripeException catch (e) {
