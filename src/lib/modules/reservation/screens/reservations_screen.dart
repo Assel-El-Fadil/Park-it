@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/core/errors/app_exception.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/navigation/models/spot_model.dart';
+import 'package:src/modules/navigation/routes/navigation_routes.dart';
 import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/report/repositories/report_repository.dart';
 import 'package:src/modules/reservation/models/reservation_model.dart';
@@ -203,11 +206,39 @@ class ReservationsScreen extends ConsumerWidget {
                                     child: const Text('Continue Payment'),
                                   ),
                                 ),
-                              TextButton(
-                                onPressed: () {
-                                  context.push('/reservations/${res['id']}');
-                                },
-                                child: const Text('View Details'),
+                              Row(
+                                children: [
+                                  IconButton.outlined(
+                                    onPressed: () => context.push(
+                                      '/reservations/${res['id']}',
+                                    ),
+                                    icon: const Icon(
+                                      Icons.receipt_long_outlined,
+                                    ),
+                                    tooltip: 'View Details',
+                                  ),
+                                  if (ReservationStatus.fromString(
+                                        res['status'],
+                                      ) ==
+                                      ReservationStatus.confirmed)
+                                    IconButton.filled(
+                                      onPressed: () => AppNavigator.pushNamed(
+                                        context,
+                                        NavigationRoutes.navigation,
+                                        extra: SpotModel(
+                                          id: res['id'].toString(),
+                                          name: spot?['title'] as String,
+                                          latitude: spot!['latitude'] as double,
+                                          longitude:
+                                              spot['longitude'] as double,
+                                        ),
+                                      ),
+                                      icon: const Icon(
+                                        Icons.navigation_outlined,
+                                      ),
+                                      tooltip: 'Take me there',
+                                    ),
+                                ],
                               ),
                             ],
                           ),
