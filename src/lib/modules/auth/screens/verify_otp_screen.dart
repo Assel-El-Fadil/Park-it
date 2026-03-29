@@ -15,13 +15,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Email verification is handled via the confirmation link sent by Supabase.
 class VerifyOtpScreen extends ConsumerStatefulWidget {
   final String? email;
-  final String? phone;
   final OtpType? type;
 
   const VerifyOtpScreen({
     super.key,
     this.email,
-    this.phone,
     this.type,
   });
 
@@ -71,14 +69,11 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     try {
       await ref.read(authNotifierProvider.notifier).resendVerification(
         widget.email!,
-        phone: widget.phone,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.phone != null 
-                ? 'A new SMS code has been sent.' 
-                : 'A new verification email has been sent.'),
+          const SnackBar(
+            content: Text('A new verification email has been sent.'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -103,26 +98,23 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      final isPhoneVerification = widget.phone != null;
-      
-      debugPrint('[VerifyOtpScreen] Submitting OTP: token=${_codeController.text.trim()}, phone=${widget.phone}, email=${widget.email}, type=${isPhoneVerification ? "phoneChange" : "signup"}');
+      debugPrint('[VerifyOtpScreen] Submitting OTP: token=${_codeController.text.trim()}, email=${widget.email}, type=${widget.type ?? "signup"}');
 
       await ref.read(authNotifierProvider.notifier).verifyOTP(
-            email: isPhoneVerification ? null : widget.email,
-            phone: widget.phone,
+            email: widget.email,
             token: _codeController.text.trim(),
-            type: widget.type ?? (isPhoneVerification ? OtpType.phoneChange : OtpType.signup),
+            type: widget.type ?? OtpType.signup,
           );
 
       if (mounted) {
-        if (isPhoneVerification) {
+        if (widget.type == OtpType.emailChange) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Phone number verified and updated!'),
+              content: Text('Email verified and updated!'),
               backgroundColor: AppColors.success,
             ),
           );
-          // Refresh auth state to reflect new phone
+          // Refresh auth state
           await ref.read(authNotifierProvider.notifier).checkAuthState();
           context.go(AuthRoutes.profile);
         } else {
@@ -146,14 +138,8 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     final isLoading = authState.value?.isLoading ?? false;
     final errorMessage = authState.value?.errorMessage;
 
-    // Determine what we're verifying
-    final isPhoneVerification = widget.phone != null;
-    final destination = isPhoneVerification
-        ? widget.phone!
-        : (widget.email ?? 'your account');
-    final verificationLabel = isPhoneVerification
-        ? 'Phone Verification'
-        : 'Email Verification';
+    final destination = widget.email ?? 'your account';
+    final verificationLabel = 'Verification';
 
     return Scaffold(
       appBar: CustomAppBar(title: verificationLabel),
@@ -175,9 +161,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  isPhoneVerification
-                      ? 'We sent a 6-digit code via SMS to $destination. Please enter it below.'
-                      : 'We sent a 6-digit code to $destination. Please enter it below to verify your account.',
+                  'We sent a 6-digit code to $destination. Please enter it below to verify your account.',
                   style: context.textTheme.bodyMedium?.copyWith(
                     color: context.colorScheme.textSecondary,
                     height: 1.5,

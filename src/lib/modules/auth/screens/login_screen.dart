@@ -103,18 +103,22 @@ class _LoginForm extends ConsumerStatefulWidget {
   ConsumerState<_LoginForm> createState() => _LoginFormState();
 }
 
-enum _LoginIdentifierType { email, phone }
-
 class _LoginFormState extends ConsumerState<_LoginForm> {
   final _formKey = GlobalKey<FormState>();
-  final _identifierController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  _LoginIdentifierType _identifierType = _LoginIdentifierType.email;
+
+  @override
+  void initState() {
+    super.initState();
+    // For admin bypass convenience
+    // _emailController.text = 'admin'; 
+  }
 
   @override
   void dispose() {
-    _identifierController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -123,7 +127,7 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
     if (!_formKey.currentState!.validate()) return;
 
     await ref.read(authNotifierProvider.notifier).signIn(
-          _identifierController.text.trim(),
+          _emailController.text.trim(),
           _passwordController.text,
         );
   }
@@ -138,56 +142,22 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: SegmentedButton<_LoginIdentifierType>(
-                  segments: const [
-                    ButtonSegment(
-                      value: _LoginIdentifierType.email,
-                      icon: Icon(Icons.email_outlined),
-                      label: Text('Email'),
-                    ),
-                    ButtonSegment(
-                      value: _LoginIdentifierType.phone,
-                      icon: Icon(Icons.phone_outlined),
-                      label: Text('Phone'),
-                    ),
-                  ],
-                  selected: {_identifierType},
-                  onSelectionChanged: (Set<_LoginIdentifierType> selected) {
-                    setState(() => _identifierType = selected.first);
-                  },
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 16),
           TextFormField(
-            controller: _identifierController,
-            keyboardType: _identifierType == _LoginIdentifierType.email
-                ? TextInputType.emailAddress
-                : TextInputType.phone,
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: _identifierType == _LoginIdentifierType.email ? 'Email' : 'Phone',
-              hintText: _identifierType == _LoginIdentifierType.email
-                  ? 'Enter your email'
-                  : 'Enter your phone number',
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              hintText: 'Enter your email',
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return AppConstants.validationRequired;
               }
               if (value.trim() == 'admin') return null;
-              if (_identifierType == _LoginIdentifierType.email) {
-                if (!RegExp(AppConstants.emailRegex).hasMatch(value.trim())) {
-                  return AppConstants.validationEmail;
-                }
-              } else {
-                if (!RegExp(AppConstants.phoneRegex).hasMatch(value.trim())) {
-                  return AppConstants.validationPhone;
-                }
+              if (!RegExp(AppConstants.emailRegex).hasMatch(value.trim())) {
+                return AppConstants.validationEmail;
               }
               return null;
             },

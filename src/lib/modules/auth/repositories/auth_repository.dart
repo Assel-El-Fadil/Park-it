@@ -34,7 +34,6 @@ abstract class AuthRepository {
 
   Future<UserModel> verifyOTP({
     String? email,
-    String? phone,
     required String token,
     required OtpType type,
   });
@@ -44,7 +43,7 @@ abstract class AuthRepository {
   Future<void> updatePassword({String? oldPassword, required String newPassword});
   Future<void> updateEmail(String newEmail);
   Future<void> updatePhone(String newPhone);
-  Future<void> resendVerification(String email, {String? phone});
+  Future<void> resendVerification(String email);
   Future<void> deleteAccount();
 }
 
@@ -187,12 +186,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   @override
   Future<UserModel> signIn(String identifier, String password) async {
     try {
-      final email = await _resolveEmailFromIdentifier(identifier.trim());
-      if (email == null || email.isEmpty) {
-        throw AppException(AppConstants.errorInvalidCredentials);
-      }
-
-      final response = await _authService.signIn(email, password);
+      final response = await _authService.signIn(identifier, password);
       final user = response.user;
       if (user == null) {
         throw AppException(AppConstants.errorInvalidCredentials);
@@ -315,14 +309,12 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   @override
   Future<UserModel> verifyOTP({
     String? email,
-    String? phone,
     required String token,
     required OtpType type,
   }) async {
     try {
       final response = await _authService.verifyOTP(
         email: email,
-        phone: phone,
         token: token,
         type: type,
       );
@@ -425,9 +417,9 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   }
 
   @override
-  Future<void> resendVerification(String email, {String? phone}) async {
+  Future<void> resendVerification(String email) async {
     try {
-      await _authService.resendVerification(email, phone: phone);
+      await _authService.resendVerification(email);
     } on AuthException catch (e) {
       throw AppException(e.message);
     } catch (e) {

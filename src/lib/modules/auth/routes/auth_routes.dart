@@ -60,7 +60,6 @@ List<GoRoute> getAuthRoutes() {
         final extra = state.extra as Map<String, dynamic>? ?? {};
         return VerifyOtpScreen(
           email: extra['email'] as String?,
-          phone: extra['phone'] as String?,
           type: extra['type'] as OtpType?,
         );
       },

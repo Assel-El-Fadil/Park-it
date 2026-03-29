@@ -170,14 +170,12 @@ class AuthService {
 
   Future<AuthResponse> verifyOTP({
     String? email,
-    String? phone,
     required String token,
     required OtpType type,
   }) async {
     try {
       return await _client.auth.verifyOTP(
         email: email,
-        phone: phone,
         token: token,
         type: type,
       );
@@ -377,22 +375,13 @@ class AuthService {
     }
   }
 
-  Future<void> resendVerification(String email, {String? phone}) async {
+  Future<void> resendVerification(String email) async {
     try {
-      if (phone != null && phone.isNotEmpty) {
-        // Resend SMS
-        await _client.auth.resend(
-          type: OtpType.sms,
-          phone: phone,
-        );
-      } else {
-        // Resend Email
-        await _client.auth.resend(
-          type: OtpType.signup,
-          email: email,
-          emailRedirectTo: AppConstants.authRedirectUrl('/login'),
-        );
-      }
+      await _client.auth.resend(
+        type: OtpType.signup,
+        email: email,
+        emailRedirectTo: AppConstants.authRedirectUrl('/login'),
+      );
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
