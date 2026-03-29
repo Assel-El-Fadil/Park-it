@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:src/modules/admin/screens/admin_users_screen.dart';
 import 'package:src/modules/admin/screens/admin_spots_screen.dart';
 import 'package:src/modules/admin/screens/admin_reports_screen.dart';
-import 'package:src/modules/super_admin/screens/super_admin_profile_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lottie/lottie.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/core/config/themes/color_palette.dart';
-import 'package:src/core/enums/app_enums.dart';
+import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
-import 'package:src/modules/admin/routes/admin_routes.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -23,23 +21,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _navigateToNextScreen() async {
-    await ref.read(authNotifierProvider.future);
+    // Wait for a short duration to show the splash screen
+    await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
-    final isAuthenticated = ref.read(isAuthenticatedProvider);
+    final authState = ref.read(authNotifierProvider).value;
+    final isAuthenticated = authState?.isAuthenticated ?? false;
+    final isNewUser = authState?.isNewUser ?? false;
 
-    if (isAuthenticated) {
-      final user = ref.read(currentUserProvider);
-      if (user?.role == UserRole.superAdmin) {
-        context.go('/super-admin');
-      } else if (user?.role == UserRole.admin) {
-        context.go(AdminRoutes.dashboardPath);
-      } else {
-        context.go(AuthRoutes.profile);
-      }
+    if (!isAuthenticated) {
+      context.go(AppRoutes.login);
+    } else if (isNewUser) {
+      context.go(AuthRoutes.roleSelectionPath);
     } else {
-      context.go(AuthRoutes.login);
+      context.go(AppRoutes.profile);
     }
   }
 
@@ -51,18 +47,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
-              width: 200,
-              height: 200,
-              child: Lottie.asset(
-                'assets/animations/splash_animation.json',
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(height: 24),
+            // Logo / Name
             Text(
               'Park-it',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -1.0,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            // Optional subtitle or tagline
+            Text(
+              'Parking Made Simple',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textSecondaryLight,
+                    letterSpacing: 0.5,
+                  ),
             ),
           ],
         ),

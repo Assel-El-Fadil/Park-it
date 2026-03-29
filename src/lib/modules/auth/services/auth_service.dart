@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/main.dart' show initialLaunchUri;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,6 +17,17 @@ class AuthService {
     required String role,
   }) async {
     try {
+      // 0. Preliminary check: if email exists in public users table
+      final existingUser = await _client
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+
+      if (existingUser != null) {
+        throw AuthException(AppConstants.errorEmailInUse);
+      }
+
       return await _client.auth.signUp(
         email: email,
         password: password,
@@ -68,13 +80,18 @@ class AuthService {
         authScreenLaunchMode: kIsWeb
             ? LaunchMode.platformDefault
             : LaunchMode.externalApplication,
+        queryParams: {
+          // Explicitly command OAuth providers to forget previous cookies and force
+          // displaying an interactive "select account" dialog for clean session switching.
+          'prompt': 'select_account',
+        },
       );
       return true;
     } on AuthException catch (e) {
       throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -103,7 +120,7 @@ class AuthService {
       throw AuthException(AppConstants.errorGeneric);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -114,7 +131,7 @@ class AuthService {
       throw AuthException(AppConstants.errorGeneric);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -142,37 +159,36 @@ class AuthService {
     try {
       await _client.auth.resetPasswordForEmail(
         email,
+        // Keep reset flow on dedicated screen URL.
         redirectTo: AppConstants.authRedirectUrl('/reset-password'),
       );
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
   Future<AuthResponse> verifyOTP({
     String? email,
-    String? phone,
     required String token,
     required OtpType type,
   }) async {
     try {
       return await _client.auth.verifyOTP(
-        email: email,
-        phone: phone,
-        token: token,
+        email: email?.trim(),
+        token: token.trim(),
         type: type,
       );
     } on AuthException catch (e) {
       throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -182,6 +198,14 @@ class AuthService {
   }) async {
     try {
       final user = _client.auth.currentUser;
+
+      // For web password-recovery flow, try to recover session directly from URL
+      // before validating session presence.
+      if (oldPassword == null || oldPassword.isEmpty) {
+        if (_client.auth.currentSession == null && kIsWeb) {
+          await _tryRecoverSessionFromUrl();
+        }
+      }
       
       // 1. Verify old password if provided
       if (oldPassword != null && oldPassword.isNotEmpty) {
@@ -197,25 +221,129 @@ class AuthService {
       // 2. If successful, update to the new password
       await _client.auth.updateUser(UserAttributes(password: newPassword));
     } on AuthException catch (e) {
-      if (e.message.toLowerCase().contains('invalid login credentials')) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('invalid login credentials')) {
         throw AuthException('Le mot de passe actuel est incorrect.');
       }
-      if (e.message.toLowerCase().contains('password') &&
-          e.message.toLowerCase().contains('weak')) {
+      if (msg.contains('password') && msg.contains('weak')) {
         throw AuthException(AppConstants.errorWeakPassword);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      if (msg.contains('same') && msg.contains('password')) {
+        throw AuthException('New password must be different from the current password.');
+      }
+      if (msg.contains('session') || msg.contains('jwt')) {
+        throw AuthException(
+          'Your reset session is invalid or expired. Please request a new reset link and open it in the same browser.',
+        );
+      }
+      // Keep the real Supabase message instead of masking it.
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
+  }
+
+  Future<void> _tryRecoverSessionFromUrl() async {
+    // If the session is already set (by detectSessionInUri at boot), skip.
+    if (_client.auth.currentSession != null) {
+      debugPrint('[AuthService] Session already present, skipping URL recovery.');
+      return;
+    }
+
+    final uri = initialLaunchUri ?? Uri.base;
+
+    // Build a flat param map covering both query and fragment params.
+    // With hash routing + implicit flow, Supabase produces a double-hash URL:
+    //   #/reset-password#access_token=xxx&refresh_token=yyy&type=recovery
+    // Dart sees fragment = "/reset-password#access_token=xxx&..."
+    // We split on '#' or '?' inside the fragment to extract the token part.
+    final params = <String, String>{...uri.queryParameters};
+    if (uri.fragment.isNotEmpty) {
+      final frag = uri.fragment;
+      int sepIdx = frag.indexOf('#');
+      if (sepIdx == -1) sepIdx = frag.indexOf('?');
+      if (sepIdx != -1 && sepIdx < frag.length - 1) {
+        try {
+          params.addAll(Uri.splitQueryString(frag.substring(sepIdx + 1)));
+        } catch (_) {}
+      }
+    }
+    debugPrint('[AuthService] params keys: ${params.keys.toList()}');
+
+    final accessToken  = params['access_token'];
+    final refreshToken = params['refresh_token'];
+    final code         = params['code'];
+
+    // Strategy 1: access_token + refresh_token (implicit recovery flow).
+    if (accessToken != null && accessToken.isNotEmpty &&
+        refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        await _client.auth.setSession(refreshToken);
+        if (_client.auth.currentSession != null) {
+          debugPrint('[AuthService] Strategy 1 (setSession) succeeded.');
+          return;
+        }
+      } catch (e) {
+        debugPrint('[AuthService] Strategy 1 failed: $e');
+      }
+    }
+
+    // Strategy 2: PKCE code exchange.
+    if (code != null && code.isNotEmpty) {
+      try {
+        await _client.auth.exchangeCodeForSession(code);
+        if (_client.auth.currentSession != null) {
+          debugPrint('[AuthService] Strategy 2 (exchangeCode) succeeded.');
+          return;
+        }
+      } catch (e) {
+        debugPrint('[AuthService] Strategy 2 failed: $e');
+      }
+    }
+
+    // Strategy 3: let Supabase parse the full URL automatically.
+    try {
+      await _client.auth.getSessionFromUrl(uri);
+      if (_client.auth.currentSession != null) {
+        debugPrint('[AuthService] Strategy 3 (getSessionFromUrl) succeeded.');
+        return;
+      }
+    } catch (e) {
+      debugPrint('[AuthService] Strategy 3 failed: $e');
+    }
+
+    // Strategy 4: synthetic URL without hash fragment.
+    if (accessToken != null && accessToken.isNotEmpty) {
+      try {
+        final syntheticUri = Uri(
+          scheme: uri.scheme,
+          host: uri.host,
+          port: uri.port,
+          path: '/',
+          queryParameters: params,
+        );
+        await _client.auth.getSessionFromUrl(syntheticUri);
+        if (_client.auth.currentSession != null) {
+          debugPrint('[AuthService] Strategy 4 (synthetic URL) succeeded.');
+          return;
+        }
+      } catch (e) {
+        debugPrint('[AuthService] Strategy 4 failed: $e');
+      }
+    }
+
+    debugPrint('[AuthService] All recovery strategies failed. '
+        'Session: ${_client.auth.currentSession}');
   }
 
   Future<void> updatePhone(String newPhone) async {
     try {
+      debugPrint('[AuthService] Updating phone in metadata: $newPhone');
       await _client.auth.updateUser(
-        UserAttributes(phone: newPhone),
+        UserAttributes(data: {'phone': newPhone}),
       );
+      debugPrint('[AuthService] Metadata update completed successfully');
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('already registered') ||
           e.message.toLowerCase().contains('already been registered')) {
@@ -224,10 +352,10 @@ class AuthService {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -245,37 +373,45 @@ class AuthService {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
-  Future<void> resendVerification(String email, {String? phone}) async {
+  Future<void> resendVerification(String email, {OtpType type = OtpType.signup}) async {
     try {
-      if (phone != null && phone.isNotEmpty) {
-        // Resend SMS
-        await _client.auth.resend(
-          type: OtpType.sms,
-          phone: phone,
+      if (type == OtpType.emailChange) {
+        // For email change, Supabase requires calling updateUser with the new email again
+        await _client.auth.updateUser(
+          UserAttributes(email: email),
+          emailRedirectTo: AppConstants.authRedirectUrl('/profile'),
+        );
+      } else if (type == OtpType.recovery) {
+        // For password recovery, call resetPasswordForEmail again to re-trigger the code
+        await _client.auth.resetPasswordForEmail(
+          email,
+          redirectTo: AppConstants.authRedirectUrl('/reset-password'),
         );
       } else {
-        // Resend Email
+        final normalizedEmail = email.trim();
+        debugPrint('[AuthService] Resending verification to: $normalizedEmail, type: $type');
         await _client.auth.resend(
-          type: OtpType.signup,
-          email: email,
+          type: type,
+          email: normalizedEmail,
           emailRedirectTo: AppConstants.authRedirectUrl('/login'),
         );
+        debugPrint('[AuthService] Resend request completed successfully');
       }
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 }

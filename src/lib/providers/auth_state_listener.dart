@@ -25,18 +25,17 @@ class _AuthStateListenerState extends ConsumerState<AuthStateListener> {
   @override
   void initState() {
     super.initState();
-    _subscription = Supabase.instance.client.auth.onAuthStateChange.listen(
-      (data) {
-        if (data.event == AuthChangeEvent.signedIn && data.session != null) {
-          ref.invalidate(authNotifierProvider);
-        }
-        // When user clicks the password reset link in their email,
-        // Supabase fires a passwordRecovery event. Redirect to the reset screen.
-        if (data.event == AuthChangeEvent.passwordRecovery) {
-          appRouter.go(AuthRoutes.resetPasswordPath);
-        }
-      },
-    );
+    _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
+      if (data.event == AuthChangeEvent.signedIn && data.session != null) {
+        ref.invalidate(authNotifierProvider);
+      }
+
+      if (data.event == AuthChangeEvent.passwordRecovery) {
+        AppNavigator.goNamedNoContext(AuthRoutes.resetPassword);
+      }
+    });
   }
 
   @override

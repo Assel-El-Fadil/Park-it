@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:src/core/base/cloud/supabase_repo.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/core/errors/app_exception.dart';
@@ -34,7 +35,6 @@ abstract class AuthRepository {
 
   Future<UserModel> verifyOTP({
     String? email,
-    String? phone,
     required String token,
     required OtpType type,
   });
@@ -44,8 +44,9 @@ abstract class AuthRepository {
   Future<void> updatePassword({String? oldPassword, required String newPassword});
   Future<void> updateEmail(String newEmail);
   Future<void> updatePhone(String newPhone);
-  Future<void> resendVerification(String email, {String? phone});
+  Future<void> resendVerification(String email, {OtpType type});
   Future<void> deleteAccount();
+  Future<bool> userExists(String email);
 }
 
 class AuthRepositoryImpl extends SupabaseRepository<UserModel>
@@ -73,10 +74,33 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       await _authService.signInWithOAuth(provider);
       return true;
     } on AuthException catch (e) {
+      if (e.message.toLowerCase().contains('email') && e.message.toLowerCase().contains('exists')) {
+        throw AppException('An account with this email already exists with a different sign-in method.');
+      }
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
+    }
+  }
+
+  @override
+  Future<bool> userExists(String email) async {
+    try {
+      final response = await client
+          .from(tableName)
+          .select('id, role')
+          .eq('email', email)
+          .maybeSingle();
+
+      // Many Supabase setups use triggers that insert a row automatically upon auth.
+      // To guarantee they completed the role selection screen, their role MUST be populated.
+      final exists = response != null && response['role'] != null;
+      debugPrint('[AuthRepository] userExists check for email $email: $exists');
+      return exists;
+    } catch (e) {
+      debugPrint('[AuthRepository] Error in userExists: $e');
+      return false;
     }
   }
 
@@ -116,6 +140,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     final firstName = metadata['first_name'] as String? ?? fullName.split(' ').first;
     final lastName = metadata['last_name'] as String? ?? (fullName.contains(' ') ? fullName.split(' ').sublist(1).join(' ') : '');
     final roleStr = metadata['role'] as String?;
+    final metaPhoto = metadata['profile_photo'] as String?;
 
     return UserModel(
       id: supabaseUser.id,
@@ -123,6 +148,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       lastName: lastName,
       email: email ?? '',
       phone: phone,
+      profilePhoto: metaPhoto,
       role: _roleFromMeta(roleStr),
     );
   }
@@ -180,19 +206,14 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     } catch (e, stackTrace) {
       print('ERROR [AuthRepositoryImpl.signUp]: $e');
       print('STACK [AuthRepositoryImpl.signUp]: $stackTrace');
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
   @override
   Future<UserModel> signIn(String identifier, String password) async {
     try {
-      final email = await _resolveEmailFromIdentifier(identifier.trim());
-      if (email == null || email.isEmpty) {
-        throw AppException(AppConstants.errorInvalidCredentials);
-      }
-
-      final response = await _authService.signIn(email, password);
+      final response = await _authService.signIn(identifier, password);
       final user = response.user;
       if (user == null) {
         throw AppException(AppConstants.errorInvalidCredentials);
@@ -217,7 +238,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -230,7 +251,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -244,29 +265,26 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         'phone': user.phone,
         'profile_photo': user.profilePhoto,
         'role': user.role.name.toUpperCase(),
+        'role_configured': true, // Native flag immune to backend triggers
       }));
 
-      // Also attempt to update the users table but ignore RLS errors gracefully
-      try {
-        await client
-            .from(tableName)
-            .update({
-              'first_name': user.firstName,
-              'last_name': user.lastName,
-              if (user.email != null) 'email': user.email,
-              'phone': user.phone,
-              'profile_photo': user.profilePhoto,
-              'average_rating': user.averageRating,
-              'total_reviews': user.totalReviews,
-              'fcm_token': user.fcmToken,
-              'role': user.role.name.toUpperCase(),
-            })
-            .eq('id', user.id);
-      } catch (_) {
-        // Ignored Database Error
-      }
+      // Also attempt to upsert the users table and propagate any errors
+      await client
+          .from(tableName)
+          .upsert({
+            'id': user.id,
+            'first_name': user.firstName,
+            'last_name': user.lastName,
+            if (user.email != null) 'email': user.email,
+            'phone': user.phone,
+            'profile_photo': user.profilePhoto,
+            'average_rating': user.averageRating,
+            'total_reviews': user.totalReviews,
+            'fcm_token': user.fcmToken,
+            'role': user.role.name.toUpperCase(),
+          });
     } catch (e) {
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -308,21 +326,19 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
   @override
   Future<UserModel> verifyOTP({
     String? email,
-    String? phone,
     required String token,
     required OtpType type,
   }) async {
     try {
       final response = await _authService.verifyOTP(
         email: email,
-        phone: phone,
         token: token,
         type: type,
       );
@@ -337,12 +353,30 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       if (sessionToken != null) {
         await _sessionService.saveSession(userModel, sessionToken);
       }
+
+      // If it was an email change, update the email in the public users table
+      if (type == OtpType.emailChange && user.email != null) {
+        await client
+            .from(tableName)
+            .update({'email': user.email})
+            .eq('id', user.id);
+      } else if (type == OtpType.signup) {
+        // Formally establish their row in the database globally now that they are verified!
+        try {
+          await updateProfile(userModel);
+        } catch (e) {
+          debugPrint('[AuthRepository] Resilient Sync: Profile establishment during verification failed, but core verification succeeded: $e');
+          // We don't rethrow here because the verification was successful in Supabase Auth,
+          // and the user can re-sync their profile naturally during their first regular login.
+        }
+      }
+
       return userModel;
     } on AuthException catch (e) {
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -375,7 +409,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -390,7 +424,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -398,23 +432,32 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   Future<void> updatePhone(String newPhone) async {
     try {
       await _authService.updatePhone(newPhone);
+      
+      // Also update the public users table for consistency
+      final user = client.auth.currentUser;
+      if (user != null) {
+        await client
+          .from(tableName)
+          .update({'phone': newPhone})
+          .eq('id', user.id);
+      }
     } on AuthException catch (e) {
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
   @override
-  Future<void> resendVerification(String email, {String? phone}) async {
+  Future<void> resendVerification(String email, {OtpType type = OtpType.signup}) async {
     try {
-      await _authService.resendVerification(email, phone: phone);
+      await _authService.resendVerification(email, type: type);
     } on AuthException catch (e) {
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 

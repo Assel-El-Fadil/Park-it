@@ -1,35 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:src/core/config/routes/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/providers/theme_provider.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+
+Uri? initialLaunchUri;
 
 Future<void> main() async {
-  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  try {
+    final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+    debugPrint('[main] Starting initialization...');
 
-  await dotenv.load(fileName: "lib/.env");
+    if (kIsWeb) {
+      usePathUrlStrategy();
+      initialLaunchUri = Uri.base;
+      debugPrint('[main] initialLaunchUri = $initialLaunchUri');
+    }
 
-  if (!kIsWeb) {
-    Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
-    Stripe.urlScheme = 'parkit';
-    await Stripe.instance.applySettings();
+    await dotenv.load(fileName: "lib/.env");
+    debugPrint('[main] Dotenv loaded');
+
+    if (!kIsWeb) {
+      Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
+      Stripe.urlScheme = 'parkit';
+      await Stripe.instance.applySettings();
+      debugPrint('[main] Stripe initialized (Mobile)');
+    } else {
+      debugPrint('[main] Stripe initialization skipped on Web');
+    }
+
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL'] ?? AppConstants.supabaseUrl,
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+        detectSessionInUri: true,
+      ),
+    );
+    debugPrint('[main] Supabase initialized');
+
+    FlutterNativeSplash.remove();
+    runApp(const ProviderScope(child: MyApp()));
+  } catch (e, s) {
+    debugPrint('[main] FATAL ERROR: $e');
+    debugPrint('[main] STACK TRACE: $s');
+    FlutterNativeSplash.remove();
+    runApp(const ProviderScope(child: MyApp()));
   }
-
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? AppConstants.supabaseUrl,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
-
-  FlutterNativeSplash.remove();
-
-  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
@@ -38,13 +63,14 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
-      routerConfig: appRouter,
+      routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
   }

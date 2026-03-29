@@ -11,6 +11,8 @@ import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/repositories/auth_repository.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show OtpType;
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -79,7 +81,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         email: user.email,
-        phone: _phoneController.text.trim(),
+        phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         profilePhoto: photoUrl,
         averageRating: user.averageRating,
         totalReviews: user.totalReviews,
@@ -227,7 +229,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _showUpdateDialog(BuildContext context, String type) {
     bool isPassword = type == 'password';
     bool isPhone = type == 'phone';
-    final controller = TextEditingController();         // used for 'new email' OR 'new password' OR 'new phone'
+    bool isEmail = type == 'email';
+    final controller = TextEditingController();         // used for 'new email' OR 'new password'
+    String fullPhoneNumber = '';                         // used for phone
     final oldPasswordController = TextEditingController(); // used only if isPassword
     final confirmController = TextEditingController();  // used only if isPassword
     final formKey = GlobalKey<FormState>();
@@ -263,28 +267,44 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
                 const SizedBox(height: 16),
               ],
-              TextFormField(
-                controller: controller,
-                obscureText: isPassword,
-                keyboardType: keyboardType,
-                decoration: InputDecoration(
-                  labelText: labelText,
-                  hintText: hintText,
+              if (!isPhone)
+                TextFormField(
+                  controller: controller,
+                  obscureText: isPassword,
+                  keyboardType: keyboardType,
+                  decoration: InputDecoration(
+                    labelText: labelText,
+                    hintText: hintText,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return 'This field is required';
+                    if (isPassword && value.length < AppConstants.minPasswordLength) {
+                      return AppConstants.validationPassword;
+                    }
+                    if (!isPassword && !isPhone && !RegExp(AppConstants.emailRegex).hasMatch(value)) {
+                      return AppConstants.validationEmail;
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'This field is required';
-                  if (isPassword && value.length < AppConstants.minPasswordLength) {
-                    return AppConstants.validationPassword;
-                  }
-                  if (!isPassword && !isPhone && !RegExp(AppConstants.emailRegex).hasMatch(value)) {
-                    return AppConstants.validationEmail;
-                  }
-                  if (isPhone && value.length < 8) {
-                    return 'Please enter a valid phone number';
-                  }
-                  return null;
-                },
-              ),
+              if (isPhone) ...[
+                IntlPhoneField(
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    border: OutlineInputBorder(borderSide: BorderSide()),
+                  ),
+                  initialCountryCode: 'MA', // Default to Morocco
+                  onChanged: (phone) {
+                    fullPhoneNumber = phone.completeNumber;
+                  },
+                  validator: (phone) {
+                    if (phone == null || phone.completeNumber.isEmpty) {
+                      return 'Please enter a valid phone number';
+                    }
+                    return null;
+                  },
+                ),
+              ],
               if (isPassword) ...[
                 const SizedBox(height: 16),
                 TextFormField(
@@ -328,18 +348,31 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     );
                   }
                 } else if (isPhone) {
-                  await ref.read(authNotifierProvider.notifier).updatePhone(controller.text.trim());
-                  await ref.read(authNotifierProvider.notifier).checkAuthState();
-                  if (mounted) {
+                  // For phone changes, Supabase sends an OtpType.phoneChange by default if enabled
+                  await ref.read(authNotifierProvider.notifier).updatePhone(fullPhoneNumber);
+                  
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Phone number updated successfully.')),
+                      const SnackBar(
+                        content: Text('Phone number updated successfully'),
+                        backgroundColor: AppColors.success,
+                      ),
                     );
                   }
-                } else {
+                } else if (isEmail) {
                   await ref.read(authNotifierProvider.notifier).updateEmail(controller.text.trim());
-                  if (mounted) {
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    context.push(
+                      AuthRoutes.verifyOtpPath,
+                      extra: {
+                        'email': controller.text.trim(),
+                        'type': OtpType.emailChange,
+                      },
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('A confirmation link has been sent to your new email address.')),
+                      const SnackBar(content: Text('A verification code has been sent to your new email.')),
                     );
                   }
                 }

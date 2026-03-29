@@ -15,12 +15,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Email verification is handled via the confirmation link sent by Supabase.
 class VerifyOtpScreen extends ConsumerStatefulWidget {
   final String? email;
-  final String? phone;
+  final OtpType? type;
 
   const VerifyOtpScreen({
     super.key,
     this.email,
-    this.phone,
+    this.type,
   });
 
   @override
@@ -34,6 +34,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   Timer? _resendTimer;
   int _secondsRemaining = 60;
   bool _canResend = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -62,21 +63,19 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   }
 
   Future<void> _resendCode() async {
-    if (!_canResend || widget.email == null) return;
-    
+    final emailToVerify = widget.email ?? ref.read(authNotifierProvider).value?.pendingEmail;
+    if (!_canResend || emailToVerify == null) return;
     _startResendTimer();
     
     try {
       await ref.read(authNotifierProvider.notifier).resendVerification(
-        widget.email!,
-        phone: widget.phone,
+        emailToVerify,
+        type: widget.type ?? OtpType.signup,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.phone != null 
-                ? 'A new SMS code has been sent.' 
-                : 'A new verification email has been sent.'),
+          const SnackBar(
+            content: Text('A new verification email has been sent.'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -98,30 +97,64 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    // 1. Strict synchronous guard to prevent any overlap in the same event loop cycle
+    if (_isSubmitting) return;
+    _isSubmitting = true;
+    
+    // 2. Clear state check
+    if (!_formKey.currentState!.validate()) {
+      _isSubmitting = false;
+      return;
+    }
 
     try {
-      // Phone SMS verification
+      // 3. UI feedback
+      final token = _codeController.text.trim();
+      final emailToVerify = widget.email ?? ref.read(authNotifierProvider).value?.pendingEmail;
+      
+      debugPrint('[VerifyOtpScreen] Submitting OTP: token=$token, email=$emailToVerify, type=${widget.type ?? "signup"}');
+
       await ref.read(authNotifierProvider.notifier).verifyOTP(
-            email: widget.email,
-            phone: widget.phone,
-            token: _codeController.text.trim(),
-            type: widget.phone != null ? OtpType.sms : OtpType.signup,
+            email: emailToVerify,
+            token: token,
+            type: widget.type ?? OtpType.signup,
           );
 
       if (mounted) {
-        final state = ref.read(authNotifierProvider).value;
-        final user = state?.currentUser;
-        if (user != null && user.role == UserRole.superAdmin) {
-          context.go('/super-admin');
-        } else if (user != null && user.role == UserRole.owner) {
+        setState(() => _isSubmitting = false);
+        if (widget.type == OtpType.emailChange) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email verified and updated!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          // Refresh auth state
+          await ref.read(authNotifierProvider.notifier).checkAuthState();
           context.go(AuthRoutes.profile);
+        } else if (widget.type == OtpType.recovery) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Code verified! Please set your new password.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.go(AuthRoutes.resetPasswordPath);
         } else {
-          context.go(AuthRoutes.profile);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account verified successfully! Please log in.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.go(AuthRoutes.login);
         }
       }
     } catch (e) {
-      // Error handled by AuthNotifier state
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+      // Error is visually handled by the AuthNotifier state (errorMessage)
     }
   }
 
@@ -130,26 +163,23 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.value?.isLoading ?? false;
     final errorMessage = authState.value?.errorMessage;
+    final pendingEmail = authState.value?.pendingEmail;
 
-    // Determine what we're verifying
-    final isPhoneVerification = widget.phone != null;
-    final destination = isPhoneVerification
-        ? widget.phone!
-        : (widget.email ?? 'your account');
-    final verificationLabel = isPhoneVerification
-        ? 'Phone Verification'
-        : 'Email Verification';
+    final destination = widget.email ?? pendingEmail ?? 'your account';
+    final verificationLabel = 'Verification';
 
     return Scaffold(
       appBar: CustomAppBar(title: verificationLabel),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          child: AbsorbPointer(
+            absorbing: _isSubmitting || isLoading,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 const SizedBox(height: 24),
                 Text(
                   'Enter Verification Code',
@@ -160,38 +190,12 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  isPhoneVerification
-                      ? 'We sent a 6-digit code via SMS to $destination. Please enter it below.'
-                      : 'We sent a 6-digit code to $destination. Please enter it below to verify your account.',
+                  'We sent a 6-digit code to $destination. Please enter it below to verify your account.',
                   style: context.textTheme.bodyMedium?.copyWith(
                     color: context.colorScheme.textSecondary,
                     height: 1.5,
                   ),
                 ),
-                if (isPhoneVerification && widget.email != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.info_outline, color: AppColors.success, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'A confirmation link has also been sent to ${widget.email}. Please check your email to verify your address.',
-                            style: context.textTheme.bodySmall?.copyWith(
-                              color: AppColors.success,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _codeController,
@@ -247,7 +251,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                 SizedBox(
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : _submit,
+                    onPressed: (_isSubmitting || isLoading) ? null : _submit,
                     child: isLoading
                         ? const SizedBox(
                             height: 24,
@@ -271,14 +275,23 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: _canResend ? _resendCode : null,
-                      child: Text(
-                        _canResend ? 'Resend Code' : 'Resend in ${_secondsRemaining}s',
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: _canResend ? AppColors.primary : context.colorScheme.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      onPressed: (_canResend && !isLoading) ? _resendCode : null,
+                      child: isLoading 
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : Text(
+                            _canResend ? 'Resend Code' : 'Resend in ${_secondsRemaining}s',
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: _canResend ? AppColors.primary : context.colorScheme.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                     ),
                   ],
                 ),
@@ -287,6 +300,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }
