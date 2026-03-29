@@ -141,10 +141,11 @@ final routerProvider = Provider<GoRouter>((ref) {
            }
         }
       } else {
-        // 3. Unauthenticated Case: Ensure we are at Splash, Login or Register
+        // 3. Unauthenticated Case: Ensure we are at Splash, Login, Register or OTP Verification
         if (state.matchedLocation != AppRoutes.splashPath && 
             state.matchedLocation != AuthRoutes.login &&
-            state.matchedLocation != AuthRoutes.register) {
+            state.matchedLocation != AuthRoutes.register &&
+            state.matchedLocation != AuthRoutes.verifyOtpPath) {
           debugPrint('[GoRouter] Not authenticated, forcing redirect to Login');
           return AuthRoutes.login;
         }

@@ -140,6 +140,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     final firstName = metadata['first_name'] as String? ?? fullName.split(' ').first;
     final lastName = metadata['last_name'] as String? ?? (fullName.contains(' ') ? fullName.split(' ').sublist(1).join(' ') : '');
     final roleStr = metadata['role'] as String?;
+    final metaPhoto = metadata['profile_photo'] as String?;
 
     return UserModel(
       id: supabaseUser.id,
@@ -147,6 +148,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       lastName: lastName,
       email: email ?? '',
       phone: phone,
+      profilePhoto: metaPhoto,
       role: _roleFromMeta(roleStr),
     );
   }
@@ -362,6 +364,9 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
             .from(tableName)
             .update({'email': user.email})
             .eq('id', user.id);
+      } else if (type == OtpType.signup) {
+        // Formally establish their row in the database globally now that they are verified!
+        await updateProfile(userModel);
       }
 
       return userModel;
