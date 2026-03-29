@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -10,7 +11,8 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/providers/theme_provider.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   await dotenv.load(fileName: "lib/.env");
 
@@ -24,6 +26,8 @@ Future<void> main() async {
     url: dotenv.env['SUPABASE_URL'] ?? AppConstants.supabaseUrl,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
+
+  FlutterNativeSplash.remove();
 
   runApp(const ProviderScope(child: MyApp()));
 }
