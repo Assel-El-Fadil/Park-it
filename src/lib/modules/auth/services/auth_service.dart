@@ -17,6 +17,17 @@ class AuthService {
     required String role,
   }) async {
     try {
+      // 0. Preliminary check: if email exists in public users table
+      final existingUser = await _client
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+
+      if (existingUser != null) {
+        throw AuthException(AppConstants.errorEmailInUse);
+      }
+
       return await _client.auth.signUp(
         email: email,
         password: password,
@@ -75,7 +86,7 @@ class AuthService {
       throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -104,7 +115,7 @@ class AuthService {
       throw AuthException(AppConstants.errorGeneric);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -115,7 +126,7 @@ class AuthService {
       throw AuthException(AppConstants.errorGeneric);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -150,10 +161,10 @@ class AuthService {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -174,7 +185,7 @@ class AuthService {
       throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -325,9 +336,11 @@ class AuthService {
 
   Future<void> updatePhone(String newPhone) async {
     try {
+      debugPrint('[AuthService] Updating phone in metadata: $newPhone');
       await _client.auth.updateUser(
-        UserAttributes(phone: newPhone),
+        UserAttributes(data: {'phone': newPhone}),
       );
+      debugPrint('[AuthService] Metadata update completed successfully');
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('already registered') ||
           e.message.toLowerCase().contains('already been registered')) {
@@ -336,10 +349,10 @@ class AuthService {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -357,10 +370,10 @@ class AuthService {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 
@@ -384,10 +397,10 @@ class AuthService {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);
       }
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.message);
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException(AppConstants.errorGeneric);
+      throw AuthException(e.toString());
     }
   }
 }

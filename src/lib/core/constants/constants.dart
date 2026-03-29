@@ -232,7 +232,7 @@ class AppConstants {
   static const String errorUnauthorized =
       'You are not authorized to perform this action.';
   static const String errorInvalidCredentials = 'Invalid email or password.';
-  static const String errorEmailInUse = 'This email is already registered.';
+  static const String errorEmailInUse = 'an account already attached to this email';
   static const String errorWeakPassword = 'Password is too weak.';
   static const String errorUserNotFound = 'User not found.';
   static const String errorInvalidData = 'Invalid data provided.';

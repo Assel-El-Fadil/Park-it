@@ -76,7 +76,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -180,7 +180,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     } catch (e, stackTrace) {
       print('ERROR [AuthRepositoryImpl.signUp]: $e');
       print('STACK [AuthRepositoryImpl.signUp]: $stackTrace');
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -217,7 +217,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -230,7 +230,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -266,7 +266,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         // Ignored Database Error
       }
     } catch (e) {
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -308,7 +308,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -342,7 +342,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -375,7 +375,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -390,7 +390,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -398,11 +398,20 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   Future<void> updatePhone(String newPhone) async {
     try {
       await _authService.updatePhone(newPhone);
+      
+      // Also update the public users table for consistency
+      final user = client.auth.currentUser;
+      if (user != null) {
+        await client
+          .from(tableName)
+          .update({'phone': newPhone})
+          .eq('id', user.id);
+      }
     } on AuthException catch (e) {
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 
@@ -414,7 +423,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw AppException(AppConstants.errorGeneric);
+      throw AppException(e.toString());
     }
   }
 

@@ -101,22 +101,37 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      // Phone SMS verification
+      final isPhoneVerification = widget.phone != null;
+      
+      debugPrint('[VerifyOtpScreen] Submitting OTP: token=${_codeController.text.trim()}, phone=${widget.phone}, email=${widget.email}, type=${isPhoneVerification ? "phoneChange" : "signup"}');
+
       await ref.read(authNotifierProvider.notifier).verifyOTP(
-            email: widget.email,
+            email: isPhoneVerification ? null : widget.email,
             phone: widget.phone,
             token: _codeController.text.trim(),
-            type: widget.phone != null ? OtpType.sms : OtpType.signup,
+            type: isPhoneVerification ? OtpType.phoneChange : OtpType.signup,
           );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account verified successfully! Please log in.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        context.go(AuthRoutes.login);
+        if (isPhoneVerification) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Phone number verified and updated!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          // Refresh auth state to reflect new phone
+          await ref.read(authNotifierProvider.notifier).checkAuthState();
+          context.go(AuthRoutes.profile);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account verified successfully! Please log in.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.go(AuthRoutes.login);
+        }
       }
     } catch (e) {
       // Error handled by AuthNotifier state
@@ -166,30 +181,6 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                     height: 1.5,
                   ),
                 ),
-                if (isPhoneVerification && widget.email != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.info_outline, color: AppColors.success, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'A confirmation link has also been sent to ${widget.email}. Please check your email to verify your address.',
-                            style: context.textTheme.bodySmall?.copyWith(
-                              color: AppColors.success,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _codeController,
