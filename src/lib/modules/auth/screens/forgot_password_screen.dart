@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
@@ -18,7 +19,6 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  bool _isSuccess = false;
 
   @override
   void dispose() {
@@ -33,9 +33,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       await ref.read(authNotifierProvider.notifier).sendPasswordReset(
             _emailController.text.trim(),
           );
-      setState(() {
-        _isSuccess = true;
-      });
+      if (mounted) {
+        context.go(
+          AuthRoutes.verifyOtpPath,
+          extra: {
+            'email': _emailController.text.trim(),
+            'type': OtpType.recovery,
+          },
+        );
+      }
     } catch (e) {
       // Error is handled by AuthNotifier state, shown below
     }
@@ -54,7 +60,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: _isSuccess ? _buildSuccessView(context) : _buildFormView(context, isLoading, errorMessage),
+          child: _buildFormView(context, isLoading, errorMessage),
         ),
       ),
     );
@@ -141,62 +147,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Send Reset Link'),
+                  : const Text('Send Reset Code'),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSuccessView(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 48),
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: AppColors.success.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.mark_email_read_outlined,
-            color: AppColors.success,
-            size: 40,
-          ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Check your email',
-          textAlign: TextAlign.center,
-          style: context.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: context.colorScheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'We have sent a password reset link to\n${_emailController.text.trim()}',
-          textAlign: TextAlign.center,
-          style: context.textTheme.bodyLarge?.copyWith(
-            color: context.colorScheme.textSecondary,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 48),
-        SizedBox(
-          height: 56,
-          child: ElevatedButton(
-            onPressed: () {
-              ref.read(authNotifierProvider.notifier).clearError();
-              context.go(AuthRoutes.login);
-            },
-            child: const Text('Return to Login'),
-          ),
-        ),
-      ],
     );
   }
 }

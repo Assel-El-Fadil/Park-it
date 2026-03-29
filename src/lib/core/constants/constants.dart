@@ -232,7 +232,7 @@ class AppConstants {
   static const String errorUnauthorized =
       'You are not authorized to perform this action.';
   static const String errorInvalidCredentials = 'Invalid email or password.';
-  static const String errorEmailInUse = 'This email is already registered.';
+  static const String errorEmailInUse = 'an account already attached to this email';
   static const String errorWeakPassword = 'Password is too weak.';
   static const String errorUserNotFound = 'User not found.';
   static const String errorInvalidData = 'Invalid data provided.';
@@ -262,6 +262,8 @@ class AppConstants {
   static const String validationEmail = 'Please enter a valid email address';
   static const String validationPassword =
       'Password must be at least 8 characters';
+  static const String validationPasswordComplexity =
+      'Password must contain at least one letter and one number';
   static const String validationPasswordMatch = 'Passwords do not match';
   static const String validationPhone = 'Please enter a valid phone number';
   static const String validationName = 'Name must be at least 2 characters';

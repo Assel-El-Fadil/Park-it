@@ -1,7 +1,9 @@
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/modules/auth/screens/forgot_password_screen.dart';
 import 'package:src/modules/auth/screens/login_screen.dart';
 import 'package:src/modules/auth/screens/register_screen.dart';
+import 'package:src/modules/auth/screens/role_selection_screen.dart';
 import 'package:src/modules/auth/screens/reset_password_screen.dart';
 import 'package:src/modules/auth/screens/verify_otp_screen.dart';
 import 'package:src/modules/user/screens/profile_screen.dart';
@@ -22,6 +24,9 @@ class AuthRoutes {
 
   static const String resetPassword = 'reset-password';
   static const String resetPasswordPath = '/reset-password';
+
+  static const String roleSelection = 'role-selection';
+  static const String roleSelectionPath = '/role-selection';
 }
 
 /// Auth module route configuration
@@ -59,7 +64,7 @@ List<GoRoute> getAuthRoutes() {
         final extra = state.extra as Map<String, dynamic>? ?? {};
         return VerifyOtpScreen(
           email: extra['email'] as String?,
-          phone: extra['phone'] as String?,
+          type: extra['type'] as OtpType?,
         );
       },
     ),
@@ -67,6 +72,11 @@ List<GoRoute> getAuthRoutes() {
       path: AuthRoutes.resetPasswordPath,
       name: AuthRoutes.resetPassword,
       builder: (context, state) => const ResetPasswordScreen(),
+    ),
+    GoRoute(
+      path: AuthRoutes.roleSelectionPath,
+      name: AuthRoutes.roleSelection,
+      builder: (context, state) => const RoleSelectionScreen(),
     ),
   ];
 }

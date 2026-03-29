@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,12 +10,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/providers/theme_provider.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+
+/// The browser URL captured at launch, BEFORE GoRouter rewrites it.
+/// On web, recovery tokens live here; on mobile this is always null.
+Uri? initialLaunchUri;
 
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  await dotenv.load(fileName: "lib/.env");
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
 
   if (!kIsWeb) {
     Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
@@ -22,10 +30,8 @@ Future<void> main() async {
     await Stripe.instance.applySettings();
   }
 
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? AppConstants.supabaseUrl,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
+  await dotenv.load(fileName: "lib/.env");
+  debugPrint('[main] Dotenv loaded');
 
   FlutterNativeSplash.remove();
 
@@ -38,13 +44,14 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
-      routerConfig: appRouter,
+      routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
   }

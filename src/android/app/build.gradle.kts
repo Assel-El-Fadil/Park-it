@@ -47,4 +47,5 @@ flutter {
 
 dependencies {
     implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.browser:browser:1.5.0")
 }

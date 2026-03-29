@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/main.dart' show initialLaunchUri;
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
 import 'package:src/shared/widgets/custom_appbar.dart';
@@ -24,6 +26,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isSuccess = false;
+  bool _sessionPrepared = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareRecoverySession();
+  }
 
   @override
   void dispose() {
@@ -39,9 +48,66 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       await ref.read(authNotifierProvider.notifier).updatePassword(
             newPassword: _passwordController.text,
           );
+      
+      // We sign out to ensure the user logs in with the new password as requested
+      await ref.read(authNotifierProvider.notifier).signOut();
+      
       setState(() => _isSuccess = true);
     } catch (e) {
       // Error handled by AuthNotifier state
+    }
+  }
+
+  Future<void> _prepareRecoverySession() async {
+    if (_sessionPrepared) return;
+
+    final client = Supabase.instance.client;
+
+    // 1. Session already set (e.g. by VerifyOtpScreen or boot flow).
+    if (client.auth.currentSession != null) {
+      debugPrint('[ResetPwd] Session present.');
+      _sessionPrepared = true;
+      return;
+    }
+
+    // 2. Fallback: Parse tokens from the launch URL (for link-based flow).
+    final savedUri = initialLaunchUri ?? Uri.base;
+    final params = <String, String>{...savedUri.queryParameters};
+
+    if (savedUri.fragment.isNotEmpty) {
+      final fragment = savedUri.fragment;
+      int sepIdx = fragment.indexOf('#');
+      if (sepIdx == -1) sepIdx = fragment.indexOf('?');
+
+      if (sepIdx != -1 && sepIdx < fragment.length - 1) {
+        final tokenStr = fragment.substring(sepIdx + 1);
+        try {
+          params.addAll(Uri.splitQueryString(tokenStr));
+        } catch (_) {}
+      }
+    }
+
+    final refreshToken = params['refresh_token'];
+    final code = params['code'];
+
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        await client.auth.setSession(refreshToken);
+        if (client.auth.currentSession != null) {
+          _sessionPrepared = true;
+          return;
+        }
+      } catch (_) {}
+    }
+
+    if (code != null && code.isNotEmpty) {
+      try {
+        await client.auth.exchangeCodeForSession(code);
+        if (client.auth.currentSession != null) {
+          _sessionPrepared = true;
+          return;
+        }
+      } catch (_) {}
     }
   }
 
