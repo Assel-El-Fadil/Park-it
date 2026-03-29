@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:src/core/base/cloud/supabase_repo.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/core/errors/app_exception.dart';
@@ -45,6 +46,7 @@ abstract class AuthRepository {
   Future<void> updatePhone(String newPhone);
   Future<void> resendVerification(String email, {OtpType type});
   Future<void> deleteAccount();
+  Future<bool> userExists(String email);
 }
 
 class AuthRepositoryImpl extends SupabaseRepository<UserModel>
@@ -72,10 +74,33 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       await _authService.signInWithOAuth(provider);
       return true;
     } on AuthException catch (e) {
+      if (e.message.toLowerCase().contains('email') && e.message.toLowerCase().contains('exists')) {
+        throw AppException('An account with this email already exists with a different sign-in method.');
+      }
       throw AppException(e.message);
     } catch (e) {
       if (e is AppException) rethrow;
       throw AppException(e.toString());
+    }
+  }
+
+  @override
+  Future<bool> userExists(String email) async {
+    try {
+      final response = await client
+          .from(tableName)
+          .select('id, role')
+          .eq('email', email)
+          .maybeSingle();
+
+      // Many Supabase setups use triggers that insert a row automatically upon auth.
+      // To guarantee they completed the role selection screen, their role MUST be populated.
+      final exists = response != null && response['role'] != null;
+      debugPrint('[AuthRepository] userExists check for email $email: $exists');
+      return exists;
+    } catch (e) {
+      debugPrint('[AuthRepository] Error in userExists: $e');
+      return false;
     }
   }
 
@@ -238,13 +263,15 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         'phone': user.phone,
         'profile_photo': user.profilePhoto,
         'role': user.role.name.toUpperCase(),
+        'role_configured': true, // Native flag immune to backend triggers
       }));
 
-      // Also attempt to update the users table but ignore RLS errors gracefully
+      // Also attempt to upsert the users table but ignore RLS errors gracefully
       try {
         await client
             .from(tableName)
-            .update({
+            .upsert({
+              'id': user.id,
               'first_name': user.firstName,
               'last_name': user.lastName,
               if (user.email != null) 'email': user.email,
@@ -254,8 +281,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
               'total_reviews': user.totalReviews,
               'fcm_token': user.fcmToken,
               'role': user.role.name.toUpperCase(),
-            })
-            .eq('id', user.id);
+            });
       } catch (_) {
         // Ignored Database Error
       }

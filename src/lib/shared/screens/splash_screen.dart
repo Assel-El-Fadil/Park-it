@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/config/routes/app_routes.dart';
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/auth/routes/auth_routes.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -24,8 +26,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     if (!mounted) return;
 
-    // Simplified redirection to login as per user request
-    context.go(AppRoutes.login);
+    final authState = ref.read(authNotifierProvider).value;
+    final isAuthenticated = authState?.isAuthenticated ?? false;
+    final isNewUser = authState?.isNewUser ?? false;
+
+    if (!isAuthenticated) {
+      context.go(AppRoutes.login);
+    } else if (isNewUser) {
+      context.go(AuthRoutes.roleSelectionPath);
+    } else {
+      context.go(AppRoutes.profile);
+    }
   }
 
   @override

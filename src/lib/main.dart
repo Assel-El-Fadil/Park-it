@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/constants/constants.dart';
 import 'package:src/providers/theme_provider.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 /// The browser URL captured at launch, BEFORE GoRouter rewrites it.
 /// On web, recovery tokens live here; on mobile this is always null.
@@ -17,6 +18,10 @@ Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     debugPrint('[main] Starting initialization...');
+
+    if (kIsWeb) {
+      usePathUrlStrategy();
+    }
 
     // Capture the full URL before GoRouter replaces it with a clean path.
     if (kIsWeb) {
@@ -40,8 +45,8 @@ Future<void> main() async {
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL'] ?? AppConstants.supabaseUrl,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-      authOptions: FlutterAuthClientOptions(
-        authFlowType: kIsWeb ? AuthFlowType.implicit : AuthFlowType.pkce,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
         detectSessionInUri: true,
       ),
     );
@@ -64,13 +69,14 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
-      routerConfig: appRouter,
+      routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
   }

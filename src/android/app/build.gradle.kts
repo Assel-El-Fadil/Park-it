@@ -44,3 +44,7 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation("androidx.browser:browser:1.5.0")
+}

@@ -80,6 +80,11 @@ class AuthService {
         authScreenLaunchMode: kIsWeb
             ? LaunchMode.platformDefault
             : LaunchMode.externalApplication,
+        queryParams: {
+          // Explicitly command OAuth providers to forget previous cookies and force
+          // displaying an interactive "select account" dialog for clean session switching.
+          'prompt': 'select_account',
+        },
       );
       return true;
     } on AuthException catch (e) {
