@@ -8,7 +8,6 @@ import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/reservation/routes/reservation_routes.dart';
 import 'package:src/modules/review/routes/review_routes.dart';
 import 'package:src/modules/admin/routes/admin_routes.dart';
-import 'package:src/modules/admin/routes/admin_routes.dart';
 import 'package:src/modules/user/routes/user_routes.dart';
 import 'package:src/modules/report/routes/report_routes.dart';
 import 'package:src/shared/screens/landing_page.dart';
@@ -19,7 +18,6 @@ import 'package:src/shared/screens/terms_of_service_screen.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/core/config/routes/router_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
 
 class AppRoutes {
   // App routes
@@ -28,7 +26,7 @@ class AppRoutes {
   static const String privacyPolicy = 'policy';
   static const String settings = 'settings';
 
-  static const String landing = '/';
+  static const String landing = '/landing';
   static const String login = '/login';
   static const String register = '/register';
   static const String profile = '/profile';
@@ -44,6 +42,10 @@ class AppRoutes {
 class AppNavigator {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
+
+  static GoRouter get _router => GoRouter.of(navigatorKey.currentContext!);
+
+  // Context Based Navigation
 
   // Helper Methods
   static void goToLogin(BuildContext context) =>
@@ -88,6 +90,39 @@ class AppNavigator {
       GoRouter.of(context).pop();
     }
   }
+
+  // Context Free Navigation
+
+  static Future<T?> pushNamedNoContext<T>(
+    String routeName, {
+    Object? extra,
+    Map<String, String> pathParameters = const <String, String>{},
+    Map<String, dynamic> queryParameters = const <String, dynamic>{},
+  }) {
+    return _router.pushNamed(
+      routeName,
+      extra: extra,
+      pathParameters: pathParameters,
+      queryParameters: queryParameters,
+    );
+  }
+
+  static void goNamedNoContext(String routeName, {Object? extra}) {
+    _router.goNamed(routeName, extra: extra);
+  }
+
+  static Future<T?> pushReplacementNamedNoContext<T>(
+    String routeName, {
+    Object? extra,
+  }) {
+    return _router.pushReplacementNamed(routeName, extra: extra);
+  }
+
+  static void popNoContext() {
+    if (_router.canPop()) {
+      _router.pop();
+    }
+  }
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -96,53 +131,56 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.splashPath,
     refreshListenable: RouterNotifier(ref),
     debugLogDiagnostics: true,
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Page not found: ${state.uri}'),
-      ),
-    ),
+    errorBuilder: (context, state) =>
+        Scaffold(body: Center(child: Text('Page not found: ${state.uri}'))),
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider).value;
       if (authState == null) return null;
 
-      final location = state.uri.toString();
-      
       // 1. Auth-based redirection
       final bool isAuthenticated = authState.isAuthenticated;
       final bool isNewUser = authState.isNewUser;
-      final bool justLoggedIn = authState.justLoggedIn;
-      
+
       if (isAuthenticated) {
         // 2a. App Startup: Splash -> Profile (Existing) or Role Selection (New/Incomplete)
         if (state.matchedLocation == AppRoutes.splashPath) {
           if (isNewUser) {
-            debugPrint('[GoRouter] New user authenticated without profile on startup, strictly forcing role selection');
+            debugPrint(
+              '[GoRouter] New user authenticated without profile on startup, strictly forcing role selection',
+            );
             return AuthRoutes.roleSelectionPath;
           } else {
-            debugPrint('[GoRouter] Valid profile found on startup, directing to Profile');
+            debugPrint(
+              '[GoRouter] Valid profile found on startup, directing to Profile',
+            );
             return AppRoutes.profile;
           }
         }
 
         // 2b. Enforced role selection for NEW users (active session)
-        if (isNewUser && state.matchedLocation != AuthRoutes.roleSelectionPath) {
-          debugPrint('[GoRouter] New user authenticated without profile, strictly forcing role selection');
+        if (isNewUser &&
+            state.matchedLocation != AuthRoutes.roleSelectionPath) {
+          debugPrint(
+            '[GoRouter] New user authenticated without profile, strictly forcing role selection',
+          );
           return AuthRoutes.roleSelectionPath;
         }
-        
+
         // 2c. Session handling: Prevent existing users from reaching Login/Register/Landing or Role Selection
         if (!isNewUser) {
-           if (state.matchedLocation == '/' ||
-               state.matchedLocation == AuthRoutes.login || 
-               state.matchedLocation == AuthRoutes.register ||
-               state.matchedLocation == AuthRoutes.roleSelectionPath) {
-             debugPrint('[GoRouter] Already authenticated, directing to Profile');
-             return AppRoutes.profile;
-           }
+          if (state.matchedLocation == '/' ||
+              state.matchedLocation == AuthRoutes.login ||
+              state.matchedLocation == AuthRoutes.register ||
+              state.matchedLocation == AuthRoutes.roleSelectionPath) {
+            debugPrint(
+              '[GoRouter] Already authenticated, directing to Profile',
+            );
+            return AppRoutes.profile;
+          }
         }
       } else {
         // 3. Unauthenticated Case: Ensure we are at Splash, Login, Register or OTP Verification
-        if (state.matchedLocation != AppRoutes.splashPath && 
+        if (state.matchedLocation != AppRoutes.splashPath &&
             state.matchedLocation != AuthRoutes.login &&
             state.matchedLocation != AuthRoutes.register &&
             state.matchedLocation != AuthRoutes.verifyOtpPath) {
@@ -156,7 +194,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       // Landing Page
       GoRoute(
-        path: '/',
+        path: AppRoutes.landing,
         name: 'landing',
         builder: (context, state) => const LandingPage(),
       ),

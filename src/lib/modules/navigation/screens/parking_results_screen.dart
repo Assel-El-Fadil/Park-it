@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/modules/navigation/routes/navigation_routes.dart';
+import 'package:src/modules/notification/routes/notification_routes.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
 import 'package:src/modules/owner/repositories/parking_spot_repository.dart';
 import 'package:src/modules/navigation/widgets/time_selection_bar.dart';
+import 'package:src/modules/payment/routes/payment_routes.dart';
+import 'package:src/modules/reservation/routes/reservation_routes.dart';
 import 'package:src/providers/booking_time_provider.dart';
 
 import 'package:src/core/enums/app_enums.dart';
 
 import 'package:src/providers/location_provider.dart';
+import 'package:src/shared/widgets/custom_appbar.dart';
 
 class ParkingFilters {
   final VehicleType? vehicleType;
@@ -200,7 +204,82 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
     // ... updated body ...
 
     return Scaffold(
-      appBar: AppBar(title: Text('Parking in ${widget.cityQuery}')),
+      appBar: CustomAppBar(
+        title: 'Parking in ${widget.cityQuery}',
+
+        centerTitle: false,
+        showBottomBorder: true,
+        isTransparent: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () {
+              AppNavigator.pushNamed(context, AppRoutes.settings);
+            },
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More',
+            onSelected: (value) {
+              switch (value) {
+                case 'notifications':
+                  AppNavigator.pushNamed(
+                    context,
+                    NotificationRoutes.notifications,
+                  );
+                  break;
+                case 'profile':
+                  AppNavigator.pushNamed(context, AppRoutes.profile);
+                  break;
+                case 'reservations':
+                  AppNavigator.pushNamed(
+                    context,
+                    ReservationRoutes.reservations,
+                  );
+                  break;
+                case 'payments':
+                  AppNavigator.pushNamed(context, PaymentRoutes.myPayments);
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'notifications',
+                child: ListTile(
+                  leading: Icon(Icons.notifications_outlined),
+                  title: Text('Notifications'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'profile',
+                child: ListTile(
+                  leading: Icon(Icons.person_outline),
+                  title: Text('Profile'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'reservations',
+                child: ListTile(
+                  leading: Icon(Icons.receipt_long_outlined),
+                  title: Text('My Reservations'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'payments',
+                child: ListTile(
+                  leading: Icon(Icons.credit_card_outlined),
+                  title: Text('Payments'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: Column(
         children: [
           const TimeSelectionBar(),

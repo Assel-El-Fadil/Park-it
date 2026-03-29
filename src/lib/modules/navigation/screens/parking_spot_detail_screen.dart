@@ -5,6 +5,7 @@ import 'package:src/modules/owner/models/availability_model.dart';
 import 'package:src/modules/owner/repositories/parking_spot_repository.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/app_layout.dart';
+import 'package:src/shared/widgets/custom_appbar.dart';
 import 'package:src/shared/widgets/frosted_bar.dart';
 import 'package:src/shared/widgets/rating_stars.dart';
 import 'package:src/shared/widgets/section_header.dart';
@@ -42,6 +43,12 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
 
     return SafeArea(
       child: Scaffold(
+        appBar: CustomAppBar(
+          title: 'Spot Details',
+          centerTitle: false,
+          showBottomBorder: true,
+          isTransparent: false,
+        ),
         body: spotAsyncValue.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(child: Text('Error: $err')),
@@ -61,39 +68,6 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 12),
-                        FrostedBar(
-                          borderRadius: BorderRadius.circular(16),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                onPressed: () =>
-                                    Navigator.of(context).maybePop(),
-                                icon: Icon(
-                                  Icons.arrow_back,
-                                  color: theme.colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  'Spot Details',
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(
-                                width: 48,
-                              ), // To balance the back arrow
-                            ],
-                          ),
-                        ),
                         const SizedBox(height: 16),
                         _PhotoCarousel(theme: theme, photos: spot.photos),
                         const SizedBox(height: 12),
