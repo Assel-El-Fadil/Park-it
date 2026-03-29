@@ -31,9 +31,9 @@ class SocialLoginButtons extends ConsumerWidget {
                 icon: Icons.g_mobiledata_rounded,
                 onTap: isLoading
                     ? null
-                    : () => ref.read(authNotifierProvider.notifier).signInWithOAuth(
-                          OAuthProvider.google,
-                        ),
+                    : () => ref
+                          .read(authNotifierProvider.notifier)
+                          .signInWithOAuth(OAuthProvider.google),
               ),
             ),
             const SizedBox(width: 12),
@@ -43,9 +43,9 @@ class SocialLoginButtons extends ConsumerWidget {
                 icon: Icons.facebook,
                 onTap: isLoading
                     ? null
-                    : () => ref.read(authNotifierProvider.notifier).signInWithOAuth(
-                          OAuthProvider.facebook,
-                        ),
+                    : () => ref
+                          .read(authNotifierProvider.notifier)
+                          .signInWithOAuth(OAuthProvider.facebook),
               ),
             ),
             // Instagram removed: not a supported Supabase OAuth provider
@@ -57,11 +57,7 @@ class SocialLoginButtons extends ConsumerWidget {
 }
 
 class _SocialButton extends StatelessWidget {
-  const _SocialButton({
-    required this.label,
-    required this.icon,
-    this.onTap,
-  });
+  const _SocialButton({required this.label, required this.icon, this.onTap});
 
   final String label;
   final IconData icon;
