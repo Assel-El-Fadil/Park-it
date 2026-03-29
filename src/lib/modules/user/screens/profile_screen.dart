@@ -141,7 +141,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: user.role == UserRole.admin || user.role == UserRole.superAdmin || user.role == UserRole.owner
+      bottomNavigationBar: user.role == UserRole.admin || user.role == UserRole.owner
           ? null 
           : const CommonBottomNav(currentIndex: 3),
     );
@@ -226,7 +226,6 @@ class _ProfileHeader extends StatelessWidget {
                 switch (user.role) {
                   UserRole.owner => 'Parking Owner',
                   UserRole.admin => 'Admin',
-                  UserRole.superAdmin => 'Super Admin',
                   _ => 'Driver',
                 },
                 style: AppTextStyles.labelMedium.copyWith(
