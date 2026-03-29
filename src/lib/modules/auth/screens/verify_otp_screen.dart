@@ -16,11 +16,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class VerifyOtpScreen extends ConsumerStatefulWidget {
   final String? email;
   final String? phone;
+  final OtpType? type;
 
   const VerifyOtpScreen({
     super.key,
     this.email,
     this.phone,
+    this.type,
   });
 
   @override
@@ -109,7 +111,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
             email: isPhoneVerification ? null : widget.email,
             phone: widget.phone,
             token: _codeController.text.trim(),
-            type: isPhoneVerification ? OtpType.phoneChange : OtpType.signup,
+            type: widget.type ?? (isPhoneVerification ? OtpType.phoneChange : OtpType.signup),
           );
 
       if (mounted) {

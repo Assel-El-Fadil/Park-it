@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:src/modules/auth/screens/forgot_password_screen.dart';
 import 'package:src/modules/auth/screens/login_screen.dart';
 import 'package:src/modules/auth/screens/register_screen.dart';
@@ -60,6 +61,7 @@ List<GoRoute> getAuthRoutes() {
         return VerifyOtpScreen(
           email: extra['email'] as String?,
           phone: extra['phone'] as String?,
+          type: extra['type'] as OtpType?,
         );
       },
     ),

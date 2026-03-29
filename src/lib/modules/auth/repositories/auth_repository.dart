@@ -337,6 +337,15 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       if (sessionToken != null) {
         await _sessionService.saveSession(userModel, sessionToken);
       }
+
+      // If it was an email change, update the email in the public users table
+      if (type == OtpType.emailChange && user.email != null) {
+        await client
+            .from(tableName)
+            .update({'email': user.email})
+            .eq('id', user.id);
+      }
+
       return userModel;
     } on AuthException catch (e) {
       throw AppException(e.message);

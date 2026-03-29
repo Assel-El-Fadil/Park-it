@@ -229,6 +229,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _showUpdateDialog(BuildContext context, String type) {
     bool isPassword = type == 'password';
     bool isPhone = type == 'phone';
+    bool isEmail = type == 'email';
     final controller = TextEditingController();         // used for 'new email' OR 'new password'
     String fullPhoneNumber = '';                         // used for phone
     final oldPasswordController = TextEditingController(); // used only if isPassword
@@ -359,11 +360,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     );
                   }
-                } else {
+                } else if (isEmail) {
                   await ref.read(authNotifierProvider.notifier).updateEmail(controller.text.trim());
-                  if (mounted) {
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    context.push(
+                      AuthRoutes.verifyOtpPath,
+                      extra: {
+                        'email': controller.text.trim(),
+                        'type': OtpType.emailChange,
+                      },
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('A confirmation link has been sent to your new email address.')),
+                      const SnackBar(content: Text('A verification code has been sent to your new email.')),
                     );
                   }
                 }
