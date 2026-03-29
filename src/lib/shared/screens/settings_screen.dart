@@ -84,7 +84,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         children: [
           // Account Section
           _buildSectionHeader('Account'),
-          _buildAccountTile(),
+          _buildAccountTile(user),
 
           if (isAdmin) ...[
             _buildSectionHeader('Admin Options'),
@@ -172,17 +172,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildAccountTile() {
+  Widget _buildAccountTile(user) {
     return ListTile(
-      leading: const CircleAvatar(
+      leading: CircleAvatar(
         radius: 25,
-        backgroundImage: NetworkImage('https://via.placeholder.com/150'),
+        backgroundImage: user?.profilePhoto != null
+            ? NetworkImage(user!.profilePhoto)
+            : null,
+        child: user?.profilePhoto == null ? const Icon(Icons.person) : null,
       ),
-      title: const Text(
-        'John Doe',
-        style: TextStyle(fontWeight: FontWeight.bold),
+      title: Text(
+        '${user?.firstName} ${user?.lastName}',
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
-      subtitle: const Text('john.doe@example.com'),
+      subtitle: Text(user?.email ?? ''),
       trailing: IconButton(
         icon: const Icon(Icons.edit),
         onPressed: () {
