@@ -180,4 +180,14 @@ class ReservationRepository extends SupabaseRepository<ReservationModel> {
       'updated_at': end.toIso8601String(),
     });
   }
+
+  Future<void> cancelReservation(int reservationId) async {
+    await client
+        .from(tableName)
+        .update({
+          'status': 'CANCELLED',
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', reservationId);
+  }
 }
