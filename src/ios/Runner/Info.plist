@@ -35,7 +35,7 @@
 				<string>Editor</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<string>io.supabase.flutter</string>
+					<string>io.supabase.parkit</string>
 				</array>
 			</dict>
 		</array>

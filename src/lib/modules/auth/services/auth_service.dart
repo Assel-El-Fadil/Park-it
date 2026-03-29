@@ -76,7 +76,7 @@ class AuthService {
     try {
       await _client.auth.signInWithOAuth(
         provider,
-        redirectTo: kIsWeb ? null : 'io.supabase.flutter://login-callback/',
+        redirectTo: kIsWeb ? null : 'io.supabase.parkit://login-callback/',
         authScreenLaunchMode: kIsWeb
             ? LaunchMode.platformDefault
             : LaunchMode.externalApplication,
@@ -206,11 +206,13 @@ class AuthService {
           await _tryRecoverSessionFromUrl();
         }
       }
-      
+
       // 1. Verify old password if provided
       if (oldPassword != null && oldPassword.isNotEmpty) {
         if (user == null || user.email == null) {
-          throw AuthException('User must be logged in with an email to update password.');
+          throw AuthException(
+            'User must be logged in with an email to update password.',
+          );
         }
         await _client.auth.signInWithPassword(
           email: user.email!,
@@ -229,7 +231,9 @@ class AuthService {
         throw AuthException(AppConstants.errorWeakPassword);
       }
       if (msg.contains('same') && msg.contains('password')) {
-        throw AuthException('New password must be different from the current password.');
+        throw AuthException(
+          'New password must be different from the current password.',
+        );
       }
       if (msg.contains('session') || msg.contains('jwt')) {
         throw AuthException(
@@ -247,7 +251,9 @@ class AuthService {
   Future<void> _tryRecoverSessionFromUrl() async {
     // If the session is already set (by detectSessionInUri at boot), skip.
     if (_client.auth.currentSession != null) {
-      debugPrint('[AuthService] Session already present, skipping URL recovery.');
+      debugPrint(
+        '[AuthService] Session already present, skipping URL recovery.',
+      );
       return;
     }
 
@@ -271,13 +277,15 @@ class AuthService {
     }
     debugPrint('[AuthService] params keys: ${params.keys.toList()}');
 
-    final accessToken  = params['access_token'];
+    final accessToken = params['access_token'];
     final refreshToken = params['refresh_token'];
-    final code         = params['code'];
+    final code = params['code'];
 
     // Strategy 1: access_token + refresh_token (implicit recovery flow).
-    if (accessToken != null && accessToken.isNotEmpty &&
-        refreshToken != null && refreshToken.isNotEmpty) {
+    if (accessToken != null &&
+        accessToken.isNotEmpty &&
+        refreshToken != null &&
+        refreshToken.isNotEmpty) {
       try {
         await _client.auth.setSession(refreshToken);
         if (_client.auth.currentSession != null) {
@@ -333,16 +341,16 @@ class AuthService {
       }
     }
 
-    debugPrint('[AuthService] All recovery strategies failed. '
-        'Session: ${_client.auth.currentSession}');
+    debugPrint(
+      '[AuthService] All recovery strategies failed. '
+      'Session: ${_client.auth.currentSession}',
+    );
   }
 
   Future<void> updatePhone(String newPhone) async {
     try {
       debugPrint('[AuthService] Updating phone in metadata: $newPhone');
-      await _client.auth.updateUser(
-        UserAttributes(data: {'phone': newPhone}),
-      );
+      await _client.auth.updateUser(UserAttributes(data: {'phone': newPhone}));
       debugPrint('[AuthService] Metadata update completed successfully');
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('already registered') ||
@@ -380,7 +388,10 @@ class AuthService {
     }
   }
 
-  Future<void> resendVerification(String email, {OtpType type = OtpType.signup}) async {
+  Future<void> resendVerification(
+    String email, {
+    OtpType type = OtpType.signup,
+  }) async {
     try {
       if (type == OtpType.emailChange) {
         // For email change, Supabase requires calling updateUser with the new email again
@@ -396,7 +407,9 @@ class AuthService {
         );
       } else {
         final normalizedEmail = email.trim();
-        debugPrint('[AuthService] Resending verification to: $normalizedEmail, type: $type');
+        debugPrint(
+          '[AuthService] Resending verification to: $normalizedEmail, type: $type',
+        );
         await _client.auth.resend(
           type: type,
           email: normalizedEmail,

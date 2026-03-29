@@ -30,12 +30,50 @@ class _AuthStateListenerState extends ConsumerState<AuthStateListener> {
     ) {
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         ref.invalidate(authNotifierProvider);
+        _syncOAuthProfile(data.session!);
       }
 
       if (data.event == AuthChangeEvent.passwordRecovery) {
         AppNavigator.goNamedNoContext(AuthRoutes.resetPassword);
       }
     });
+  }
+
+  Future<void> _syncOAuthProfile(Session session) async {
+    final user = session.user;
+
+    if (user.appMetadata['provider'] == 'email') return;
+
+    final meta = user.userMetadata;
+    if (meta == null) return;
+
+    final firstName =
+        meta['given_name'] ?? // Google
+        meta['first_name'] ?? // Facebook
+        (meta['full_name'] as String?)?.split(' ').first;
+
+    final lastName =
+        meta['family_name'] ?? // Google
+        meta['last_name'] ?? // Facebook
+        (meta['full_name'] as String?)?.split(' ').skip(1).join(' ');
+
+    if (firstName == null && lastName == null) return;
+
+    try {
+      await Supabase.instance.client
+          .from('users')
+          .update({
+            if (firstName != null) 'first_name': firstName,
+            if (lastName != null) 'last_name': lastName,
+          })
+          .eq('id', user.id);
+
+      debugPrint(
+        '[AuthStateListener] OAuth profile synced: $firstName $lastName',
+      );
+    } catch (e) {
+      debugPrint('[AuthStateListener] Failed to sync OAuth profile: $e');
+    }
   }
 
   @override
