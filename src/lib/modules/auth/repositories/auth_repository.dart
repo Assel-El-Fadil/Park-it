@@ -268,25 +268,21 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         'role_configured': true, // Native flag immune to backend triggers
       }));
 
-      // Also attempt to upsert the users table but ignore RLS errors gracefully
-      try {
-        await client
-            .from(tableName)
-            .upsert({
-              'id': user.id,
-              'first_name': user.firstName,
-              'last_name': user.lastName,
-              if (user.email != null) 'email': user.email,
-              'phone': user.phone,
-              'profile_photo': user.profilePhoto,
-              'average_rating': user.averageRating,
-              'total_reviews': user.totalReviews,
-              'fcm_token': user.fcmToken,
-              'role': user.role.name.toUpperCase(),
-            });
-      } catch (_) {
-        // Ignored Database Error
-      }
+      // Also attempt to upsert the users table and propagate any errors
+      await client
+          .from(tableName)
+          .upsert({
+            'id': user.id,
+            'first_name': user.firstName,
+            'last_name': user.lastName,
+            if (user.email != null) 'email': user.email,
+            'phone': user.phone,
+            'profile_photo': user.profilePhoto,
+            'average_rating': user.averageRating,
+            'total_reviews': user.totalReviews,
+            'fcm_token': user.fcmToken,
+            'role': user.role.name.toUpperCase(),
+          });
     } catch (e) {
       throw AppException(e.toString());
     }
@@ -366,7 +362,13 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
             .eq('id', user.id);
       } else if (type == OtpType.signup) {
         // Formally establish their row in the database globally now that they are verified!
-        await updateProfile(userModel);
+        try {
+          await updateProfile(userModel);
+        } catch (e) {
+          debugPrint('[AuthRepository] Resilient Sync: Profile establishment during verification failed, but core verification succeeded: $e');
+          // We don't rethrow here because the verification was successful in Supabase Auth,
+          // and the user can re-sync their profile naturally during their first regular login.
+        }
       }
 
       return userModel;

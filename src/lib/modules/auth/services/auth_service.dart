@@ -180,8 +180,8 @@ class AuthService {
   }) async {
     try {
       return await _client.auth.verifyOTP(
-        email: email,
-        token: token,
+        email: email?.trim(),
+        token: token.trim(),
         type: type,
       );
     } on AuthException catch (e) {
@@ -395,11 +395,14 @@ class AuthService {
           redirectTo: AppConstants.authRedirectUrl('/reset-password'),
         );
       } else {
+        final normalizedEmail = email.trim();
+        debugPrint('[AuthService] Resending verification to: $normalizedEmail, type: $type');
         await _client.auth.resend(
           type: type,
-          email: email,
+          email: normalizedEmail,
           emailRedirectTo: AppConstants.authRedirectUrl('/login'),
         );
+        debugPrint('[AuthService] Resend request completed successfully');
       }
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('rate limit')) {

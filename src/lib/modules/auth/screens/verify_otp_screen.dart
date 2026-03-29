@@ -34,6 +34,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   Timer? _resendTimer;
   int _secondsRemaining = 60;
   bool _canResend = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -95,18 +96,31 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    // 1. Strict synchronous guard to prevent any overlap in the same event loop cycle
+    if (_isSubmitting) return;
+    _isSubmitting = true;
+    
+    // 2. Clear state check
+    if (!_formKey.currentState!.validate()) {
+      _isSubmitting = false;
+      return;
+    }
 
     try {
-      debugPrint('[VerifyOtpScreen] Submitting OTP: token=${_codeController.text.trim()}, email=${widget.email}, type=${widget.type ?? "signup"}');
+      // 3. UI feedback
+      setState(() {}); 
+      
+      final token = _codeController.text.trim();
+      debugPrint('[VerifyOtpScreen] Submitting OTP: token=$token, email=${widget.email}, type=${widget.type ?? "signup"}');
 
       await ref.read(authNotifierProvider.notifier).verifyOTP(
             email: widget.email,
-            token: _codeController.text.trim(),
+            token: token,
             type: widget.type ?? OtpType.signup,
           );
 
       if (mounted) {
+        setState(() => _isSubmitting = false);
         if (widget.type == OtpType.emailChange) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -136,7 +150,10 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
         }
       }
     } catch (e) {
-      // Error handled by AuthNotifier state
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+      // Error is visually handled by the AuthNotifier state (errorMessage)
     }
   }
 
@@ -154,11 +171,13 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          child: AbsorbPointer(
+            absorbing: _isSubmitting || isLoading,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 const SizedBox(height: 24),
                 Text(
                   'Enter Verification Code',
@@ -230,7 +249,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                 SizedBox(
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : _submit,
+                    onPressed: (_isSubmitting || isLoading) ? null : _submit,
                     child: isLoading
                         ? const SizedBox(
                             height: 24,
@@ -254,14 +273,23 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: _canResend ? _resendCode : null,
-                      child: Text(
-                        _canResend ? 'Resend Code' : 'Resend in ${_secondsRemaining}s',
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: _canResend ? AppColors.primary : context.colorScheme.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      onPressed: (_canResend && !isLoading) ? _resendCode : null,
+                      child: isLoading 
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : Text(
+                            _canResend ? 'Resend Code' : 'Resend in ${_secondsRemaining}s',
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: _canResend ? AppColors.primary : context.colorScheme.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                     ),
                   ],
                 ),
@@ -270,6 +298,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

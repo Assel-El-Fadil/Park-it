@@ -411,6 +411,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     required String token,
     required OtpType type,
   }) async {
+    // Start loading while preserving error for now, or clear it if that's "trying again"
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const AppAuthState(isLoading: true),
@@ -423,6 +424,23 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
         token: token,
         type: type,
       );
+
+      // If this was a sign-up verification, sign out to force manual login
+      // as per user request to redirect to login page.
+      if (type == OtpType.signup) {
+        debugPrint('[AuthNotifier] Sign-up OTP verified. Signing out to redirect to login...');
+        
+        // Brief delay to ensure any internal Supabase state has settled
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        await authRepository.signOut();
+        state = const AsyncValue.data(AppAuthState(
+          isAuthenticated: false,
+          isLoading: false,
+          errorMessage: null,
+        ));
+        return;
+      }
 
       state = AsyncValue.data(
         AppAuthState(
