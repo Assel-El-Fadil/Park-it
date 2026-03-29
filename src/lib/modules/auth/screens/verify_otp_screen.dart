@@ -63,12 +63,13 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   }
 
   Future<void> _resendCode() async {
-    if (!_canResend || widget.email == null) return;
+    final emailToVerify = widget.email ?? ref.read(authNotifierProvider).value?.pendingEmail;
+    if (!_canResend || emailToVerify == null) return;
     _startResendTimer();
     
     try {
       await ref.read(authNotifierProvider.notifier).resendVerification(
-        widget.email!,
+        emailToVerify,
         type: widget.type ?? OtpType.signup,
       );
       if (mounted) {
@@ -108,13 +109,13 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
 
     try {
       // 3. UI feedback
-      setState(() {}); 
-      
       final token = _codeController.text.trim();
-      debugPrint('[VerifyOtpScreen] Submitting OTP: token=$token, email=${widget.email}, type=${widget.type ?? "signup"}');
+      final emailToVerify = widget.email ?? ref.read(authNotifierProvider).value?.pendingEmail;
+      
+      debugPrint('[VerifyOtpScreen] Submitting OTP: token=$token, email=$emailToVerify, type=${widget.type ?? "signup"}');
 
       await ref.read(authNotifierProvider.notifier).verifyOTP(
-            email: widget.email,
+            email: emailToVerify,
             token: token,
             type: widget.type ?? OtpType.signup,
           );
@@ -162,8 +163,9 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.value?.isLoading ?? false;
     final errorMessage = authState.value?.errorMessage;
+    final pendingEmail = authState.value?.pendingEmail;
 
-    final destination = widget.email ?? 'your account';
+    final destination = widget.email ?? pendingEmail ?? 'your account';
     final verificationLabel = 'Verification';
 
     return Scaffold(

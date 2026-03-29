@@ -17,6 +17,7 @@ class AppAuthState {
   final bool isAuthenticated;
   final bool isNewUser;
   final bool justLoggedIn;
+  final String? pendingEmail;
 
   const AppAuthState({
     this.isLoading = false,
@@ -25,6 +26,7 @@ class AppAuthState {
     this.isAuthenticated = false,
     this.isNewUser = false,
     this.justLoggedIn = false,
+    this.pendingEmail,
   });
 
   AppAuthState copyWith({
@@ -34,6 +36,7 @@ class AppAuthState {
     bool? isAuthenticated,
     bool? isNewUser,
     bool? justLoggedIn,
+    Object? pendingEmail = _sentinel,
   }) {
     return AppAuthState(
       isLoading: isLoading ?? this.isLoading,
@@ -44,6 +47,9 @@ class AppAuthState {
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isNewUser: isNewUser ?? this.isNewUser,
       justLoggedIn: justLoggedIn ?? this.justLoggedIn,
+      pendingEmail: pendingEmail == _sentinel
+          ? this.pendingEmail
+          : pendingEmail as String?,
     );
   }
 }
@@ -438,6 +444,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           isAuthenticated: false,
           isLoading: false,
           errorMessage: null,
+          pendingEmail: null,
         ));
         return;
       }
@@ -448,6 +455,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           isAuthenticated: true,
           isLoading: false,
           errorMessage: null,
+          pendingEmail: null,
         ),
       );
     } on AppException catch (e) {
@@ -539,6 +547,10 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
+      
+      // Store the new email in the state for persistent recovery during OTP stage
+      state = AsyncValue.data(state.value!.copyWith(pendingEmail: newEmail));
+
       await authRepository.updateEmail(newEmail);
 
       // Refresh the local user state to reflect the new email
