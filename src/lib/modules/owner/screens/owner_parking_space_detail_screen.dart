@@ -41,6 +41,11 @@ class OwnerParkingSpaceDetailScreen extends ConsumerWidget {
       );
     }
 
+    final state = ref.watch(ownerStoreProvider);
+    final totalBookings = state.totalBookingsForSpot(spot.id);
+    final totalReviews = state.totalReviewsForSpot(spot.id);
+    final averageRating = state.averageRatingForSpot(spot.id);
+
     final statusColor = switch (spot.status) {
       SpotStatus.available => AppColors.success,
       SpotStatus.archived => AppColors.textTertiaryLight,
@@ -113,12 +118,12 @@ class OwnerParkingSpaceDetailScreen extends ConsumerWidget {
                           ),
                         _Chip(
                           label:
-                              '${spot.averageRating.toStringAsFixed(1)} (${spot.totalReviews})',
+                              '${averageRating.toStringAsFixed(1)} ($totalReviews)',
                           icon: Icons.star,
                           color: AppColors.accentDark,
                         ),
                         _Chip(
-                          label: '${spot.totalBookings} bookings',
+                          label: '$totalBookings bookings',
                           icon: Icons.bookmark_added_outlined,
                         ),
                         if (spot.isDynamicPricing)
