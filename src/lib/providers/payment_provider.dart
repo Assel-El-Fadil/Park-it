@@ -90,6 +90,24 @@ class PaymentNotifier extends Notifier<PaymentState> {
       );
 
       state = state.copyWith(isRefunding: false, payment: payment);
+
+      final notificationService = ref.read(notificationServiceProvider);
+
+      notificationService.addNotification(
+        NotificationModel(
+          userId: payment.payerId,
+          type: NotificationType.paymentSuccess,
+          title: 'Refund Successful',
+          content:
+              'Your refund of $refundAmount ${payment.currency} has been processed successfully.',
+          isRead: false,
+          channel: NotificationChannel.inApp,
+          sentAt: DateTime.now(),
+          referenceId: payment.id,
+          referenceType: 'payment',
+        ),
+      );
+
       return true;
     } catch (e) {
       state = state.copyWith(isRefunding: false, errorMessage: e.toString());
