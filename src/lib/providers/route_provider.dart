@@ -15,6 +15,7 @@ class RouteNotifier extends AsyncNotifier<RouteModel?> {
     required double destLat,
     required double destLng,
   }) async {
+    print('fetchRoute called: $originLat,$originLng → $destLat,$destLng');
     state = const AsyncValue.loading();
 
     try {
@@ -36,7 +37,9 @@ class RouteNotifier extends AsyncNotifier<RouteModel?> {
       // GeoJSON coordinates are [lng, lat] — flip them for latlong2
       final coordinates = route['geometry']['coordinates'] as List;
       final points = coordinates
-          .map((c) => LatLng(c[1] as double, c[0] as double))
+          .map(
+            (c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble()),
+          )
           .toList();
 
       final distanceKm = (leg['distance'] as num) / 1000;

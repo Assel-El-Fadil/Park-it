@@ -16,6 +16,7 @@ Future<void> main() async {
 
   if (!kIsWeb) {
     Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
+    Stripe.urlScheme = 'parkit';
     await Stripe.instance.applySettings();
   }
 

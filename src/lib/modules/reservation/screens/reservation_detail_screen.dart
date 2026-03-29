@@ -9,6 +9,7 @@ import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/reservation/repositories/reservation_repository.dart';
 import 'package:src/modules/review/repositories/review_repository.dart';
 import 'package:src/modules/report/repositories/report_repository.dart';
+import 'package:src/providers/location_provider.dart';
 import 'package:src/providers/payment_provider.dart';
 import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/custom_modal.dart';

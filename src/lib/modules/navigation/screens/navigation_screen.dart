@@ -33,6 +33,9 @@ class _NavigationPageState extends ConsumerState<NavigationScreen> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      ref.read(locationProvider.notifier).getCurrentLocation();
+    });
     ref.read(locationProvider.notifier).startTracking();
   }
 
@@ -44,6 +47,7 @@ class _NavigationPageState extends ConsumerState<NavigationScreen> {
   }
 
   void _fetchRoute() {
+    print('fetch route is called');
     final loc = ref.read(locationProvider).value;
     if (loc == null) return;
 
@@ -68,15 +72,22 @@ class _NavigationPageState extends ConsumerState<NavigationScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Follow user as they move
-    ref.listen(locationProvider, (_, next) {
-      if (!_followUser) return;
+    ref.listen(locationProvider, (prev, next) {
       final loc = next.value;
       if (loc == null) return;
-      final bearing = ref
-          .read(locationProvider.notifier)
-          .bearingTo(widget.destLat, widget.destLng);
-      _moveCamera(LatLng(loc.latitude, loc.longitude), bearing: bearing);
+
+      // Follow user
+      if (_followUser) {
+        final bearing = ref
+            .read(locationProvider.notifier)
+            .bearingTo(widget.destLat, widget.destLng);
+        _moveCamera(LatLng(loc.latitude, loc.longitude), bearing: bearing);
+      }
+
+      // Fetch route once on first valid location
+      if (prev?.value == null && next.value != null) {
+        _fetchRoute();
+      }
     });
 
     // Fetch route once location is first available

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:src/modules/navigation/models/route_model.dart';
 import 'package:src/modules/navigation/widgets/map_icon_button.dart';
 
 class BottomInfoStrip extends StatelessWidget {
@@ -12,7 +13,7 @@ class BottomInfoStrip extends StatelessWidget {
     required this.theme,
   });
 
-  final AsyncValue routeState;
+  final AsyncValue<RouteModel?> routeState;
   final String placeName;
   final VoidCallback onReroute;
   final ColorScheme colorScheme;
@@ -20,6 +21,7 @@ class BottomInfoStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(routeState.toString());
     return Container(
       margin: const EdgeInsets.all(12),
       padding: EdgeInsets.fromLTRB(
