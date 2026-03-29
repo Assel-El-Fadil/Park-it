@@ -92,14 +92,12 @@ class _OwnerParkingLotDetailScreenState
       _dynamicPricing = spots.any((s) => s.isDynamicPricing);
     }
 
+    final state = ref.watch(ownerStoreProvider);
+    final totalBookings = state.totalBookingsForLot(lotId);
+    final averageRating = state.averageRatingForLot(lotId);
     final availableSpots = spots
         .where((s) => s.status == SpotStatus.available)
         .length;
-    final totalBookings = spots.fold<int>(0, (sum, s) => sum + s.totalBookings);
-    final averageRating = spots.isEmpty
-        ? 0.0
-        : spots.fold<double>(0, (sum, s) => sum + s.averageRating) /
-              spots.length;
 
     return Scaffold(
       appBar: AppBar(
