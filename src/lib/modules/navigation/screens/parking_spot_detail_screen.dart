@@ -468,7 +468,7 @@ class _AvailabilitySection extends ConsumerWidget {
               const SectionHeader(title: 'Opening Hours'),
               const SizedBox(height: 12),
               ...availabilities
-                  .where((a) => a.dayOfWeek != null)
+                  .where((a) => a.dayOfWeek != null && !a.isBlocked)
                   .map(
                     (a) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -482,14 +482,9 @@ class _AvailabilitySection extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            a.isBlocked ? 'Closed' : a.timeRange,
+                            a.timeRange,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: a.isBlocked
-                                  ? theme.colorScheme.error
-                                  : theme.colorScheme.onSurfaceVariant,
-                              fontWeight: a.isBlocked
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
