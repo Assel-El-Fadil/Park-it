@@ -45,10 +45,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      await _prepareRecoverySession();
       await ref.read(authNotifierProvider.notifier).updatePassword(
             newPassword: _passwordController.text,
           );
+      
+      // We sign out to ensure the user logs in with the new password as requested
+      await ref.read(authNotifierProvider.notifier).signOut();
+      
       setState(() => _isSuccess = true);
     } catch (e) {
       // Error handled by AuthNotifier state
@@ -60,115 +63,52 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
     final client = Supabase.instance.client;
 
-    // 1. Session already set (e.g. by detectSessionInUri at boot).
+    // 1. Session already set (e.g. by VerifyOtpScreen or boot flow).
     if (client.auth.currentSession != null) {
-      debugPrint('[ResetPwd] Session already present.');
+      debugPrint('[ResetPwd] Session present.');
       _sessionPrepared = true;
       return;
     }
 
-    // 2. Parse tokens from the launch URL.
-    //
-    //    With hash-routing redirect (http://localhost:3000/#/reset-password),
-    //    Supabase implicit flow produces a DOUBLE-HASH URL:
-    //      http://localhost:3000/#/reset-password#access_token=xxx&refresh_token=yyy&type=recovery
-    //
-    //    Dart's Uri sees the entire fragment as:
-    //      /reset-password#access_token=xxx&refresh_token=yyy&type=recovery
-    //
-    //    We must split on BOTH '#' and '?' inside the fragment to extract
-    //    the token query string.
+    // 2. Fallback: Parse tokens from the launch URL (for link-based flow).
     final savedUri = initialLaunchUri ?? Uri.base;
-    debugPrint('[ResetPwd] Parsing URL: $savedUri');
-    debugPrint('[ResetPwd] fragment: ${savedUri.fragment}');
-
     final params = <String, String>{...savedUri.queryParameters};
 
     if (savedUri.fragment.isNotEmpty) {
       final fragment = savedUri.fragment;
-
-      // Find the token separator: could be '#' (implicit flow) or '?' (PKCE)
       int sepIdx = fragment.indexOf('#');
       if (sepIdx == -1) sepIdx = fragment.indexOf('?');
 
       if (sepIdx != -1 && sepIdx < fragment.length - 1) {
         final tokenStr = fragment.substring(sepIdx + 1);
-        debugPrint('[ResetPwd] tokenStr from fragment: $tokenStr');
         try {
           params.addAll(Uri.splitQueryString(tokenStr));
         } catch (_) {}
       }
     }
 
-    debugPrint('[ResetPwd] Extracted params: ${params.keys.toList()}');
-
-    final accessToken = params['access_token'];
     final refreshToken = params['refresh_token'];
     final code = params['code'];
 
-    // Strategy A: setSession with refresh_token (implicit flow).
     if (refreshToken != null && refreshToken.isNotEmpty) {
-      debugPrint('[ResetPwd] Trying setSession(refreshToken)...');
       try {
         await client.auth.setSession(refreshToken);
         if (client.auth.currentSession != null) {
-          debugPrint('[ResetPwd] setSession succeeded.');
           _sessionPrepared = true;
           return;
         }
-      } catch (e) {
-        debugPrint('[ResetPwd] setSession failed: $e');
-      }
+      } catch (_) {}
     }
 
-    // Strategy B: exchangeCodeForSession (PKCE flow).
     if (code != null && code.isNotEmpty) {
-      debugPrint('[ResetPwd] Trying exchangeCodeForSession...');
       try {
         await client.auth.exchangeCodeForSession(code);
         if (client.auth.currentSession != null) {
-          debugPrint('[ResetPwd] exchangeCodeForSession succeeded.');
           _sessionPrepared = true;
           return;
         }
-      } catch (e) {
-        debugPrint('[ResetPwd] exchangeCodeForSession failed: $e');
-      }
+      } catch (_) {}
     }
-
-    // Strategy C: build a clean URL with tokens as query params and let
-    // Supabase parse it.
-    if (accessToken != null && accessToken.isNotEmpty) {
-      debugPrint('[ResetPwd] Trying getSessionFromUrl with synthetic URL...');
-      try {
-        final syntheticUri = Uri(
-          scheme: savedUri.scheme,
-          host: savedUri.host,
-          port: savedUri.port,
-          path: '/',
-          queryParameters: params,
-        );
-        await client.auth.getSessionFromUrl(syntheticUri);
-        if (client.auth.currentSession != null) {
-          debugPrint('[ResetPwd] getSessionFromUrl succeeded.');
-          _sessionPrepared = true;
-          return;
-        }
-      } catch (e) {
-        debugPrint('[ResetPwd] getSessionFromUrl failed: $e');
-      }
-    }
-
-    // Strategy D: wait briefly for Supabase auth stream to fire.
-    debugPrint('[ResetPwd] Waiting 2s for auth stream...');
-    await Future.delayed(const Duration(seconds: 2));
-    if (client.auth.currentSession != null) {
-      debugPrint('[ResetPwd] Session appeared after wait.');
-      _sessionPrepared = true;
-      return;
-    }
-
-    debugPrint('[ResetPwd] All strategies exhausted. No session found.');
   }
 
   @override

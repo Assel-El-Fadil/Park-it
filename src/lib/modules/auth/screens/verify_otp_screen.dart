@@ -117,6 +117,14 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
           // Refresh auth state
           await ref.read(authNotifierProvider.notifier).checkAuthState();
           context.go(AuthRoutes.profile);
+        } else if (widget.type == OtpType.recovery) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Code verified! Please set your new password.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.go(AuthRoutes.resetPasswordPath);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

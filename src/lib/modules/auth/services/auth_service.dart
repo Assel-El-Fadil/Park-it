@@ -383,6 +383,12 @@ class AuthService {
           UserAttributes(email: email),
           emailRedirectTo: AppConstants.authRedirectUrl('/profile'),
         );
+      } else if (type == OtpType.recovery) {
+        // For password recovery, call resetPasswordForEmail again to re-trigger the code
+        await _client.auth.resetPasswordForEmail(
+          email,
+          redirectTo: AppConstants.authRedirectUrl('/reset-password'),
+        );
       } else {
         await _client.auth.resend(
           type: type,
