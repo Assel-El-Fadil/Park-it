@@ -375,13 +375,21 @@ class AuthService {
     }
   }
 
-  Future<void> resendVerification(String email) async {
+  Future<void> resendVerification(String email, {OtpType type = OtpType.signup}) async {
     try {
-      await _client.auth.resend(
-        type: OtpType.signup,
-        email: email,
-        emailRedirectTo: AppConstants.authRedirectUrl('/login'),
-      );
+      if (type == OtpType.emailChange) {
+        // For email change, Supabase requires calling updateUser with the new email again
+        await _client.auth.updateUser(
+          UserAttributes(email: email),
+          emailRedirectTo: AppConstants.authRedirectUrl('/profile'),
+        );
+      } else {
+        await _client.auth.resend(
+          type: type,
+          email: email,
+          emailRedirectTo: AppConstants.authRedirectUrl('/login'),
+        );
+      }
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('rate limit')) {
         throw AuthException(AppConstants.errorRateLimit);

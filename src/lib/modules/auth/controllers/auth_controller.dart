@@ -466,7 +466,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     }
   }
 
-  Future<void> resendVerification(String email) async {
+  Future<void> resendVerification(String email, {OtpType type = OtpType.signup}) async {
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const AppAuthState(isLoading: true),
@@ -474,7 +474,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
-      await authRepository.resendVerification(email);
+      await authRepository.resendVerification(email, type: type);
 
       state = AsyncValue.data(
         state.value?.copyWith(isLoading: false, errorMessage: null) ??

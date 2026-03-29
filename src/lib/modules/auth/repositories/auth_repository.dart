@@ -43,7 +43,7 @@ abstract class AuthRepository {
   Future<void> updatePassword({String? oldPassword, required String newPassword});
   Future<void> updateEmail(String newEmail);
   Future<void> updatePhone(String newPhone);
-  Future<void> resendVerification(String email);
+  Future<void> resendVerification(String email, {OtpType type});
   Future<void> deleteAccount();
 }
 
@@ -417,9 +417,9 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   }
 
   @override
-  Future<void> resendVerification(String email) async {
+  Future<void> resendVerification(String email, {OtpType type = OtpType.signup}) async {
     try {
-      await _authService.resendVerification(email);
+      await _authService.resendVerification(email, type: type);
     } on AuthException catch (e) {
       throw AppException(e.message);
     } catch (e) {

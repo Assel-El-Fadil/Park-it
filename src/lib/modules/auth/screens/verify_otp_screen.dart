@@ -63,12 +63,12 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
 
   Future<void> _resendCode() async {
     if (!_canResend || widget.email == null) return;
-    
     _startResendTimer();
     
     try {
       await ref.read(authNotifierProvider.notifier).resendVerification(
         widget.email!,
+        type: widget.type ?? OtpType.signup,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
