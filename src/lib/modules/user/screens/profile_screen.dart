@@ -136,10 +136,6 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 32),
               _LogoutButton(),
-              if (user.role == UserRole.driver || user.role == UserRole.owner) ...[
-                const SizedBox(height: 16),
-                _DeleteAccountButton(),
-              ],
               const SizedBox(height: 80),
             ],
           ),
@@ -356,70 +352,3 @@ class _LogoutButton extends ConsumerWidget {
     );
   }
 }
-
-class _DeleteAccountButton extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authNotifierProvider);
-    final isLoading = authState.value?.isLoading ?? false;
-
-    return SizedBox(
-      height: 56,
-      child: TextButton.icon(
-        onPressed: isLoading
-            ? null
-            : () => _showDeleteConfirmation(context, ref),
-        icon: const Icon(Icons.delete_forever, size: 20),
-        label: const Text('Delete Account'),
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.error,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showDeleteConfirmation(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Account?'),
-        content: const Text(
-          'This action is permanent and cannot be undone. All your personal data and parking history will be deleted.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete My Account'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        await ref.read(authNotifierProvider.notifier).deleteAccount();
-        if (context.mounted) {
-          context.go(AuthRoutes.login);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Account successfully deleted.')),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to delete account: ${e.toString()}'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-      }
-    }
-  }
-}
-
