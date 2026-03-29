@@ -21,13 +21,79 @@ class TimeSelectionBar extends ConsumerWidget {
 
     if (!context.mounted) return;
     
-    final time = await showTimePicker(
+    final selectedHour = await showDialog<int>(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(initialTime),
+      builder: (context) {
+        int tempHour = initialTime.hour;
+        return AlertDialog(
+          title: const Text('Select Hour'),
+          content: StatefulBuilder(
+            builder: (context, setLocalState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      DropdownButton<int>(
+                        value: tempHour == 0 ? 12 : (tempHour > 12 ? tempHour - 12 : tempHour),
+                        items: List.generate(12, (i) => i + 1).map((h) {
+                          return DropdownMenuItem(value: h, child: Text(h.toString()));
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setLocalState(() {
+                              final isPm = tempHour >= 12;
+                              if (isPm) {
+                                tempHour = (val == 12) ? 12 : val + 12;
+                              } else {
+                                tempHour = (val == 12) ? 0 : val;
+                              }
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 16),
+                      ToggleButtons(
+                        isSelected: [tempHour < 12, tempHour >= 12],
+                        onPressed: (index) {
+                          setLocalState(() {
+                            if (index == 0 && tempHour >= 12) {
+                              tempHour -= 12;
+                            } else if (index == 1 && tempHour < 12) {
+                              tempHour += 12;
+                            }
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        children: const [
+                          Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('AM')),
+                          Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('PM')),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, tempHour),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
-    if (time == null) return;
 
-    final selected = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    if (selectedHour == null) return;
+
+    final selected = DateTime(date.year, date.month, date.day, selectedHour, 0);
     onSelected(selected);
   }
 
@@ -37,7 +103,7 @@ class TimeSelectionBar extends ConsumerWidget {
     final notifier = ref.read(bookingTimeProvider.notifier);
 
     final dateFormatter = DateFormat('EEE, MMM d').format;
-    final timeFormatter = DateFormat('h:mm a').format;
+    final timeFormatter = DateFormat('h:00 a').format;
 
     return Container(
       color: const Color(0xFF3B5668), // Matches the dark blueish theme from screenshot
