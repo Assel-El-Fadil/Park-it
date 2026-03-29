@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/modules/navigation/routes/navigation_routes.dart';
+import 'package:src/shared/widgets/common_bottom_nav.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -29,6 +30,7 @@ class _LandingPageState extends State<LandingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black, // Dark theme required
+      bottomNavigationBar: const CommonBottomNav(currentIndex: 0),
       body: Stack(
         fit: StackFit.expand,
         children: [
