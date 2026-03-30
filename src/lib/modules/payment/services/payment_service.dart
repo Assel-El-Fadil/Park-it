@@ -3,6 +3,7 @@ import 'package:flutter_stripe/flutter_stripe.dart' hide PaymentMethod;
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/payment/models/payment_model.dart';
 import 'package:src/modules/payment/repositories/payment_repository_cloud.dart';
+import 'package:src/modules/payment/services/stripe_payment_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PaymentService {
@@ -43,12 +44,12 @@ class PaymentService {
     required String payerId,
     required double amount,
     required PaymentMethod method,
+    required StripePaymentHandler stripeHandler,
     String currency = 'MAD',
   }) async {
     final platformFee = _calcPlatformFee(amount);
     final ownerPayout = _calcOwnerPayout(amount);
 
-    // Step 1 — create Stripe Payment Intent
     final intentData = await _invokeFunction({
       'action': 'create_payment_intent',
       'amount': amount,
@@ -82,15 +83,7 @@ class PaymentService {
     final paymentId = pendingData['id'] as int;
 
     try {
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: 'Park-it',
-          style: ThemeMode.system,
-        ),
-      );
-
-      await Stripe.instance.presentPaymentSheet();
+      await stripeHandler.present(clientSecret);
 
       final confirmData = await _invokeFunction({
         'action': 'confirm_payment',
@@ -121,7 +114,6 @@ class PaymentService {
           })
           .eq('id', reservationId);
 
-      // Return final model
       final completed = await _repo.getById(paymentId.toString());
       return completed!;
     } on StripeException {
