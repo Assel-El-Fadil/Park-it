@@ -36,6 +36,14 @@ abstract class OwnerRepository {
   Future<void> updateParkingSpot(ParkingSpotModel spot);
   Future<void> archiveParkingSpot(int spotId);
 
+  Future<void> updateSpotsInLot({
+    required int lotId,
+    double? pricePerHour,
+    double? pricePerDay,
+    bool? isDynamicPricing,
+    SpotStatus? status,
+  });
+
   Future<void> updateReviewOwnerReply({
     required int reviewId,
     required String ownerReply,
