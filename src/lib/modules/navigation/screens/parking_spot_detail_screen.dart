@@ -17,6 +17,7 @@ import 'package:src/modules/payment/routes/payment_routes.dart';
 import 'package:src/modules/navigation/routes/navigation_routes.dart';
 import 'package:src/shared/widgets/photo_carousel.dart';
 import 'package:src/core/config/routes/app_routes.dart';
+import 'package:src/modules/reservation/screens/reservations_screen.dart';
 
 final parkingSpotDetailProvider =
     FutureProvider.family<ParkingSpotModel?, String>((ref, id) {
@@ -317,11 +318,17 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                                   return;
                                 }
 
-                                final vehicleState = ref
-                                    .read(vehicleNotifierProvider)
-                                    .value;
-                                if (vehicleState == null ||
-                                    vehicleState.vehicles.isEmpty) {
+                                var vehicleState = await ref
+                                    .read(vehicleNotifierProvider.future);
+
+                                if (vehicleState.vehicles.isEmpty) {
+                                  // Force a refresh to ensure it's not a stale empty state
+                                  vehicleState = await ref
+                                      .read(vehicleNotifierProvider.notifier)
+                                      .loadVehicles(currentUser.id);
+                                }
+
+                                if (vehicleState.vehicles.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
@@ -366,6 +373,9 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                                         totalPrice:
                                             spot.pricePerHour * duration,
                                       );
+
+                                  // Invalidate the reservations provider to refresh the 'My Bookings' tab
+                                  ref.invalidate(userReservationsProvider);
 
                                   if (context.mounted) {
                                     AppNavigator.pushNamed(

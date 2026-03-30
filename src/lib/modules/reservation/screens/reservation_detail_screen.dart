@@ -15,6 +15,7 @@ import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/custom_modal.dart';
 import 'package:src/shared/widgets/section_header.dart';
 import 'package:src/core/config/themes/color_palette.dart';
+import 'package:src/modules/reservation/screens/reservations_screen.dart';
 
 final reservationDetailProvider =
     FutureProvider.family<Map<String, dynamic>, int>((ref, id) async {
@@ -220,6 +221,24 @@ class ReservationDetailScreen extends ConsumerWidget {
                             }
 
                             if (reservationStatus ==
+                                ReservationStatus.pending) {
+                              await ref
+                                  .read(reservationRepositoryProvider)
+                                  .cancelReservation(id);
+                              
+                              if (!context.mounted) return;
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Reservation cancelled successfully'),
+                                ),
+                              );
+                              
+                              ref.invalidate(userReservationsProvider);
+                              ref.invalidate(reservationDetailProvider(id));
+                            }
+
+                            if (reservationStatus ==
                                 ReservationStatus.confirmed) {
                               final scaffoldMessenger = ScaffoldMessenger.of(
                                 context,
@@ -246,15 +265,26 @@ class ReservationDetailScreen extends ConsumerWidget {
 
                               if (!context.mounted) return;
 
-                              scaffoldMessenger.showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    success
-                                        ? 'Refund processed successfully'
-                                        : 'Error processing refund',
+                              if (success) {
+                                await ref
+                                    .read(reservationRepositoryProvider)
+                                    .cancelReservation(id);
+                                
+                                ref.invalidate(userReservationsProvider);
+                                ref.invalidate(reservationDetailProvider(id));
+                                
+                                scaffoldMessenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Reservation cancelled and refund processed successfully'),
                                   ),
-                                ),
-                              );
+                                );
+                              } else {
+                                scaffoldMessenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Error processing refund'),
+                                  ),
+                                );
+                              }
                             }
                           } catch (e) {
                             if (!context.mounted) return;
