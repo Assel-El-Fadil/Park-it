@@ -232,6 +232,25 @@ class OwnerStoreController extends Notifier<OwnerStoreState> {
     await _loadForOwner(ownerId);
   }
 
+  Future<void> updateSpotsInLot({
+    required int lotId,
+    double? pricePerHour,
+    double? pricePerDay,
+    bool? isDynamicPricing,
+    SpotStatus? status,
+  }) async {
+    final ownerId = _loadedOwnerId;
+    if (ownerId == null) return;
+    await ref.read(ownerRepositoryProvider).updateSpotsInLot(
+          lotId: lotId,
+          pricePerHour: pricePerHour,
+          pricePerDay: pricePerDay,
+          isDynamicPricing: isDynamicPricing,
+          status: status,
+        );
+    await _loadForOwner(ownerId);
+  }
+
   Future<void> updateReviewOwnerReply({
     required int reviewId,
     required String ownerReply,

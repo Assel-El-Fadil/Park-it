@@ -309,7 +309,7 @@ class _OwnerParkingLotDetailScreenState
   }
 
   void _updateAllSpotPricing(List<ParkingSpotModel> spots) {
-    if (_isSubmitting) return;
+    if (_isSubmitting || spots.isEmpty) return;
 
     final priceHour = double.tryParse(_priceHourCtrl.text);
     final priceDay = _priceDayCtrl.text.isNotEmpty
@@ -329,37 +329,12 @@ class _OwnerParkingLotDetailScreenState
 
     Future(() async {
       try {
-        for (final spot in spots) {
-          final updatedSpot = ParkingSpotModel(
-            id: spot.id,
-            ownerId: spot.ownerId,
-            lotId: spot.lotId,
-            title: spot.title,
-            description: spot.description,
-            latitude: spot.latitude,
-            longitude: spot.longitude,
-            altitude: spot.altitude,
-            street: spot.street,
-            city: spot.city,
-            country: spot.country,
-            postalCode: spot.postalCode,
-            photos: spot.photos,
-            pricePerHour: priceHour,
-            pricePerDay: priceDay,
-            spotType: spot.spotType,
-            vehicleTypes: spot.vehicleTypes,
-            amenities: spot.amenities,
-            status: spot.status,
-            averageRating: spot.averageRating,
-            totalReviews: spot.totalReviews,
-            totalBookings: spot.totalBookings,
-            isDynamicPricing: _dynamicPricing,
-            createdAt: spot.createdAt,
-            updatedAt: DateTime.now(),
-          );
-
-          await ref.read(ownerStoreProvider.notifier).updateSpot(updatedSpot);
-        }
+        await ref.read(ownerStoreProvider.notifier).updateSpotsInLot(
+              lotId: spots.first.lotId!,
+              pricePerHour: priceHour,
+              pricePerDay: priceDay,
+              isDynamicPricing: _dynamicPricing,
+            );
       } catch (e) {
         debugPrint('Failed to update pricing: $e');
       }
@@ -370,7 +345,7 @@ class _OwnerParkingLotDetailScreenState
     List<ParkingSpotModel> spots,
     SpotStatus status,
   ) {
-    if (_isSubmitting) return;
+    if (_isSubmitting || spots.isEmpty) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Setting ${spots.length} spots to ${status.toJson()} in the background...')),
@@ -378,37 +353,10 @@ class _OwnerParkingLotDetailScreenState
 
     Future(() async {
       try {
-        for (final spot in spots) {
-          final updatedSpot = ParkingSpotModel(
-            id: spot.id,
-            ownerId: spot.ownerId,
-            lotId: spot.lotId,
-            title: spot.title,
-            description: spot.description,
-            latitude: spot.latitude,
-            longitude: spot.longitude,
-            altitude: spot.altitude,
-            street: spot.street,
-            city: spot.city,
-            country: spot.country,
-            postalCode: spot.postalCode,
-            photos: spot.photos,
-            pricePerHour: spot.pricePerHour,
-            pricePerDay: spot.pricePerDay,
-            spotType: spot.spotType,
-            vehicleTypes: spot.vehicleTypes,
-            amenities: spot.amenities,
-            status: status,
-            averageRating: spot.averageRating,
-            totalReviews: spot.totalReviews,
-            totalBookings: spot.totalBookings,
-            isDynamicPricing: spot.isDynamicPricing,
-            createdAt: spot.createdAt,
-            updatedAt: DateTime.now(),
-          );
-
-          await ref.read(ownerStoreProvider.notifier).updateSpot(updatedSpot);
-        }
+        await ref.read(ownerStoreProvider.notifier).updateSpotsInLot(
+              lotId: spots.first.lotId!,
+              status: status,
+            );
       } catch (e) {
         debugPrint('Failed to update status: $e');
       }
