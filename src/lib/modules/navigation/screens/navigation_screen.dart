@@ -76,22 +76,10 @@ class _NavigationPageState extends ConsumerState<NavigationScreen> {
       final loc = next.value;
       if (loc == null) return;
 
-      // Follow user
       if (_followUser) {
-        final bearing = ref
-            .read(locationProvider.notifier)
-            .bearingTo(widget.destLat, widget.destLng);
-        _moveCamera(LatLng(loc.latitude, loc.longitude), bearing: bearing);
+        _moveCamera(LatLng(loc.latitude, loc.longitude));
       }
 
-      // Fetch route once on first valid location
-      if (prev?.value == null && next.value != null) {
-        _fetchRoute();
-      }
-    });
-
-    // Fetch route once location is first available
-    ref.listen(locationProvider, (prev, next) {
       if (prev?.value == null && next.value != null) {
         _fetchRoute();
       }
