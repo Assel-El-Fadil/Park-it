@@ -60,6 +60,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
   @override
   Future<AppAuthState> build() async {
     // Listen to Supabase auth state changes to trigger state refreshes
+
     _listenToAuthChanges();
     return checkAuthState(isInitialCheck: true);
   }
@@ -68,15 +69,13 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     final authService = ref.read(authServiceProvider);
     authService.authStateStream.listen((event) {
       debugPrint('[AuthNotifier] Auth state event detected: ${event.event}');
-      
+
       // Mark "justLoggedIn" as true only for an active sign-in event
       final bool isNewSignIn = event.event == AuthChangeEvent.signedIn;
 
       checkAuthState().then((newState) {
         if (state.hasValue) {
-          state = AsyncValue.data(newState.copyWith(
-            justLoggedIn: isNewSignIn,
-          ));
+          state = AsyncValue.data(newState.copyWith(justLoggedIn: isNewSignIn));
         }
       });
     });
@@ -91,11 +90,13 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     }
 
     try {
-      // Actively verify the token against the Supabase backend. If the user was 
+      // Actively verify the token against the Supabase backend. If the user was
       // deleted remotely, their local token will fail this network request.
       await Supabase.instance.client.auth.getUser();
     } catch (e) {
-      debugPrint('[AuthNotifier] Local session is stale/user deleted remotely. Signing out.');
+      debugPrint(
+        '[AuthNotifier] Local session is stale/user deleted remotely. Signing out.',
+      );
       final authRepository = ref.read(authRepositoryProvider);
       await authRepository.signOut();
       return const AppAuthState();
@@ -116,13 +117,17 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       // Native email signups attach a role immediately; OAuth ones do not until completeProfile.
       final hasCompletedRoleSelection = sbUser.userMetadata?['role'] != null;
       final userExists = hasCompletedRoleSelection;
-      
-      debugPrint('[AuthNotifier] userModel.email: ${userModel.email}, hasCompletedRoleSelection: $hasCompletedRoleSelection');
+
+      debugPrint(
+        '[AuthNotifier] userModel.email: ${userModel.email}, hasCompletedRoleSelection: $hasCompletedRoleSelection',
+      );
 
       if (!hasCompletedRoleSelection) {
-        // If they don't have the explicit role_configured flag, they must be redirected 
+        // If they don't have the explicit role_configured flag, they must be redirected
         // to role selection to properly configure their app profile.
-        debugPrint('[AuthNotifier] No native role_configured flag detected. Marking as New User...');
+        debugPrint(
+          '[AuthNotifier] No native role_configured flag detected. Marking as New User...',
+        );
         // Do NOT insert anything into the public users table yet.
         return AppAuthState(
           currentUser: userModel,
@@ -154,7 +159,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       return AppAuthState(
         currentUser: userModel,
         isAuthenticated: true,
-        isNewUser: false, 
+        isNewUser: false,
       );
     } catch (e, s) {
       debugPrint('[AuthNotifier] Error in checkAuthState: $e');
@@ -261,7 +266,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       if (currentUser == null) throw AppException('No user session found');
 
       final updatedUser = currentUser.copyWith(role: role);
-      
+
       // 1. Update Profile (includes DB insertion/update)
       await authRepository.updateProfile(updatedUser);
 
@@ -298,18 +303,20 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     // --- Hardcoded admin bypass ---
     if (identifier.trim().toLowerCase() == 'admin@gmail.com' &&
         password == 'admin') {
-      state = AsyncValue.data(AppAuthState(
-        currentUser: const UserModel(
-          id: 'hardcoded-admin-id',
-          firstName: 'Admin',
-          lastName: 'Park-it',
-          email: 'admin@gmail.com',
-          role: UserRole.admin,
+      state = AsyncValue.data(
+        AppAuthState(
+          currentUser: const UserModel(
+            id: 'hardcoded-admin-id',
+            firstName: 'Admin',
+            lastName: 'Park-it',
+            email: 'admin@gmail.com',
+            role: UserRole.admin,
+          ),
+          isAuthenticated: true,
+          isLoading: false,
+          errorMessage: null,
         ),
-        isAuthenticated: true,
-        isLoading: false,
-        errorMessage: null,
-      ));
+      );
       return;
     }
     // --- End hardcoded admin bypass ---
@@ -434,18 +441,22 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       // If this was a sign-up verification, sign out to force manual login
       // as per user request to redirect to login page.
       if (type == OtpType.signup) {
-        debugPrint('[AuthNotifier] Sign-up OTP verified. Signing out to redirect to login...');
-        
+        debugPrint(
+          '[AuthNotifier] Sign-up OTP verified. Signing out to redirect to login...',
+        );
+
         // Brief delay to ensure any internal Supabase state has settled
         await Future.delayed(const Duration(milliseconds: 100));
-        
+
         await authRepository.signOut();
-        state = const AsyncValue.data(AppAuthState(
-          isAuthenticated: false,
-          isLoading: false,
-          errorMessage: null,
-          pendingEmail: null,
-        ));
+        state = const AsyncValue.data(
+          AppAuthState(
+            isAuthenticated: false,
+            isLoading: false,
+            errorMessage: null,
+            pendingEmail: null,
+          ),
+        );
         return;
       }
 
@@ -547,7 +558,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
-      
+
       // Store the new email in the state for persistent recovery during OTP stage
       state = AsyncValue.data(state.value!.copyWith(pendingEmail: newEmail));
 
@@ -604,7 +615,10 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
     }
   }
 
-  Future<void> resendVerification(String email, {OtpType type = OtpType.signup}) async {
+  Future<void> resendVerification(
+    String email, {
+    OtpType type = OtpType.signup,
+  }) async {
     state = AsyncValue.data(
       state.value?.copyWith(isLoading: true, errorMessage: null) ??
           const AppAuthState(isLoading: true),
