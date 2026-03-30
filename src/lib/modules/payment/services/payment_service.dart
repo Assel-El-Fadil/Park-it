@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide PaymentMethod;
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/payment/models/payment_model.dart';
 import 'package:src/modules/payment/repositories/payment_repository_cloud.dart';
 import 'package:src/modules/payment/services/stripe_payment_handler.dart';
+import 'package:src/modules/payment/services/stripe_payment_handler_web.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PaymentService {
@@ -49,6 +51,57 @@ class PaymentService {
   }) async {
     final platformFee = _calcPlatformFee(amount);
     final ownerPayout = _calcOwnerPayout(amount);
+
+    if (kIsWeb) {
+      final handler = stripeHandler as WebStripePaymentHandler;
+
+      // Insert PENDING record first so we have an ID for metadata
+      final intentData = await _invokeFunction({
+        'action': 'create_payment_intent',
+        'amount': amount,
+        'currency': currency.toLowerCase(),
+        'reservationId': reservationId,
+        'payerId': payerId,
+        'platformFee': platformFee,
+        'ownerPayout': ownerPayout,
+      });
+
+      final paymentIntentId = intentData['paymentIntentId'] as String;
+
+      final pendingData = await _supabase
+          .from('payments')
+          .insert({
+            'reservation_id': reservationId,
+            'payer_id': payerId,
+            'amount': amount,
+            'platform_fee': platformFee,
+            'owner_payout': ownerPayout,
+            'currency': currency,
+            'status': 'PENDING',
+            'method': method.toJson(),
+            'stripe_payment_intent_id': paymentIntentId,
+            'retry_count': 0,
+          })
+          .select()
+          .single();
+
+      final paymentId = pendingData['id'] as int;
+
+      // This redirects — nothing after this line runs
+      await handler.createCheckoutAndRedirect(
+        invokeFunction: _invokeFunction,
+        reservationId: reservationId,
+        payerId: payerId,
+        paymentId: paymentId,
+        amount: amount,
+        currency: currency,
+      );
+
+      // Unreachable — app state is handled on return via PaymentReturnPage
+      throw StateError('Redirected to Stripe');
+    }
+
+    //Mobile Flow
 
     final intentData = await _invokeFunction({
       'action': 'create_payment_intent',

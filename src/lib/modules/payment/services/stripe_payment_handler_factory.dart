@@ -8,7 +8,7 @@ class StripePaymentHandlerFactory {
   static StripePaymentHandler create([BuildContext? context]) {
     if (kIsWeb) {
       assert(context != null, 'BuildContext is required on web');
-      return WebStripePaymentHandler(context!);
+      return WebStripePaymentHandler();
     }
     return MobileStripePaymentHandler();
   }
