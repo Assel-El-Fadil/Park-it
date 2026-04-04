@@ -18,6 +18,8 @@ class AppAuthState {
   final bool isNewUser;
   final bool justLoggedIn;
   final String? pendingEmail;
+  /// When set with [pendingEmail], OTP screens can recover flow if route [extra] is missing.
+  final OtpType? pendingOtpType;
 
   const AppAuthState({
     this.isLoading = false,
@@ -27,6 +29,7 @@ class AppAuthState {
     this.isNewUser = false,
     this.justLoggedIn = false,
     this.pendingEmail,
+    this.pendingOtpType,
   });
 
   AppAuthState copyWith({
@@ -37,6 +40,7 @@ class AppAuthState {
     bool? isNewUser,
     bool? justLoggedIn,
     Object? pendingEmail = _sentinel,
+    Object? pendingOtpType = _sentinel,
   }) {
     return AppAuthState(
       isLoading: isLoading ?? this.isLoading,
@@ -50,6 +54,9 @@ class AppAuthState {
       pendingEmail: pendingEmail == _sentinel
           ? this.pendingEmail
           : pendingEmail as String?,
+      pendingOtpType: pendingOtpType == _sentinel
+          ? this.pendingOtpType
+          : pendingOtpType as OtpType?,
     );
   }
 }
@@ -400,9 +407,19 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       final authRepository = ref.read(authRepositoryProvider);
       await authRepository.sendPasswordReset(email);
 
+      final trimmed = email.trim();
       state = AsyncValue.data(
-        state.value?.copyWith(isLoading: false, errorMessage: null) ??
-            const AppAuthState(isLoading: false),
+        state.value?.copyWith(
+              isLoading: false,
+              errorMessage: null,
+              pendingEmail: trimmed,
+              pendingOtpType: OtpType.recovery,
+            ) ??
+            AppAuthState(
+              isLoading: false,
+              pendingEmail: trimmed,
+              pendingOtpType: OtpType.recovery,
+            ),
       );
     } on AppException catch (e) {
       state = AsyncValue.data(
@@ -455,6 +472,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
             isLoading: false,
             errorMessage: null,
             pendingEmail: null,
+            pendingOtpType: null,
           ),
         );
         return;
@@ -467,6 +485,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           isLoading: false,
           errorMessage: null,
           pendingEmail: null,
+          pendingOtpType: null,
         ),
       );
     } on AppException catch (e) {

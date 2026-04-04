@@ -34,8 +34,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             _emailController.text.trim(),
           );
       if (mounted) {
-        context.go(
-          AuthRoutes.verifyOtpPath,
+        context.goNamed(
+          AuthRoutes.verifyOtp,
           extra: {
             'email': _emailController.text.trim(),
             'type': OtpType.recovery,
@@ -82,7 +82,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Enter the email address associated with your account and we\'ll send you a link to reset your password.',
+            'Enter the email address associated with your account and we\'ll send you a 6-digit code to reset your password.',
             style: context.textTheme.bodyMedium?.copyWith(
               color: context.colorScheme.textSecondary,
               height: 1.5,

@@ -364,8 +364,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   await ref.read(authNotifierProvider.notifier).updateEmail(controller.text.trim());
                   if (context.mounted) {
                     Navigator.of(context).pop();
-                    context.push(
-                      AuthRoutes.verifyOtpPath,
+                    context.pushNamed(
+                      AuthRoutes.verifyOtp,
                       extra: {
                         'email': controller.text.trim(),
                         'type': OtpType.emailChange,

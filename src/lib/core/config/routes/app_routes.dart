@@ -167,7 +167,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         // 2b. Enforced role selection for NEW users (active session)
         if (isNewUser &&
-            state.matchedLocation != AuthRoutes.roleSelectionPath) {
+            state.matchedLocation != AuthRoutes.roleSelectionPath &&
+            state.matchedLocation != AuthRoutes.resetPasswordPath) {
           debugPrint(
             '[GoRouter] New user authenticated without profile, strictly forcing role selection',
           );
@@ -187,11 +188,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
         }
       } else {
-        // 3. Unauthenticated Case: Ensure we are at Splash, Login, Register or OTP Verification
+        // 3. Unauthenticated: allow auth flows (forgot password, reset link, OTP) without redirecting to login
         if (state.matchedLocation != AppRoutes.splashPath &&
             state.matchedLocation != AuthRoutes.login &&
             state.matchedLocation != AuthRoutes.register &&
-            state.matchedLocation != AuthRoutes.verifyOtpPath) {
+            state.matchedLocation != AuthRoutes.verifyOtpPath &&
+            state.matchedLocation != AuthRoutes.forgotPasswordPath &&
+            state.matchedLocation != AuthRoutes.resetPasswordPath) {
           debugPrint('[GoRouter] Not authenticated, forcing redirect to Login');
           return AuthRoutes.login;
         }

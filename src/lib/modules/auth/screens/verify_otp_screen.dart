@@ -42,6 +42,13 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     _startResendTimer();
   }
 
+  (String?, OtpType) _resolveEmailAndType() {
+    final auth = ref.read(authNotifierProvider).value;
+    final email = widget.email ?? auth?.pendingEmail;
+    final type = widget.type ?? auth?.pendingOtpType ?? OtpType.signup;
+    return (email, type);
+  }
+
   void _startResendTimer() {
     setState(() {
       _secondsRemaining = 60;
@@ -63,14 +70,14 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   }
 
   Future<void> _resendCode() async {
-    final emailToVerify = widget.email ?? ref.read(authNotifierProvider).value?.pendingEmail;
+    final (emailToVerify, otpType) = _resolveEmailAndType();
     if (!_canResend || emailToVerify == null) return;
     _startResendTimer();
     
     try {
       await ref.read(authNotifierProvider.notifier).resendVerification(
         emailToVerify,
-        type: widget.type ?? OtpType.signup,
+        type: otpType,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -110,19 +117,21 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     try {
       // 3. UI feedback
       final token = _codeController.text.trim();
-      final emailToVerify = widget.email ?? ref.read(authNotifierProvider).value?.pendingEmail;
-      
-      debugPrint('[VerifyOtpScreen] Submitting OTP: token=$token, email=$emailToVerify, type=${widget.type ?? "signup"}');
+      final (emailToVerify, otpType) = _resolveEmailAndType();
+
+      debugPrint(
+        '[VerifyOtpScreen] Submitting OTP: token=$token, email=$emailToVerify, type=$otpType',
+      );
 
       await ref.read(authNotifierProvider.notifier).verifyOTP(
             email: emailToVerify,
             token: token,
-            type: widget.type ?? OtpType.signup,
+            type: otpType,
           );
 
       if (mounted) {
         setState(() => _isSubmitting = false);
-        if (widget.type == OtpType.emailChange) {
+        if (otpType == OtpType.emailChange) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Email verified and updated!'),
@@ -132,14 +141,14 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
           // Refresh auth state
           await ref.read(authNotifierProvider.notifier).checkAuthState();
           context.go(AuthRoutes.profile);
-        } else if (widget.type == OtpType.recovery) {
+        } else if (otpType == OtpType.recovery) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Code verified! Please set your new password.'),
               backgroundColor: AppColors.success,
             ),
           );
-          context.go(AuthRoutes.resetPasswordPath);
+          context.goNamed(AuthRoutes.resetPassword);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -147,7 +156,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
               backgroundColor: AppColors.success,
             ),
           );
-          context.go(AuthRoutes.login);
+          context.goNamed(AuthRoutes.login);
         }
       }
     } catch (e) {
@@ -163,9 +172,16 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.value?.isLoading ?? false;
     final errorMessage = authState.value?.errorMessage;
-    final pendingEmail = authState.value?.pendingEmail;
 
-    final destination = widget.email ?? pendingEmail ?? 'your account';
+    final otpType =
+        widget.type ?? authState.value?.pendingOtpType ?? OtpType.signup;
+    final destination =
+        widget.email ?? authState.value?.pendingEmail ?? 'your account';
+    final instructions = otpType == OtpType.recovery
+        ? 'We sent a 6-digit code to $destination. Enter it below, then you can choose a new password.'
+        : otpType == OtpType.emailChange
+            ? 'We sent a code to $destination to verify your new email address.'
+            : 'We sent a 6-digit code to $destination. Please enter it below to verify your account.';
     final verificationLabel = 'Verification';
 
     return Scaffold(
@@ -190,7 +206,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'We sent a 6-digit code to $destination. Please enter it below to verify your account.',
+                  instructions,
                   style: context.textTheme.bodyMedium?.copyWith(
                     color: context.colorScheme.textSecondary,
                     height: 1.5,
