@@ -5,6 +5,7 @@ import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/navigation/models/spot_model.dart';
 import 'package:src/modules/navigation/routes/navigation_routes.dart';
+import 'package:src/modules/payment/services/stripe_payment_handler_factory.dart';
 import 'package:src/modules/reservation/repositories/reservation_repository.dart';
 import 'package:src/providers/payment_provider.dart';
 import 'package:src/shared/widgets/custom_modal.dart';
@@ -92,6 +93,7 @@ class _PayButtonState extends ConsumerState<PayButton> {
           payerId: widget.payerId,
           amount: widget.amount,
           method: _method,
+          stripeHandler: StripePaymentHandlerFactory.create(context),
           currency: widget.currency,
         );
 

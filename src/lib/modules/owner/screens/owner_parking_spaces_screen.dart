@@ -75,7 +75,7 @@ class OwnerParkingSpacesScreen extends ConsumerWidget {
   }
 }
 
-class _OwnerSpotCard extends StatelessWidget {
+class _OwnerSpotCard extends ConsumerWidget {
   const _OwnerSpotCard({
     required this.spot,
     required this.onTap,
@@ -96,8 +96,13 @@ class _OwnerSpotCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final statusColor = _statusColor(context);
+
+    final state = ref.watch(ownerStoreProvider);
+    final totalBookings = state.totalBookingsForSpot(spot.id);
+    final totalReviews = state.totalReviewsForSpot(spot.id);
+    final averageRating = state.averageRatingForSpot(spot.id);
 
     return InkWell(
       onTap: onTap,
@@ -164,17 +169,17 @@ class _OwnerSpotCard extends StatelessWidget {
                 ),
                 if (spot.pricePerDay != null)
                   _Badge(
-                    icon: Icons.calendar_today_outlined,
+                     icon: Icons.calendar_today_outlined,
                     label: '${spot.pricePerDay!.toStringAsFixed(0)} MAD/day',
                   ),
                 _Badge(
                   icon: Icons.star,
                   label:
-                      '${spot.averageRating.toStringAsFixed(1)} (${spot.totalReviews})',
+                      '${averageRating.toStringAsFixed(1)} ($totalReviews)',
                 ),
                 _Badge(
                   icon: Icons.bookmark_added_outlined,
-                  label: '${spot.totalBookings} bookings',
+                  label: '$totalBookings bookings',
                 ),
                 if (spot.isDynamicPricing)
                   const _Badge(icon: Icons.bolt, label: 'Dynamic'),

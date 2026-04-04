@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide PaymentMethod;
 
@@ -8,6 +6,7 @@ import 'package:src/modules/notification/models/notification_model.dart';
 
 import 'package:src/modules/payment/models/payment_state.dart';
 import 'package:src/modules/payment/services/payment_service.dart';
+import 'package:src/modules/payment/services/stripe_payment_handler.dart';
 import 'package:src/providers/notification_provider.dart';
 
 class PaymentNotifier extends Notifier<PaymentState> {
@@ -24,6 +23,7 @@ class PaymentNotifier extends Notifier<PaymentState> {
     required String payerId,
     required double amount,
     required PaymentMethod method,
+    required StripePaymentHandler stripeHandler,
     String currency = 'MAD',
   }) async {
     state = state.copyWith(status: PaymentStatus.loading, clearError: true);
@@ -34,6 +34,7 @@ class PaymentNotifier extends Notifier<PaymentState> {
         payerId: payerId,
         amount: amount,
         method: method,
+        stripeHandler: stripeHandler,
         currency: currency,
       );
 

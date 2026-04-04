@@ -91,7 +91,7 @@ class OwnerParkingLotsScreen extends ConsumerWidget {
   }
 }
 
-class _OwnerLotCard extends StatelessWidget {
+class _OwnerLotCard extends ConsumerWidget {
   const _OwnerLotCard({
     required this.lot,
     required this.spots,
@@ -103,7 +103,7 @@ class _OwnerLotCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final totalSpots = spots.length;
     final availableSpots = spots
         .where((s) => s.status == SpotStatus.available)
@@ -111,6 +111,11 @@ class _OwnerLotCard extends StatelessWidget {
     final averagePrice = totalSpots > 0
         ? spots.fold<double>(0, (sum, s) => sum + s.pricePerHour) / totalSpots
         : 0.0;
+
+    final state = ref.watch(ownerStoreProvider);
+    final totalBookings = state.totalBookingsForLot(lot.id);
+    final totalReviews = state.totalReviewsForLot(lot.id);
+    final averageRating = state.averageRatingForLot(lot.id);
 
     return InkWell(
       onTap: onTap,
@@ -185,12 +190,16 @@ class _OwnerLotCard extends StatelessWidget {
                   label: '${averagePrice.toStringAsFixed(0)} MAD/h avg',
                   color: AppColors.primary,
                 ),
-                if (lot.totalSpots != null)
-                  _Badge(
-                    icon: Icons.inventory_2,
-                    label: '${lot.totalSpots} capacity',
-                    color: context.colorScheme.textSecondary,
-                  ),
+                _Badge(
+                  icon: Icons.star,
+                  label: '${averageRating.toStringAsFixed(1)} ($totalReviews)',
+                  color: Colors.amber,
+                ),
+                _Badge(
+                  icon: Icons.bookmark_added_outlined,
+                  label: '$totalBookings bookings',
+                  color: AppColors.primary,
+                ),
               ],
             ),
           ],

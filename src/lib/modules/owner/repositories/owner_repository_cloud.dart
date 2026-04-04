@@ -242,6 +242,34 @@ class OwnerRepositoryCloud implements OwnerRepository {
   }
 
   @override
+  Future<void> updateSpotsInLot({
+    required int lotId,
+    double? pricePerHour,
+    double? pricePerDay,
+    bool? isDynamicPricing,
+    SpotStatus? status,
+  }) async {
+    try {
+      final updates = <String, dynamic>{
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      
+      if (pricePerHour != null) updates['price_per_hour'] = pricePerHour;
+      if (pricePerDay != null) updates['price_per_day'] = pricePerDay;
+      if (isDynamicPricing != null) updates['is_dynamic_pricing'] = isDynamicPricing;
+      if (status != null) updates['status'] = status.toJson();
+
+      if (updates.keys.length > 1) { // More than just updated_at
+        await _client.from('parking_spots').update(updates).eq('lot_id', lotId);
+      }
+    } on PostgrestException catch (e) {
+      throw AppException(e.message);
+    } catch (_) {
+      throw const AppException('Failed to bulk update parking spots.');
+    }
+  }
+
+  @override
   Future<void> updateReviewOwnerReply({
     required int reviewId,
     required String ownerReply,
