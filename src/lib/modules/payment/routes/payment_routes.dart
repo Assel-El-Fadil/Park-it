@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/modules/payment/screens/invoice_screen.dart';
 import 'package:src/modules/payment/screens/my_payments_screen.dart';
+import 'package:src/modules/payment/screens/payment_return_screen.dart';
 import 'package:src/modules/payment/screens/payment_screen.dart';
 import 'package:src/modules/payment/screens/payment_test.dart';
 import 'package:src/modules/reservation/models/reservation_model.dart';
@@ -62,6 +63,11 @@ List<GoRoute> getPaymentRoutes() {
         }
         return InvoiceScreen(id: id);
       },
+    ),
+
+    GoRoute(
+      path: '/payment-return',
+      builder: (_, __) => const PaymentReturnPage(),
     ),
   ];
 }

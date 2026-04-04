@@ -18,11 +18,11 @@ class OwnerDashboardScreen extends ConsumerWidget {
 
     final spots = ref.watch(
       ownerStoreProvider.select(
-        (s) => s.spots
-            .where((p) => p.ownerId == ownerId && p.lotId == null)
-            .toList(),
+        (s) => s.spots.where((p) => p.ownerId == ownerId).toList(),
       ),
     );
+
+    final standaloneSpots = spots.where((s) => s.lotId == null).toList();
 
     final lots = ref.watch(
       ownerStoreProvider.select(
@@ -30,21 +30,12 @@ class OwnerDashboardScreen extends ConsumerWidget {
       ),
     );
 
-    final lotSpots = ref.watch(
-      ownerStoreProvider.select(
-        (s) => s.spots
-            .where((p) => p.ownerId == ownerId && p.lotId != null)
-            .toList(),
-      ),
-    );
+    final lotSpots = spots.where((s) => s.lotId != null).toList();
 
-    final totalSpots = spots.length;
-    final totalBookings = spots.fold<int>(0, (sum, s) => sum + s.totalBookings);
-    final totalReviews = spots.fold<int>(0, (sum, s) => sum + s.totalReviews);
-    final averageRating = spots.isEmpty
-        ? 0.0
-        : spots.fold<double>(0, (sum, s) => sum + s.averageRating) /
-              spots.length;
+    final state = ref.watch(ownerStoreProvider);
+    final totalBookings = state.totalBookingsGlobal;
+    final totalReviews = state.totalReviewsGlobal;
+    final averageRating = state.averageRatingGlobal;
 
     return Scaffold(
       appBar: AppBar(
@@ -84,7 +75,7 @@ class OwnerDashboardScreen extends ConsumerWidget {
                 items: [
                   _KpiItem(
                     label: 'Standalone spots',
-                    value: '$totalSpots',
+                    value: '${standaloneSpots.length}',
                     icon: Icons.local_parking_outlined,
                   ),
                   _KpiItem(

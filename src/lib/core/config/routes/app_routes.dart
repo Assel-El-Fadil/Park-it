@@ -134,7 +134,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) =>
         Scaffold(body: Center(child: Text('Page not found: ${state.uri}'))),
     redirect: (context, state) {
-      final authState = ref.read(authNotifierProvider).value;
+      final authAsync = ref.read(authNotifierProvider);
+
+      if (authAsync.hasError) {
+        debugPrint('[GoRouter] authNotifierProvider error: ${authAsync.error}');
+        debugPrint('[GoRouter] stackTrace: ${authAsync.stackTrace}');
+        return AuthRoutes.login; // fail-safe redirect
+      }
+
+      final authState = authAsync.value;
       if (authState == null) return null;
 
       // 1. Auth-based redirection

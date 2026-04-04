@@ -46,6 +46,62 @@ class OwnerStoreState {
   }
 }
 
+extension OwnerStoreStats on OwnerStoreState {
+  int totalBookingsForSpot(int spotId) {
+    return reservations.where((r) => r.spotId == spotId).length;
+  }
+
+  int totalReviewsForSpot(int spotId) {
+    return reviewsBySpotId[spotId]?.length ?? 0;
+  }
+
+  double averageRatingForSpot(int spotId) {
+    final reviews = reviewsBySpotId[spotId];
+    if (reviews == null || reviews.isEmpty) return 0.0;
+    final sum = reviews.fold<double>(0, (sum, r) => sum + r.rating);
+    return sum / reviews.length;
+  }
+
+  int totalBookingsForLot(int lotId) {
+    final lotSpotIds = spots.where((s) => s.lotId == lotId).map((s) => s.id);
+    return reservations.where((r) => lotSpotIds.contains(r.spotId)).length;
+  }
+
+  int totalReviewsForLot(int lotId) {
+    final lotSpotIds = spots.where((s) => s.lotId == lotId).map((s) => s.id);
+    int sum = 0;
+    for (final id in lotSpotIds) {
+      sum += reviewsBySpotId[id]?.length ?? 0;
+    }
+    return sum;
+  }
+
+  double averageRatingForLot(int lotId) {
+    final lotSpotIds = spots.where((s) => s.lotId == lotId).map((s) => s.id);
+    final allReviews = <ReviewModel>[];
+    for (final id in lotSpotIds) {
+      if (reviewsBySpotId.containsKey(id)) {
+        allReviews.addAll(reviewsBySpotId[id]!);
+      }
+    }
+    if (allReviews.isEmpty) return 0.0;
+    final sum = allReviews.fold<double>(0, (sum, r) => sum + r.rating);
+    return sum / allReviews.length;
+  }
+
+  int get totalBookingsGlobal => reservations.length;
+  int get totalReviewsGlobal {
+    return reviewsBySpotId.values.fold(0, (sum, list) => sum + list.length);
+  }
+
+  double get averageRatingGlobal {
+    final allReviews = reviewsBySpotId.values.expand((element) => element).toList();
+    if (allReviews.isEmpty) return 0.0;
+    final sum = allReviews.fold<double>(0, (sum, r) => sum + r.rating);
+    return sum / allReviews.length;
+  }
+}
+
 /// In-memory data store to power the owner module UI.
 ///
 /// This mimics the database tables from `park-it.sql`:
@@ -173,6 +229,25 @@ class OwnerStoreController extends Notifier<OwnerStoreState> {
     final ownerId = _loadedOwnerId;
     if (ownerId == null) return;
     await ref.read(ownerRepositoryProvider).archiveParkingSpot(spotId);
+    await _loadForOwner(ownerId);
+  }
+
+  Future<void> updateSpotsInLot({
+    required int lotId,
+    double? pricePerHour,
+    double? pricePerDay,
+    bool? isDynamicPricing,
+    SpotStatus? status,
+  }) async {
+    final ownerId = _loadedOwnerId;
+    if (ownerId == null) return;
+    await ref.read(ownerRepositoryProvider).updateSpotsInLot(
+          lotId: lotId,
+          pricePerHour: pricePerHour,
+          pricePerDay: pricePerDay,
+          isDynamicPricing: isDynamicPricing,
+          status: status,
+        );
     await _loadForOwner(ownerId);
   }
 
