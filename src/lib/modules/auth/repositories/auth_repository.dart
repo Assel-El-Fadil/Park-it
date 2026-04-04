@@ -1,8 +1,10 @@
-import 'dart:typed_data';
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:src/core/base/cloud/supabase_repo.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/core/enums/app_enums.dart' hide UserRole;
 import 'package:src/core/errors/app_exception.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/services/auth_service.dart';
@@ -47,6 +49,16 @@ abstract class AuthRepository {
   Future<void> resendVerification(String email, {OtpType type});
   Future<void> deleteAccount();
   Future<bool> userExists(String email);
+
+  /// Encodes identity images as base64 and sets [identity_doc] (comma-separated segments:
+  /// id front, id back, then each property certificate). No Supabase Storage is used.
+  /// Legacy rows may still use comma-separated http(s) URLs.
+  Future<void> submitOwnerIdentityDocuments({
+    required String userId,
+    required Uint8List idFrontBytes,
+    required Uint8List idBackBytes,
+    required List<Uint8List> propertyCertificateBytes,
+  });
 }
 
 class AuthRepositoryImpl extends SupabaseRepository<UserModel>
@@ -142,6 +154,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     final roleStr = metadata['role'] as String?;
     final metaPhoto = metadata['profile_photo'] as String?;
 
+    final r = _roleFromMeta(roleStr);
     return UserModel(
       id: supabaseUser.id,
       firstName: firstName,
@@ -149,7 +162,10 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       email: email ?? '',
       phone: phone,
       profilePhoto: metaPhoto,
-      role: _roleFromMeta(roleStr),
+      role: r,
+      verificationStatus: r == UserRole.owner
+          ? VerificationStatus.pending
+          : VerificationStatus.verified,
     );
   }
 
@@ -188,6 +204,9 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         email: user.email ?? email,
         phone: meta['phone'] as String? ?? phone,
         role: role,
+        verificationStatus: role == UserRole.owner
+            ? VerificationStatus.pending
+            : VerificationStatus.verified,
       );
 
       final token = response.session?.accessToken;
@@ -282,6 +301,9 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
             'total_reviews': user.totalReviews,
             'fcm_token': user.fcmToken,
             'role': user.role.name.toUpperCase(),
+            'verification_status': user.verificationStatus.toJson(),
+            if (user.identityDoc != null && user.identityDoc!.trim().isNotEmpty)
+              'identity_doc': user.identityDoc,
           });
     } catch (e) {
       throw AppException(e.toString());
@@ -520,6 +542,32 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     if (upper == 'ADMIN') return UserRole.admin;
     if (upper == 'SUPER_ADMIN' || upper == 'SUPERADMIN') return UserRole.superAdmin;
     return UserRole.driver;
+  }
+
+  @override
+  Future<void> submitOwnerIdentityDocuments({
+    required String userId,
+    required Uint8List idFrontBytes,
+    required Uint8List idBackBytes,
+    required List<Uint8List> propertyCertificateBytes,
+  }) async {
+    try {
+      final parts = <String>[
+        base64Encode(idFrontBytes),
+        base64Encode(idBackBytes),
+        ...propertyCertificateBytes.map(base64Encode),
+      ];
+      final csv = parts.join(',');
+      await client.from(tableName).update({
+        'identity_doc': csv,
+        'verification_status': VerificationStatus.pending.toJson(),
+      }).eq('id', userId);
+    } on PostgrestException catch (e) {
+      throw AppException(e.message);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException(e.toString());
+    }
   }
 }
 

@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/config/routes/app_routes.dart';
+import 'package:src/core/enums/app_enums.dart' hide UserRole;
 import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/owner/routes/owner_routes.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -35,7 +38,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     } else if (isNewUser) {
       context.go(AuthRoutes.roleSelectionPath);
     } else {
-      context.go(AppRoutes.profile);
+      final u = authState?.currentUser;
+      if (u != null &&
+          u.role == UserRole.owner &&
+          u.verificationStatus == VerificationStatus.verified) {
+        context.go(OwnerRoutes.ownerMesParkingsPath);
+      } else {
+        context.go(AppRoutes.profile);
+      }
     }
   }
 

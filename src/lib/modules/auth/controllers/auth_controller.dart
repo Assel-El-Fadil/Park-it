@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:src/core/enums/app_enums.dart' hide UserRole;
 import 'package:src/core/errors/app_exception.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/repositories/auth_repository.dart';
@@ -272,19 +273,86 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
       final currentUser = state.value?.currentUser;
       if (currentUser == null) throw AppException('No user session found');
 
-      final updatedUser = currentUser.copyWith(role: role);
+      final updatedUser = currentUser.copyWith(
+        role: role,
+        verificationStatus: role == UserRole.owner
+            ? VerificationStatus.pending
+            : VerificationStatus.verified,
+      );
 
       // 1. Update Profile (includes DB insertion/update)
       await authRepository.updateProfile(updatedUser);
 
-      // 2. Refresh Auth State
+      // 2. Refresh from DB (verification + identity_doc)
+      final refreshed = await authRepository.getCurrentUser();
+
       state = AsyncValue.data(
         AppAuthState(
-          currentUser: updatedUser,
+          currentUser: refreshed ?? updatedUser,
           isAuthenticated: true,
           isNewUser: false,
           isLoading: false,
         ),
+      );
+    } on AppException catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: e.message) ??
+            AppAuthState(isLoading: false, errorMessage: e.message),
+      );
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(
+        state.value?.copyWith(isLoading: false, errorMessage: e.toString()) ??
+            AppAuthState(isLoading: false, errorMessage: e.toString()),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> refreshCurrentUser() async {
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      final fresh = await authRepository.getCurrentUser();
+      if (fresh != null && state.hasValue) {
+        state = AsyncValue.data(state.value!.copyWith(currentUser: fresh));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> submitOwnerIdentityDocuments({
+    required Uint8List idFrontBytes,
+    required Uint8List idBackBytes,
+    required List<Uint8List> propertyCertificateBytes,
+  }) async {
+    final uid = state.value?.currentUser?.id;
+    if (uid == null || uid.isEmpty) {
+      throw AppException('No user session found');
+    }
+
+    state = AsyncValue.data(
+      state.value?.copyWith(isLoading: true, errorMessage: null) ??
+          const AppAuthState(isLoading: true),
+    );
+
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.submitOwnerIdentityDocuments(
+        userId: uid,
+        idFrontBytes: idFrontBytes,
+        idBackBytes: idBackBytes,
+        propertyCertificateBytes: propertyCertificateBytes,
+      );
+      final fresh = await authRepository.getCurrentUser();
+      state = AsyncValue.data(
+        state.value?.copyWith(
+              isLoading: false,
+              errorMessage: null,
+              currentUser: fresh ?? state.value?.currentUser,
+            ) ??
+            AppAuthState(
+              isLoading: false,
+              currentUser: fresh,
+            ),
       );
     } on AppException catch (e) {
       state = AsyncValue.data(
@@ -318,6 +386,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
             lastName: 'Park-it',
             email: 'admin@gmail.com',
             role: UserRole.admin,
+            verificationStatus: VerificationStatus.verified,
           ),
           isAuthenticated: true,
           isLoading: false,
@@ -336,6 +405,7 @@ class AuthNotifier extends AsyncNotifier<AppAuthState> {
           lastName: 'Admin',
           email: 'admin@parkit.com',
           role: UserRole.admin,
+          verificationStatus: VerificationStatus.verified,
         );
 
         state = AsyncValue.data(

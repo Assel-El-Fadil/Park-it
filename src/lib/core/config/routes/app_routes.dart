@@ -15,8 +15,10 @@ import 'package:src/shared/screens/privacy_policy_screen.dart';
 import 'package:src/shared/screens/settings_screen.dart';
 import 'package:src/shared/screens/splash_screen.dart';
 import 'package:src/shared/screens/terms_of_service_screen.dart';
-import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/core/config/routes/router_notifier.dart';
+import 'package:src/core/enums/app_enums.dart' hide UserRole;
+import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/auth/models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AppRoutes {
@@ -158,6 +160,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             );
             return AuthRoutes.roleSelectionPath;
           } else {
+            final u = authState.currentUser;
+            if (u != null &&
+                u.role == UserRole.owner &&
+                u.verificationStatus == VerificationStatus.verified) {
+              debugPrint(
+                '[GoRouter] Verified owner on startup, directing to parkings hub',
+              );
+              return OwnerRoutes.ownerMesParkingsPath;
+            }
             debugPrint(
               '[GoRouter] Valid profile found on startup, directing to Profile',
             );
@@ -175,12 +186,46 @@ final routerProvider = Provider<GoRouter>((ref) {
           return AuthRoutes.roleSelectionPath;
         }
 
-        // 2c. Session handling: Prevent existing users from reaching Login/Register/Landing or Role Selection
+        // 2c. Owner identity verification (pending / unverified): lock to upload or waiting screens only
+        final uGate = authState.currentUser;
+        if (uGate != null &&
+            uGate.role == UserRole.owner &&
+            uGate.verificationStatus != VerificationStatus.verified) {
+          final uploadPath = OwnerRoutes.ownerIdentityUploadPath;
+          final pendingPath = OwnerRoutes.ownerVerificationPendingPath;
+          final hasDocs = uGate.identityDoc?.trim().isNotEmpty ?? false;
+          final loc = state.matchedLocation;
+
+          if (loc == uploadPath) {
+            if (hasDocs &&
+                uGate.verificationStatus == VerificationStatus.pending) {
+              return pendingPath;
+            }
+            return null;
+          }
+          if (loc == pendingPath) {
+            if (!hasDocs) return uploadPath;
+            return null;
+          }
+          if (!hasDocs) return uploadPath;
+          return pendingPath;
+        }
+
+        // 2d. Session handling: Prevent existing users from reaching Login/Register/Landing or Role Selection
         if (!isNewUser) {
           if (state.matchedLocation == '/' ||
               state.matchedLocation == AuthRoutes.login ||
               state.matchedLocation == AuthRoutes.register ||
               state.matchedLocation == AuthRoutes.roleSelectionPath) {
+            final u = authState.currentUser;
+            if (u != null &&
+                u.role == UserRole.owner &&
+                u.verificationStatus == VerificationStatus.verified) {
+              debugPrint(
+                '[GoRouter] Verified owner authenticated, directing to parkings hub',
+              );
+              return OwnerRoutes.ownerMesParkingsPath;
+            }
             debugPrint(
               '[GoRouter] Already authenticated, directing to Profile',
             );

@@ -1,3 +1,4 @@
+import 'package:src/core/enums/app_enums.dart' hide UserRole;
 import 'user_model.dart';
 
 class UserDTO {
@@ -67,6 +68,9 @@ class UserDTO {
       totalReviews: totalReviews,
       fcmToken: fcmToken,
       role: role,
+      verificationStatus: role == UserRole.owner
+          ? VerificationStatus.pending
+          : VerificationStatus.verified,
     );
   }
 
