@@ -541,6 +541,7 @@ class _FilterBar extends ConsumerWidget {
   }
 }
 
+
 class _FilterChip extends StatelessWidget {
   final String label;
   final IconData? icon;

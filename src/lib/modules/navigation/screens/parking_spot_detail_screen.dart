@@ -374,7 +374,6 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                                             spot.pricePerHour * duration,
                                       );
 
-                                  // Invalidate the reservations provider to refresh the 'My Bookings' tab
                                   ref.invalidate(userReservationsProvider);
 
                                   if (context.mounted) {
