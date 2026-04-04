@@ -307,7 +307,7 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
 
                     return ListTile(
                       leading: const Icon(Icons.local_parking),
-                      title: Text(spot.title),
+                      title: Text(spot.title.split(' - Spot ').first),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

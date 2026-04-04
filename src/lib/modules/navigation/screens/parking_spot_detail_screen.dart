@@ -80,7 +80,7 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      spot.title,
+                                      spot.title.split(' - Spot ').first,
                                       style: theme.textTheme.titleLarge
                                           ?.copyWith(
                                             fontWeight: FontWeight.w900,
