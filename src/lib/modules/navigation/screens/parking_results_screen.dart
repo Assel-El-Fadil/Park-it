@@ -288,7 +288,18 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
           Expanded(
             child: spotsAsyncValue.when(
               data: (spots) {
-                if (spots.isEmpty) {
+                // Deduplicate spots to show only one entry per parking lot
+                final seenTitles = <String>{};
+                final uniqueSpots = spots.where((spot) {
+                  final baseTitle = spot.title.split(' - Spot ').first;
+                  if (seenTitles.contains(baseTitle)) {
+                    return false;
+                  }
+                  seenTitles.add(baseTitle);
+                  return true;
+                }).toList();
+
+                if (uniqueSpots.isEmpty) {
                   return Center(
                     child: Text(
                       'No parking spots found in ${widget.cityQuery}.',
@@ -297,9 +308,9 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
                   );
                 }
                 return ListView.builder(
-                  itemCount: spots.length,
+                  itemCount: uniqueSpots.length,
                   itemBuilder: (context, index) {
-                    final spot = spots[index];
+                    final spot = uniqueSpots[index];
                     final total = spot.pricePerHour * duration;
                     final distance = ref
                         .read(locationProvider.notifier)
@@ -307,7 +318,7 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
 
                     return ListTile(
                       leading: const Icon(Icons.local_parking),
-                      title: Text(spot.title),
+                      title: Text(spot.title.split(' - Spot ').first),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -344,10 +355,20 @@ class _ParkingResultsScreenState extends ConsumerState<ParkingResultsScreen> {
           spotsAsyncValue.value != null && spotsAsyncValue.value!.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () {
+                final allSpots = spotsAsyncValue.value ?? [];
+                // Deduplicate spots to show only one marker per parking lot
+                final seenTitles = <String>{};
+                final uniqueSpots = allSpots.where((spot) {
+                  final baseTitle = spot.title.split(' - Spot ').first;
+                  if (seenTitles.contains(baseTitle)) return false;
+                  seenTitles.add(baseTitle);
+                  return true;
+                }).toList();
+
                 AppNavigator.pushNamed(
                   context,
                   NavigationRoutes.parkingMap,
-                  extra: spotsAsyncValue.value,
+                  extra: uniqueSpots,
                 );
               },
               icon: const Icon(Icons.map),
