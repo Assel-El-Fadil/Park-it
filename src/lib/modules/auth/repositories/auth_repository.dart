@@ -1,8 +1,10 @@
-import 'dart:typed_data';
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:src/core/base/cloud/supabase_repo.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:src/core/enums/app_enums.dart' hide UserRole;
 import 'package:src/core/errors/app_exception.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/services/auth_service.dart';
@@ -47,6 +49,16 @@ abstract class AuthRepository {
   Future<void> resendVerification(String email, {OtpType type});
   Future<void> deleteAccount();
   Future<bool> userExists(String email);
+
+  /// Encodes identity images as base64 and sets [identity_doc] (comma-separated segments:
+  /// id front, id back, then each property certificate). No Supabase Storage is used.
+  /// Legacy rows may still use comma-separated http(s) URLs.
+  Future<void> submitOwnerIdentityDocuments({
+    required String userId,
+    required Uint8List idFrontBytes,
+    required Uint8List idBackBytes,
+    required List<Uint8List> propertyCertificateBytes,
+  });
 }
 
 class AuthRepositoryImpl extends SupabaseRepository<UserModel>
@@ -142,6 +154,7 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     final roleStr = metadata['role'] as String?;
     final metaPhoto = metadata['profile_photo'] as String?;
 
+    final r = _roleFromMeta(roleStr);
     return UserModel(
       id: supabaseUser.id,
       firstName: firstName,
@@ -149,7 +162,10 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
       email: email ?? '',
       phone: phone,
       profilePhoto: metaPhoto,
-      role: _roleFromMeta(roleStr),
+      role: r,
+      verificationStatus: r == UserRole.owner
+          ? VerificationStatus.pending
+          : VerificationStatus.verified,
     );
   }
 
@@ -188,6 +204,9 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         email: user.email ?? email,
         phone: meta['phone'] as String? ?? phone,
         role: role,
+        verificationStatus: role == UserRole.owner
+            ? VerificationStatus.pending
+            : VerificationStatus.verified,
       );
 
       final token = response.session?.accessToken;
@@ -258,7 +277,61 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
   @override
   Future<void> updateProfile(UserModel user) async {
     try {
-      // Bypass RLS by saving data into Supabase Auth Metadata
+      // ── 1. Update public.users FIRST ──────────────────────────────────────
+      // IMPORTANT: The DB update MUST happen before the auth metadata update.
+      // Updating auth metadata fires an AuthChangeEvent that triggers
+      // checkAuthState() via the auth listener. If the DB row still has the
+      // old role (e.g. DRIVER from the handle_new_user trigger) when that
+      // listener reads it, the role will appear wrong. By updating the DB
+      // first we guarantee the row is correct before any state events fire.
+      final payload = <String, dynamic>{
+        'first_name': user.firstName,
+        'last_name': user.lastName,
+        if (user.email != null) 'email': user.email,
+        'phone': (user.phone != null && user.phone!.trim().isNotEmpty)
+            ? user.phone!.trim()
+            : null,
+        'profile_photo': user.profilePhoto,
+        'average_rating': user.averageRating,
+        'total_reviews': user.totalReviews,
+        'fcm_token': user.fcmToken,
+        'role': user.role.name.toUpperCase(),
+        'verification_status': user.verificationStatus.toJson(),
+        if (user.identityDoc != null && user.identityDoc!.trim().isNotEmpty)
+          'identity_doc': user.identityDoc,
+      };
+
+      debugPrint(
+        '[AuthRepository] updateProfile – UPDATE public.users id=${user.id}, '
+        'role=${user.role.name.toUpperCase()}',
+      );
+
+      final returned = await client
+          .from(tableName)
+          .update(payload)
+          .eq('id', user.id)
+          .select()
+          .maybeSingle();
+
+      if (returned == null) {
+        debugPrint(
+          '[AuthRepository] updateProfile – UPDATE returned null for id=${user.id}. '
+          'Row may not exist yet.',
+        );
+        throw AppException(
+          'Could not save your profile (no users row updated). '
+          'If this persists, sign out and sign in again.',
+        );
+      }
+
+      debugPrint(
+        '[AuthRepository] updateProfile – DB row updated successfully. '
+        'Returned role: ${returned['role']}',
+      );
+
+      // ── 2. Update Supabase Auth Metadata SECOND ───────────────────────────
+      // This fires an AuthChangeEvent; by this point the DB row already has
+      // the correct role so any listener reading public.users will see it.
       await client.auth.updateUser(UserAttributes(data: {
         'first_name': user.firstName,
         'last_name': user.lastName,
@@ -267,23 +340,8 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
         'role': user.role.name.toUpperCase(),
         'role_configured': true, // Native flag immune to backend triggers
       }));
-
-      // Also attempt to upsert the users table and propagate any errors
-      await client
-          .from(tableName)
-          .upsert({
-            'id': user.id,
-            'first_name': user.firstName,
-            'last_name': user.lastName,
-            if (user.email != null) 'email': user.email,
-            'phone': user.phone,
-            'profile_photo': user.profilePhoto,
-            'average_rating': user.averageRating,
-            'total_reviews': user.totalReviews,
-            'fcm_token': user.fcmToken,
-            'role': user.role.name.toUpperCase(),
-          });
     } catch (e) {
+      debugPrint('[AuthRepository] updateProfile – ERROR: $e');
       throw AppException(e.toString());
     }
   }
@@ -520,6 +578,32 @@ class AuthRepositoryImpl extends SupabaseRepository<UserModel>
     if (upper == 'ADMIN') return UserRole.admin;
     if (upper == 'SUPER_ADMIN' || upper == 'SUPERADMIN') return UserRole.superAdmin;
     return UserRole.driver;
+  }
+
+  @override
+  Future<void> submitOwnerIdentityDocuments({
+    required String userId,
+    required Uint8List idFrontBytes,
+    required Uint8List idBackBytes,
+    required List<Uint8List> propertyCertificateBytes,
+  }) async {
+    try {
+      final parts = <String>[
+        base64Encode(idFrontBytes),
+        base64Encode(idBackBytes),
+        ...propertyCertificateBytes.map(base64Encode),
+      ];
+      final csv = parts.join(',');
+      await client.from(tableName).update({
+        'identity_doc': csv,
+        'verification_status': VerificationStatus.pending.toJson(),
+      }).eq('id', userId);
+    } on PostgrestException catch (e) {
+      throw AppException(e.message);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw AppException(e.toString());
+    }
   }
 }
 
