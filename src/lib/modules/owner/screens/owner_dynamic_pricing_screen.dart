@@ -115,13 +115,26 @@ class _OwnerDynamicPricingScreenState
                   final six = double.tryParse(_sixCtrl.text.trim());
                   final twelve = double.tryParse(_twelveCtrl.text.trim());
 
-                  if (three == null || six == null || twelve == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter valid numbers.'),
-                      ),
-                    );
-                    return;
+                  if (_enabled) {
+                    if (three == null || six == null || twelve == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter valid numbers.'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (three <= 0 || three >= 1.0 || 
+                        six <= 0 || six >= 1.0 || 
+                        twelve <= 0 || twelve >= 1.0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Multipliers must be greater than 0 and strictly less than 1.0.'),
+                        ),
+                      );
+                      return;
+                    }
                   }
 
                   final ruleId = _ruleId ?? 1;

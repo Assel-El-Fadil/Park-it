@@ -25,6 +25,9 @@ class _OwnerParkingLotDetailScreenState
     extends ConsumerState<OwnerParkingLotDetailScreen> {
   final _priceHourCtrl = TextEditingController();
   final _priceDayCtrl = TextEditingController();
+  final _threeCtrl = TextEditingController(text: '1.0');
+  final _sixCtrl = TextEditingController(text: '1.0');
+  final _twelveCtrl = TextEditingController(text: '1.0');
   bool _isSubmitting = false;
   bool _dynamicPricing = false;
 
@@ -32,6 +35,9 @@ class _OwnerParkingLotDetailScreenState
   void dispose() {
     _priceHourCtrl.dispose();
     _priceDayCtrl.dispose();
+    _threeCtrl.dispose();
+    _sixCtrl.dispose();
+    _twelveCtrl.dispose();
     super.dispose();
   }
 
@@ -71,6 +77,8 @@ class _OwnerParkingLotDetailScreenState
       );
     }
 
+    final state = ref.watch(ownerStoreProvider);
+
     // Initialize controllers with current average prices
     if (_priceHourCtrl.text.isEmpty && spots.isNotEmpty) {
       final avgPriceHour =
@@ -90,9 +98,16 @@ class _OwnerParkingLotDetailScreenState
       }
 
       _dynamicPricing = spots.any((s) => s.isDynamicPricing);
+      if (_dynamicPricing && _threeCtrl.text == '1.0') {
+        final rules = state.dynamicPricingBySpotId[spots.first.id];
+        if (rules != null && rules.isNotEmpty) {
+          _threeCtrl.text = (rules.first.threeHours ?? 1).toString();
+          _sixCtrl.text = (rules.first.sixHours ?? 1).toString();
+          _twelveCtrl.text = (rules.first.twelveHours ?? 1).toString();
+        }
+      }
     }
 
-    final state = ref.watch(ownerStoreProvider);
     final totalBookings = state.totalBookingsForLot(lotId);
     final averageRating = state.averageRatingForLot(lotId);
     final availableSpots = spots
@@ -222,6 +237,26 @@ class _OwnerParkingLotDetailScreenState
                     onChanged: (value) =>
                         setState(() => _dynamicPricing = value),
                   ),
+                  if (_dynamicPricing) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _threeCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'Multiplier for > 3 hours'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _sixCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'Multiplier for > 6 hours'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _twelveCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'Multiplier for > 12 hours'),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   PrimaryButton(
                     label: 'Update All Spot Pricing',
@@ -323,6 +358,30 @@ class _OwnerParkingLotDetailScreenState
       return;
     }
 
+    double? three, six, twelve;
+    if (_dynamicPricing) {
+      three = double.tryParse(_threeCtrl.text);
+      six = double.tryParse(_sixCtrl.text);
+      twelve = double.tryParse(_twelveCtrl.text);
+      if (three == null || six == null || twelve == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter valid multipliers.')),
+        );
+        return;
+      }
+      
+      if (three <= 0 || three >= 1.0 || 
+          six <= 0 || six >= 1.0 || 
+          twelve <= 0 || twelve >= 1.0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Multipliers must be greater than 0 and strictly less than 1.0.'),
+          ),
+        );
+        return;
+      }
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Updating pricing for ${spots.length} spots in the background...')),
     );
@@ -335,6 +394,20 @@ class _OwnerParkingLotDetailScreenState
               pricePerDay: priceDay,
               isDynamicPricing: _dynamicPricing,
             );
+            
+        await ref.read(ownerStoreProvider.notifier).setDynamicPricingRulesForLot(
+              lotId: spots.first.lotId!,
+              threeHours: three,
+              sixHours: six,
+              twelveHours: twelve,
+              enabled: _dynamicPricing,
+            );
+            
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Lot pricing updated successfully!')),
+          );
+        }
       } catch (e) {
         debugPrint('Failed to update pricing: $e');
       }

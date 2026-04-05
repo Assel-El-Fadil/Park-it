@@ -64,4 +64,12 @@ abstract class OwnerRepository {
     required double? twelveHours,
     required bool enabled,
   });
+
+  Future<void> setDynamicPricingForLot({
+    required int lotId,
+    required double? threeHours,
+    required double? sixHours,
+    required double? twelveHours,
+    required bool enabled,
+  });
 }
