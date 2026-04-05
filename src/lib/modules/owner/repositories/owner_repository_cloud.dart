@@ -373,6 +373,47 @@ class OwnerRepositoryCloud implements OwnerRepository {
       throw const AppException('Failed to update dynamic pricing.');
     }
   }
+  @override
+  Future<void> setDynamicPricingForLot({
+    required int lotId,
+    required double? threeHours,
+    required double? sixHours,
+    required double? twelveHours,
+    required bool enabled,
+  }) async {
+    try {
+      final spotsResponse = await _client.from('parking_spots').select('id').eq('lot_id', lotId);
+      final spotIds = (spotsResponse as List).map((row) => row['id'] as int).toList();
+
+      if (spotIds.isEmpty) return;
+
+      await _client.from('dynamic_pricing_rules').delete().inFilter('spot_id', spotIds);
+
+      final newRules = spotIds.map((id) => {
+        'spot_id': id,
+        'three_hours': threeHours,
+        'six_hours': sixHours,
+        'twelve_hours': twelveHours,
+        'is_active': enabled,
+      }).toList();
+
+      if (newRules.isNotEmpty) {
+        await _client.from('dynamic_pricing_rules').insert(newRules);
+      }
+
+      await _client
+          .from('parking_spots')
+          .update({
+            'is_dynamic_pricing': enabled,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .inFilter('id', spotIds);
+    } on PostgrestException catch (e) {
+      throw AppException(e.message);
+    } catch (_) {
+      throw const AppException('Failed to bulk update dynamic pricing rules.');
+    }
+  }
 }
 
 final ownerRepositoryProvider = Provider<OwnerRepository>((ref) {
