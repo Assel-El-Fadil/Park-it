@@ -1,6 +1,15 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:src/core/enums/app_enums.dart' hide UserRole;
 
 enum UserRole { driver, owner, admin, superAdmin }
+
+VerificationStatus _verificationFromRow(dynamic raw, UserRole role) {
+  if (raw == null || (raw is String && raw.trim().isEmpty)) {
+    if (role == UserRole.owner) return VerificationStatus.pending;
+    return VerificationStatus.verified;
+  }
+  return VerificationStatus.fromString(raw as String);
+}
 
 class UserModel {
   final String id;
@@ -15,6 +24,8 @@ class UserModel {
   final UserRole role;
   final bool isBanned;
   final bool isSuspended;
+  final VerificationStatus verificationStatus;
+  final String? identityDoc;
 
   const UserModel({
     required this.id,
@@ -29,9 +40,12 @@ class UserModel {
     required this.role,
     this.isBanned = false,
     this.isSuspended = false,
+    this.verificationStatus = VerificationStatus.verified,
+    this.identityDoc,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final role = _roleFromString(json['role'] as String?);
     return UserModel(
       id: json['id'] as String,
       firstName: json['firstName'] as String,
@@ -42,9 +56,15 @@ class UserModel {
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: json['totalReviews'] as int? ?? 0,
       fcmToken: json['fcmToken'] as String?,
-      role: _roleFromString(json['role'] as String?),
+      role: role,
       isBanned: json['isBanned'] as bool? ?? false,
       isSuspended: json['isSuspended'] as bool? ?? false,
+      verificationStatus: json['verificationStatus'] != null
+          ? VerificationStatus.fromString(
+              json['verificationStatus'] as String,
+            )
+          : VerificationStatus.verified,
+      identityDoc: json['identityDoc'] as String?,
     );
   }
 
@@ -60,6 +80,8 @@ class UserModel {
       'totalReviews': totalReviews,
       'fcmToken': fcmToken,
       'role': role.name,
+      'verificationStatus': verificationStatus.toJson(),
+      'identityDoc': identityDoc,
     };
   }
 
@@ -75,9 +97,11 @@ class UserModel {
       'total_reviews': totalReviews,
       'fcm_token': fcmToken,
       'role': role.name.toUpperCase(),
-      // Read-only generally, but keep them for full row mapping
       'is_banned': isBanned,
       'is_suspended': isSuspended,
+      'verification_status': verificationStatus.toJson(),
+      if (identityDoc != null && identityDoc!.trim().isNotEmpty)
+        'identity_doc': identityDoc,
     };
   }
 
@@ -86,36 +110,57 @@ class UserModel {
     Map<String, dynamic> userRow,
   ) {
     final metadata = user.userMetadata ?? {};
-    
-    // Name: metadata first (updateUser), then DB.
-    final String firstName = (metadata['first_name'] as String?) ?? (userRow['first_name'] as String?) ?? '';
-    final String lastName = (metadata['last_name'] as String?) ?? (userRow['last_name'] as String?) ?? '';
-    // Photo: DB first so a new `users` row after account deletion (null photo) is not
-    // overridden by stale profile_photo still stored in Auth user_metadata.
+
+    final String firstName =
+        (metadata['first_name'] as String?) ??
+        (userRow['first_name'] as String?) ??
+        '';
+    final String lastName =
+        (metadata['last_name'] as String?) ??
+        (userRow['last_name'] as String?) ??
+        '';
     final String? rowPhoto = userRow['profile_photo'] as String?;
     final String? metaPhoto = metadata['profile_photo'] as String?;
-    final String? profilePhoto = (rowPhoto != null && rowPhoto.trim().isNotEmpty)
+    final String? profilePhoto =
+        (rowPhoto != null && rowPhoto.trim().isNotEmpty)
         ? rowPhoto.trim()
-        : (metaPhoto != null && metaPhoto.trim().isNotEmpty ? metaPhoto.trim() : null);
+        : (metaPhoto != null && metaPhoto.trim().isNotEmpty
+              ? metaPhoto.trim()
+              : null);
+
+    final role = _roleFromString(
+      (metadata['role'] as String?) ?? (userRow['role'] as String?),
+    );
 
     return UserModel(
       id: (userRow['id'] ?? '').toString(),
       firstName: firstName,
       lastName: lastName,
       email: (userRow['email'] as String?) ?? user.email,
-      phone: (metadata['phone'] as String?) ?? (userRow['phone'] as String?) ?? user.phone,
+      phone:
+          (metadata['phone'] as String?) ??
+          (userRow['phone'] as String?) ??
+          user.phone,
       profilePhoto: profilePhoto,
       averageRating:
           (userRow['average_rating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: userRow['total_reviews'] as int? ?? 0,
-      fcmToken: (metadata['fcm_token'] as String?) ?? (userRow['fcm_token'] as String?),
-      role: _roleFromString((metadata['role'] as String?) ?? (userRow['role'] as String?)),
+      fcmToken:
+          (metadata['fcm_token'] as String?) ??
+          (userRow['fcm_token'] as String?),
+      role: role,
       isBanned: userRow['is_banned'] as bool? ?? false,
       isSuspended: userRow['is_suspended'] as bool? ?? false,
+      verificationStatus: _verificationFromRow(
+        userRow['verification_status'],
+        role,
+      ),
+      identityDoc: userRow['identity_doc'] as String?,
     );
   }
 
   factory UserModel.fromUserRow(Map<String, dynamic> data) {
+    final role = _roleFromString(data['role'] as String?);
     return UserModel(
       id: (data['id'] ?? '').toString(),
       firstName: (data['first_name'] as String?) ?? '',
@@ -127,9 +172,14 @@ class UserModel {
           (data['average_rating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: data['total_reviews'] as int? ?? 0,
       fcmToken: data['fcm_token'] as String?,
-      role: _roleFromString(data['role'] as String?),
+      role: role,
       isBanned: data['is_banned'] as bool? ?? false,
       isSuspended: data['is_suspended'] as bool? ?? false,
+      verificationStatus: _verificationFromRow(
+        data['verification_status'],
+        role,
+      ),
+      identityDoc: data['identity_doc'] as String?,
     );
   }
 
@@ -146,6 +196,8 @@ class UserModel {
     UserRole? role,
     bool? isBanned,
     bool? isSuspended,
+    VerificationStatus? verificationStatus,
+    String? identityDoc,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -160,6 +212,8 @@ class UserModel {
       role: role ?? this.role,
       isBanned: isBanned ?? this.isBanned,
       isSuspended: isSuspended ?? this.isSuspended,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      identityDoc: identityDoc ?? this.identityDoc,
     );
   }
 }
@@ -178,4 +232,3 @@ UserRole _roleFromString(String? value) {
       return UserRole.driver;
   }
 }
-

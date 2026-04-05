@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:src/modules/admin/repositories/admin_repository.dart';
+import 'package:src/modules/admin/routes/admin_routes.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/shared/widgets/app_card.dart';
@@ -190,6 +192,22 @@ class _UserActionsSheetState extends State<_UserActionsSheet> {
             ],
           ),
           const SizedBox(height: 16),
+          if (user.role == UserRole.owner && !user.isBanned) ...[
+            _buildActionCard(
+              title: 'Verify identity',
+              subtitle: 'Review ID and property documents.',
+              icon: Icons.verified_user_outlined,
+              color: Colors.teal,
+              onTap: () {
+                Navigator.pop(context);
+                context.pushNamed(
+                  AdminRoutes.ownerVerification,
+                  pathParameters: {'userId': user.id},
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
           if (user.isBanned)
             _buildActionCard(
               title: 'Revoke Ban',

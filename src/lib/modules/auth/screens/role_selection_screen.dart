@@ -8,6 +8,7 @@ import 'package:src/core/constants/constants.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/auth/routes/auth_routes.dart';
+import 'package:src/modules/owner/routes/owner_routes.dart';
 
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -25,7 +26,11 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     try {
       await ref.read(authNotifierProvider.notifier).completeProfile(_selectedRole!);
       if (mounted) {
-        context.go(AuthRoutes.profile);
+        if (_selectedRole == UserRole.owner) {
+          context.goNamed(OwnerRoutes.ownerIdentityUpload);
+        } else {
+          context.go(AuthRoutes.profile);
+        }
       }
     } catch (e) {
       // Error handled by AuthNotifier state

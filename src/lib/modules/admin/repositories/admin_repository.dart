@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:src/core/enums/app_enums.dart';
+import 'package:src/core/enums/app_enums.dart' hide UserRole;
 import 'package:src/core/errors/app_exception.dart';
 import 'package:src/modules/auth/models/user_model.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
@@ -25,6 +25,36 @@ class AdminRepository {
       throw AppException(e.message);
     } catch (_) {
       throw const AppException('Failed to fetch users.');
+    }
+  }
+
+  Future<UserModel> getUserById(String userId) async {
+    try {
+      final row = await _client
+          .from('users')
+          .select()
+          .eq('id', userId)
+          .single();
+      return UserModel.fromUserRow(Map<String, dynamic>.from(row));
+    } on PostgrestException catch (e) {
+      throw AppException(e.message);
+    } catch (_) {
+      throw const AppException('Failed to load user.');
+    }
+  }
+
+  Future<void> updateOwnerVerificationStatus({
+    required String userId,
+    required VerificationStatus status,
+  }) async {
+    try {
+      await _client.from('users').update({
+        'verification_status': status.toJson(),
+      }).eq('id', userId);
+    } on PostgrestException catch (e) {
+      throw AppException(e.message);
+    } catch (_) {
+      throw const AppException('Failed to update verification status.');
     }
   }
 

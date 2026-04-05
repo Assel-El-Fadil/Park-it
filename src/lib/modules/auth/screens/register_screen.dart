@@ -144,8 +144,8 @@ class _RegisterFormState extends ConsumerState<_RegisterForm> {
         );
 
     if (needsVerification && mounted) {
-      context.go(
-        AuthRoutes.verifyOtpPath,
+      context.goNamed(
+        AuthRoutes.verifyOtp,
         extra: {'email': _emailController.text.trim()},
       );
     }

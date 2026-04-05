@@ -1,4 +1,6 @@
 import 'package:go_router/go_router.dart';
+import 'package:src/modules/owner/screens/owner_identity_upload_screen.dart';
+import 'package:src/modules/owner/screens/owner_verification_pending_screen.dart';
 import 'package:src/modules/owner/screens/add_parking_lot_screen.dart';
 import 'package:src/modules/owner/screens/add_parking_space_screen.dart';
 import 'package:src/modules/owner/screens/add_spot_to_lot_screen.dart';
@@ -35,8 +37,12 @@ class OwnerRoutes {
   static const String ownerAddLot = 'owner-add-lot';
   static const String ownerAddSpotToLot = 'owner-add-spot-to-lot';
   static const String ownerStandaloneSpot = 'owner-standalone-spot';
+  static const String ownerIdentityUpload = 'owner-identity-upload';
+  static const String ownerVerificationPending = 'owner-verification-pending';
 
   // Paths
+  static const String ownerIdentityUploadPath = '/owner/verification/upload';
+  static const String ownerVerificationPendingPath = '/owner/verification/pending';
   static const String ownerDashboardPath = '/owner';
   static const String ownerMesParkingsPath = '/owner/parkings';
   static const String addParkingLotPath = '/owner/parkings/lot/add';
@@ -60,6 +66,16 @@ class OwnerRoutes {
 /// Owner module route configuration
 List<GoRoute> getOwnerRoutes() {
   return [
+    GoRoute(
+      path: OwnerRoutes.ownerIdentityUploadPath,
+      name: OwnerRoutes.ownerIdentityUpload,
+      builder: (context, state) => const OwnerIdentityUploadScreen(),
+    ),
+    GoRoute(
+      path: OwnerRoutes.ownerVerificationPendingPath,
+      name: OwnerRoutes.ownerVerificationPending,
+      builder: (context, state) => const OwnerVerificationPendingScreen(),
+    ),
     // Owner shell (dashboard / spots / reviews / reports)
     GoRoute(
       path: OwnerRoutes.ownerDashboardPath,
