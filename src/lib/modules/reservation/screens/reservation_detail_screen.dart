@@ -51,8 +51,10 @@ class ReservationDetailScreen extends ConsumerWidget {
           final spot = data['parking_spots'] as Map<String, dynamic>?;
           final vehicle = data['vehicles'] as Map<String, dynamic>?;
           final status = data['status'] as String;
-          final startTime = DateTime.parse(data['start_time'] as String);
-          final endTime = DateTime.parse(data['end_time'] as String);
+          final startStr = data['start_time'] as String;
+          final endStr = data['end_time'] as String;
+          final startTime = DateTime.parse(startStr.endsWith('Z') ? startStr : '${startStr}Z').toLocal();
+          final endTime = DateTime.parse(endStr.endsWith('Z') ? endStr : '${endStr}Z').toLocal();
           final totalPrice = (data['total_price'] as num).toDouble();
           final platformFee = (data['platform_fee'] as num).toDouble();
           final user = ref.watch(currentUserProvider);
