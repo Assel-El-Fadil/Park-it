@@ -80,7 +80,14 @@ class ReservationModel {
   Duration get duration => endTime.difference(startTime);
   double get ownerPayout => totalPrice - platformFee;
   bool get isActive => status == ReservationStatus.active;
-  bool get isCancellable =>
-      status == ReservationStatus.pending ||
-      status == ReservationStatus.confirmed;
+  bool get isCancellable {
+    if (status == ReservationStatus.pending) return true;
+    
+    if (status == ReservationStatus.confirmed) {
+      final hoursUntilStart = startTime.difference(DateTime.now().toLocal()).inHours;
+      return hoursUntilStart >= 48;
+    }
+    
+    return false;
+  }
 }
