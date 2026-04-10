@@ -163,86 +163,65 @@ class ReservationsScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.money,
-                                size: 16,
-                                color: theme.colorScheme.primary,
+                          Icon(
+                            Icons.money,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${totalPrice.toStringAsFixed(2)} MAD',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          if (status.toUpperCase() == 'PENDING') ...[
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: TextButton(
+                                onPressed: () {
+                                  final booking = ReservationModel.fromJson(res);
+                                  context.push(
+                                    PaymentRoutes.paymentPath,
+                                    extra: booking,
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  foregroundColor: theme.colorScheme.primary,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('Continue Payment'),
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${totalPrice.toStringAsFixed(2)} MAD',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.primary,
+                            ),
+                          ],
+                          const Spacer(),
+                          IconButton.outlined(
+                            onPressed: () => context.push(
+                              '/reservations/${res['id']}',
+                            ),
+                            icon: const Icon(Icons.receipt_long_outlined),
+                            tooltip: 'View Details',
+                          ),
+                          if (ReservationStatus.fromString(res['status']) ==
+                              ReservationStatus.confirmed)
+                            IconButton.filled(
+                              onPressed: () => AppNavigator.pushNamed(
+                                context,
+                                NavigationRoutes.navigation,
+                                extra: SpotModel(
+                                  id: res['id'].toString(),
+                                  name: spot?['title'] as String,
+                                  latitude: spot!['latitude'] as double,
+                                  longitude: spot['longitude'] as double,
                                 ),
                               ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              if (status.toUpperCase() == 'PENDING')
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: TextButton(
-                                    onPressed: () {
-                                      final booking = ReservationModel.fromJson(
-                                        res,
-                                      );
-                                      context.push(
-                                        PaymentRoutes.paymentPath,
-                                        extra: booking,
-                                      );
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor:
-                                          theme.colorScheme.primary,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                      ),
-                                    ),
-                                    child: const Text('Continue Payment'),
-                                  ),
-                                ),
-                              Row(
-                                children: [
-                                  IconButton.outlined(
-                                    onPressed: () => context.push(
-                                      '/reservations/${res['id']}',
-                                    ),
-                                    icon: const Icon(
-                                      Icons.receipt_long_outlined,
-                                    ),
-                                    tooltip: 'View Details',
-                                  ),
-                                  if (ReservationStatus.fromString(
-                                        res['status'],
-                                      ) ==
-                                      ReservationStatus.confirmed)
-                                    IconButton.filled(
-                                      onPressed: () => AppNavigator.pushNamed(
-                                        context,
-                                        NavigationRoutes.navigation,
-                                        extra: SpotModel(
-                                          id: res['id'].toString(),
-                                          name: spot?['title'] as String,
-                                          latitude: spot!['latitude'] as double,
-                                          longitude:
-                                              spot['longitude'] as double,
-                                        ),
-                                      ),
-                                      icon: const Icon(
-                                        Icons.navigation_outlined,
-                                      ),
-                                      tooltip: 'Take me there',
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
+                              icon: const Icon(Icons.navigation_outlined),
+                              tooltip: 'Take me there',
+                            ),
                         ],
                       ),
                       if (status.toUpperCase() == 'COMPLETED') ...[

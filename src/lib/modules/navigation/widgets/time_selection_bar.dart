@@ -130,9 +130,12 @@ class TimeSelectionBar extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Text(
-                        dateFormatter(bookingTime.arriveTime).toUpperCase(),
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                      Flexible(
+                        child: Text(
+                          dateFormatter(bookingTime.arriveTime).toUpperCase(),
+                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 6),
@@ -176,9 +179,12 @@ class TimeSelectionBar extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Text(
-                        dateFormatter(bookingTime.exitTime).toUpperCase(),
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                      Flexible(
+                        child: Text(
+                          dateFormatter(bookingTime.exitTime).toUpperCase(),
+                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 6),
