@@ -34,23 +34,27 @@ class ReservationModel {
   });
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(String dateStr) {
+      return DateTime.parse(dateStr.endsWith('Z') ? dateStr : '${dateStr}Z').toLocal();
+    }
+
     return ReservationModel(
       id: json['id'] as int,
       driverId: json['driver_id'] as String,
       spotId: json['spot_id'] as int,
       vehicleId: json['vehicle_id'] as int,
-      startTime: DateTime.parse(json['start_time'] as String),
-      endTime: DateTime.parse(json['end_time'] as String),
+      startTime: parseDate(json['start_time'] as String),
+      endTime: parseDate(json['end_time'] as String),
       status: ReservationStatus.fromString(json['status'] as String),
       totalPrice: (json['total_price'] as num).toDouble(),
       platformFee: (json['platform_fee'] as num).toDouble(),
       lockExpiresAt: json['lock_expires_at'] != null
-          ? DateTime.parse(json['lock_expires_at'] as String)
+          ? parseDate(json['lock_expires_at'] as String)
           : null,
       cancellationReason: json['cancellation_reason'] as String?,
       accessCode: json['access_code'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseDate(json['created_at'] as String),
+      updatedAt: parseDate(json['updated_at'] as String),
     );
   }
 
@@ -60,16 +64,16 @@ class ReservationModel {
       'driver_id': driverId,
       'spot_id': spotId,
       'vehicle_id': vehicleId,
-      'start_time': startTime.toIso8601String(),
-      'end_time': endTime.toIso8601String(),
+      'start_time': startTime.toUtc().toIso8601String(),
+      'end_time': endTime.toUtc().toIso8601String(),
       'status': status.toJson(),
       'total_price': totalPrice,
       'platform_fee': platformFee,
-      'lock_expires_at': lockExpiresAt?.toIso8601String(),
+      'lock_expires_at': lockExpiresAt?.toUtc().toIso8601String(),
       'cancellation_reason': cancellationReason,
       'access_code': accessCode,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
     };
   }
 

@@ -116,7 +116,8 @@ class ReservationsScreen extends ConsumerWidget {
               final res = reservations[index];
               final spot = res['parking_spots'] as Map<String, dynamic>?;
               final status = res['status'] as String;
-              final startTime = DateTime.parse(res['start_time'] as String);
+              final dateStr = res['start_time'] as String;
+              final startTime = DateTime.parse(dateStr.endsWith('Z') ? dateStr : '${dateStr}Z').toLocal();
               final totalPrice = (res['total_price'] as num).toDouble();
 
               return Padding(
@@ -683,6 +684,7 @@ class _StatusBadge extends StatelessWidget {
     switch (status.toUpperCase()) {
       case 'CONFIRMED':
       case 'COMPLETED':
+      case 'ACTIVE':
         color = Colors.green;
         break;
       case 'PENDING':
