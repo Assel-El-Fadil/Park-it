@@ -254,28 +254,6 @@ class _AddParkingSpaceScreenState extends ConsumerState<AddParkingSpaceScreen> {
                           ),
                         ),
                       ],
-                      if (!_isLotMode && lots.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<int?>(
-                          value: _lotId,
-                          decoration: const InputDecoration(
-                            labelText: 'Parent lot (optional)',
-                          ),
-                          items: [
-                            const DropdownMenuItem<int?>(
-                              value: null,
-                              child: Text('No lot'),
-                            ),
-                            ...lots.map(
-                              (lot) => DropdownMenuItem<int?>(
-                                value: lot.id,
-                                child: Text(lot.name),
-                              ),
-                            ),
-                          ],
-                          onChanged: (v) => setState(() => _lotId = v),
-                        ),
-                      ],
                     ],
                   ),
                 ),

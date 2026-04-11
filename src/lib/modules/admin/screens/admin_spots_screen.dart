@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/admin/repositories/admin_repository.dart';
+import 'package:src/modules/admin/routes/admin_routes.dart';
+import 'package:src/modules/navigation/routes/navigation_routes.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
 import 'package:src/shared/widgets/app_card.dart';
 
@@ -71,6 +74,12 @@ class AdminSpotsScreen extends ConsumerWidget {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: AppCard(
+                    onTap: () {
+                      context.pushNamed(
+                        AdminRoutes.spotDetail,
+                        pathParameters: {'spotId': spot.id.toString()},
+                      );
+                    },
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

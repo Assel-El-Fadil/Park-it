@@ -58,14 +58,15 @@ class OwnerParkingSpaceDetailScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('Spot details'),
           actions: [
-            IconButton(
-              tooltip: 'Edit',
-              onPressed: () => context.pushNamed(
-                OwnerRoutes.editParkingSpace,
-                pathParameters: {'id': parkingSpaceId},
+            if (spot.status != SpotStatus.suspended)
+              IconButton(
+                tooltip: 'Edit',
+                onPressed: () => context.pushNamed(
+                  OwnerRoutes.editParkingSpace,
+                  pathParameters: {'id': parkingSpaceId},
+                ),
+                icon: const Icon(Icons.edit_outlined),
               ),
-              icon: const Icon(Icons.edit_outlined),
-            ),
           ],
         ),
         body: SingleChildScrollView(

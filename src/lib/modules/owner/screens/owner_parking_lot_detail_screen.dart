@@ -241,20 +241,32 @@ class _OwnerParkingLotDetailScreenState
                     const SizedBox(height: 12),
                     TextField(
                       controller: _threeCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'Multiplier for > 3 hours'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Multiplier for > 3 hours',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _sixCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'Multiplier for > 6 hours'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Multiplier for > 6 hours',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _twelveCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'Multiplier for > 12 hours'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Multiplier for > 12 hours',
+                      ),
                     ),
                   ],
                   const SizedBox(height: 16),
@@ -353,7 +365,11 @@ class _OwnerParkingLotDetailScreenState
 
     if (priceHour == null || priceHour < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Minimum price is 6.00 MAD (Stripe requires at least ≈ \$0.50 USD).')),
+        const SnackBar(
+          content: Text(
+            'Minimum price is 6.00 MAD (Stripe requires at least ≈ \$0.50 USD).',
+          ),
+        ),
       );
       return;
     }
@@ -369,13 +385,18 @@ class _OwnerParkingLotDetailScreenState
         );
         return;
       }
-      
-      if (three <= 0 || three >= 1.0 || 
-          six <= 0 || six >= 1.0 || 
-          twelve <= 0 || twelve >= 1.0) {
+
+      if (three <= 0 ||
+          three >= 1.0 ||
+          six <= 0 ||
+          six >= 1.0 ||
+          twelve <= 0 ||
+          twelve >= 1.0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Multipliers must be greater than 0 and strictly less than 1.0.'),
+            content: Text(
+              'Multipliers must be greater than 0 and strictly less than 1.0.',
+            ),
           ),
         );
         return;
@@ -383,26 +404,34 @@ class _OwnerParkingLotDetailScreenState
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Updating pricing for ${spots.length} spots in the background...')),
+      SnackBar(
+        content: Text(
+          'Updating pricing for ${spots.length} spots in the background...',
+        ),
+      ),
     );
 
     Future(() async {
       try {
-        await ref.read(ownerStoreProvider.notifier).updateSpotsInLot(
+        await ref
+            .read(ownerStoreProvider.notifier)
+            .updateSpotsInLot(
               lotId: spots.first.lotId!,
               pricePerHour: priceHour,
               pricePerDay: priceDay,
               isDynamicPricing: _dynamicPricing,
             );
-            
-        await ref.read(ownerStoreProvider.notifier).setDynamicPricingRulesForLot(
+
+        await ref
+            .read(ownerStoreProvider.notifier)
+            .setDynamicPricingRulesForLot(
               lotId: spots.first.lotId!,
               threeHours: three,
               sixHours: six,
               twelveHours: twelve,
               enabled: _dynamicPricing,
             );
-            
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Lot pricing updated successfully!')),
@@ -414,22 +443,22 @@ class _OwnerParkingLotDetailScreenState
     });
   }
 
-  void _updateAllSpotsStatus(
-    List<ParkingSpotModel> spots,
-    SpotStatus status,
-  ) {
+  void _updateAllSpotsStatus(List<ParkingSpotModel> spots, SpotStatus status) {
     if (_isSubmitting || spots.isEmpty) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Setting ${spots.length} spots to ${status.toJson()} in the background...')),
+      SnackBar(
+        content: Text(
+          'Setting ${spots.length} spots to ${status.toJson()} in the background...',
+        ),
+      ),
     );
 
     Future(() async {
       try {
-        await ref.read(ownerStoreProvider.notifier).updateSpotsInLot(
-              lotId: spots.first.lotId!,
-              status: status,
-            );
+        await ref
+            .read(ownerStoreProvider.notifier)
+            .updateSpotsInLot(lotId: spots.first.lotId!, status: status);
       } catch (e) {
         debugPrint('Failed to update status: $e');
       }

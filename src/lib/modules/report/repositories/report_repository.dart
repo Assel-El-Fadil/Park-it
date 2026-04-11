@@ -75,13 +75,11 @@ class ReportRepository {
 
   Future<void> resolveReport({
     required int reportId,
-    required String resolvedBy,
     String? resolution,
   }) async {
     try {
       await _client.from('reports').update({
         'status': ReportStatus.resolved.toJson(),
-        'resolved_by': resolvedBy,
         'resolved_at': DateTime.now().toIso8601String(),
         'resolution': resolution?.trim().isEmpty == true ? null : resolution?.trim(),
       }).eq('id', reportId);

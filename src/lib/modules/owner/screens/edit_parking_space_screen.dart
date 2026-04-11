@@ -8,6 +8,7 @@ import 'package:src/shared/widgets/section_header.dart';
 import 'package:src/core/enums/app_enums.dart';
 import 'package:src/modules/owner/data/owner_store.dart';
 import 'package:src/modules/owner/models/parking_spot_model.dart';
+import 'package:src/core/config/themes/color_palette.dart';
 
 class EditParkingSpaceScreen extends ConsumerStatefulWidget {
   const EditParkingSpaceScreen({super.key, required this.parkingSpaceId});
@@ -95,11 +96,15 @@ class _EditParkingSpaceScreenState
       _status = spot.status;
 
       _amenities['CCTV'] = spot.amenities?.contains(Amenity.cctv) == true;
-      _amenities['LIGHTING'] = spot.amenities?.contains(Amenity.lighting) == true;
-      _amenities['EV_CHARGER'] = spot.amenities?.contains(Amenity.evCharger) == true;
-      _amenities['WHEELCHAIR'] = spot.amenities?.contains(Amenity.wheelchair) == true;
+      _amenities['LIGHTING'] =
+          spot.amenities?.contains(Amenity.lighting) == true;
+      _amenities['EV_CHARGER'] =
+          spot.amenities?.contains(Amenity.evCharger) == true;
+      _amenities['WHEELCHAIR'] =
+          spot.amenities?.contains(Amenity.wheelchair) == true;
       _amenities['GUARD'] = spot.amenities?.contains(Amenity.guard) == true;
-      _amenities['CAR_WASH'] = spot.amenities?.contains(Amenity.carWash) == true;
+      _amenities['CAR_WASH'] =
+          spot.amenities?.contains(Amenity.carWash) == true;
       _isDynamicPricing = spot.isDynamicPricing;
     }
 
@@ -114,12 +119,18 @@ class _EditParkingSpaceScreenState
                 const SizedBox(height: 12),
                 FrostedBar(
                   borderRadius: BorderRadius.circular(16),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   child: Row(
                     children: [
                       IconButton(
                         onPressed: () => Navigator.of(context).maybePop(),
-                        icon: Icon(Icons.arrow_back, color: theme.colorScheme.primary),
+                        icon: Icon(
+                          Icons.arrow_back,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       Expanded(
@@ -143,7 +154,10 @@ class _EditParkingSpaceScreenState
                                 if (!mounted) return;
                                 Navigator.of(context).maybePop();
                               },
-                        icon: Icon(Icons.archive_outlined, color: theme.colorScheme.primary),
+                        icon: Icon(
+                          Icons.archive_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     ],
                   ),
@@ -205,13 +219,17 @@ class _EditParkingSpaceScreenState
                       TextField(
                         controller: _descCtrl,
                         maxLines: 4,
-                        decoration: const InputDecoration(labelText: 'Description'),
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                        ),
                       ),
                       const SizedBox(height: 12),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<SpotType>(
                         value: _spotType,
-                        decoration: const InputDecoration(labelText: 'Spot type'),
+                        decoration: const InputDecoration(
+                          labelText: 'Spot type',
+                        ),
                         items: SpotType.values
                             .map(
                               (e) => DropdownMenuItem(
@@ -220,7 +238,8 @@ class _EditParkingSpaceScreenState
                               ),
                             )
                             .toList(),
-                        onChanged: (v) => setState(() => _spotType = v ?? _spotType),
+                        onChanged: (v) =>
+                            setState(() => _spotType = v ?? _spotType),
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<SpotStatus>(
@@ -235,12 +254,9 @@ class _EditParkingSpaceScreenState
                             value: SpotStatus.archived,
                             child: Text('ARCHIVED'),
                           ),
-                          DropdownMenuItem(
-                            value: SpotStatus.suspended,
-                            child: Text('SUSPENDED'),
-                          ),
                         ],
-                        onChanged: (v) => setState(() => _status = v ?? _status),
+                        onChanged: (v) =>
+                            setState(() => _status = v ?? _status),
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
@@ -294,10 +310,15 @@ class _EditParkingSpaceScreenState
                           return FilterChip(
                             label: Text(e.key),
                             selected: e.value,
-                            onSelected: (value) => setState(() => _amenities[e.key] = value),
-                            selectedColor: theme.colorScheme.primary.withValues(alpha: 0.14),
+                            onSelected: (value) =>
+                                setState(() => _amenities[e.key] = value),
+                            selectedColor: theme.colorScheme.primary.withValues(
+                              alpha: 0.14,
+                            ),
                             showCheckmark: false,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           );
                         }).toList(),
                       ),
@@ -315,7 +336,9 @@ class _EditParkingSpaceScreenState
                     final description = _descCtrl.text.trim();
                     final pricePerHour =
                         double.tryParse(_priceCtrl.text.trim()) ?? 0;
-                    final pricePerDay = double.tryParse(_priceDayCtrl.text.trim());
+                    final pricePerDay = double.tryParse(
+                      _priceDayCtrl.text.trim(),
+                    );
 
                     if (title.isEmpty) return;
                     if (pricePerHour < 6) {
@@ -333,14 +356,16 @@ class _EditParkingSpaceScreenState
 
                     final amenities = <Amenity>[];
                     if (_amenities['CCTV'] == true) amenities.add(Amenity.cctv);
-                    if (_amenities['LIGHTING'] == true) amenities.add(Amenity.lighting);
+                    if (_amenities['LIGHTING'] == true)
+                      amenities.add(Amenity.lighting);
                     if (_amenities['EV_CHARGER'] == true) {
                       amenities.add(Amenity.evCharger);
                     }
                     if (_amenities['WHEELCHAIR'] == true) {
                       amenities.add(Amenity.wheelchair);
                     }
-                    if (_amenities['GUARD'] == true) amenities.add(Amenity.guard);
+                    if (_amenities['GUARD'] == true)
+                      amenities.add(Amenity.guard);
                     if (_amenities['CAR_WASH'] == true) {
                       amenities.add(Amenity.carWash);
                     }
@@ -386,4 +411,3 @@ class _EditParkingSpaceScreenState
     );
   }
 }
-

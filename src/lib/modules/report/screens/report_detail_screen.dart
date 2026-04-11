@@ -10,6 +10,7 @@ import 'package:src/shared/widgets/app_card.dart';
 import 'package:src/shared/widgets/app_layout.dart';
 import 'package:src/shared/widgets/primary_button.dart';
 import 'package:src/shared/widgets/section_header.dart';
+import 'package:src/modules/admin/screens/admin_reports_screen.dart';
 
 final reportDetailProvider = FutureProvider.family<({ReportModel report, String? spotTitle}), int>((
   ref,
@@ -120,22 +121,54 @@ class ReportDetailScreen extends ConsumerWidget {
                             label: 'Mark as resolved',
                             icon: Icons.check_circle_outline_rounded,
                             onPressed: () async {
-                              final user = ref.read(currentUserProvider);
-                              final resolvedBy = user?.id;
-                              if (resolvedBy == null) return;
-                              await ref
-                                  .read(reportRepositoryProvider)
-                                  .resolveReport(
-                                    reportId: report.id,
-                                    resolvedBy: resolvedBy,
-                                  );
-                              ref.invalidate(reportDetailProvider(id));
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Report marked as resolved.'),
+                              final commentCtrl = TextEditingController();
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Resolve Report'),
+                                  content: TextField(
+                                    controller: commentCtrl,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Enter resolution comment (optional)',
+                                    ),
+                                    maxLines: 3,
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('Resolve'),
+                                    ),
+                                  ],
                                 ),
                               );
+
+                              if (confirm == true) {
+                                try {
+                                  await ref
+                                      .read(reportRepositoryProvider)
+                                      .resolveReport(
+                                        reportId: report.id,
+                                        resolution: commentCtrl.text,
+                                      );
+                                  ref.invalidate(reportDetailProvider(id));
+                                  ref.invalidate(adminReportsProvider);
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Report marked as resolved.'),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')),
+                                  );
+                                }
+                              }
                             },
                           ),
                         if (report.status == ReportStatus.resolved)
