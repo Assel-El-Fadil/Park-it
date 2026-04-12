@@ -18,12 +18,21 @@ import 'package:src/modules/navigation/routes/navigation_routes.dart';
 import 'package:src/shared/widgets/photo_carousel.dart';
 import 'package:src/core/config/routes/app_routes.dart';
 import 'package:src/modules/reservation/screens/reservations_screen.dart';
+import 'package:src/modules/review/models/review_model.dart';
+import 'package:src/modules/review/repositories/review_repository.dart';
+import 'package:intl/intl.dart';
+import 'package:src/modules/user/controllers/wishlist_controller.dart';
 
 final parkingSpotDetailProvider =
     FutureProvider.family<ParkingSpotModel?, String>((ref, id) {
       final repo = ref.read(parkingSpotRepositoryProvider);
       return repo.getById(id);
     });
+
+final spotReviewsProvider = 
+    FutureProvider.family<List<ReviewModel>, String>((ref, id) {
+  return ref.read(reviewRepositoryProvider).getReviewsBySpotId(int.tryParse(id) ?? 0);
+});
 
 final parkingSpotAvailabilityProvider =
     FutureProvider.family<List<AvailabilityModel>, int>((ref, spotId) async {
@@ -49,6 +58,36 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
           centerTitle: false,
           showBottomBorder: true,
           isTransparent: false,
+          actions: [
+            Consumer(
+              builder: (context, ref, _) {
+                final isSavedState = ref.watch(isSpotSavedProvider(int.tryParse(spotId) ?? 0));
+                
+                return isSavedState.when(
+                  data: (isSaved) => IconButton(
+                    icon: Icon(
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: isSaved ? theme.colorScheme.primary : null,
+                    ),
+                    onPressed: () {
+                      ref.read(wishlistNotifierProvider.notifier).toggleWishlist(int.tryParse(spotId) ?? 0);
+                    },
+                  ),
+                  loading: () => const SizedBox(
+                    width: 48,
+                    child: Center(
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                  error: (_, __) => const Icon(Icons.error_outline),
+                );
+              },
+            ),
+          ],
         ),
         body: spotAsyncValue.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -247,6 +286,106 @@ class ParkingSpotDetailScreen extends ConsumerWidget {
                                   ),
                                 ],
                               ),
+                              if (spot.totalReviews > 0) ...[
+                                const Divider(height: 24),
+                                Consumer(
+                                  builder: (context, ref, _) {
+                                    final reviewsAsync = ref.watch(
+                                        spotReviewsProvider(
+                                            spot.id.toString()));
+                                    return reviewsAsync.when(
+                                      loading: () => const Center(
+                                          child: CircularProgressIndicator()),
+                                      error: (err, _) =>
+                                          Text('Error loading reviews: $err'),
+                                      data: (reviews) {
+                                        if (reviews.isEmpty) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return ListView.separated(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount: reviews.length,
+                                          separatorBuilder: (_, __) =>
+                                              const Divider(height: 24),
+                                          itemBuilder: (context, index) {
+                                            final r = reviews[index];
+                                            final initials = r.reviewerName
+                                                    ?.substring(0, 1)
+                                                    .toUpperCase() ??
+                                                'U';
+                                            return Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 16,
+                                                  child: Text(
+                                                    initials,
+                                                    style: const TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.bold),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          Text(
+                                                            r.reviewerName ?? 'User',
+                                                            style: theme.textTheme
+                                                                .titleSmall
+                                                                ?.copyWith(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold),
+                                                          ),
+                                                          Text(
+                                                            DateFormat('MMM d')
+                                                                .format(r.createdAt),
+                                                            style: theme.textTheme
+                                                                .bodySmall
+                                                                ?.copyWith(
+                                                                    color: theme
+                                                                        .colorScheme
+                                                                        .onSurfaceVariant),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      RatingStars(
+                                                          rating:
+                                                              r.rating.toDouble(),
+                                                          size: 12),
+                                                      if (r.comment != null &&
+                                                          r.comment!.isNotEmpty) ...[
+                                                        const SizedBox(height: 8),
+                                                        Text(
+                                                          r.comment!,
+                                                          style: theme.textTheme
+                                                              .bodyMedium,
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
                             ],
                           ),
                         ),
