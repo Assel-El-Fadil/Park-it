@@ -11,18 +11,40 @@ class WishlistRepository {
 
   static const String _table = 'wishlists';
 
-  /// Returns rows with nested `parking_spots` if FK exists in Supabase.
-  Future<List<Map<String, dynamic>>> getWishlistForUser(int userId) async {
+  /// Returns rows with nested `parking_spots`.
+  Future<List<Map<String, dynamic>>> getWishlistForUser(String userId) async {
     final response = await _client
         .from(_table)
-        .select('id, user_id, spot_id, added_at, parking_spots(*)')
+        .select('*, parking_spots(*)')
         .eq('user_id', userId)
         .order('added_at', ascending: false);
 
     return List<Map<String, dynamic>>.from(response as List);
   }
 
+  Future<bool> isSpotSaved(String userId, int spotId) async {
+    final response = await _client
+        .from(_table)
+        .select()
+        .eq('user_id', userId)
+        .eq('spot_id', spotId)
+        .maybeSingle();
+    
+    return response != null;
+  }
+
+  Future<void> addWishlistEntry(String userId, int spotId) async {
+    await _client.from(_table).insert({
+      'user_id': userId,
+      'spot_id': spotId,
+    });
+  }
+
   Future<void> removeWishlistEntry(int wishlistId) async {
     await _client.from(_table).delete().eq('id', wishlistId);
+  }
+
+  Future<void> removeWishlistEntryBySpot(String userId, int spotId) async {
+    await _client.from(_table).delete().eq('user_id', userId).eq('spot_id', spotId);
   }
 }
