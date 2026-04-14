@@ -4,7 +4,9 @@ import 'package:src/core/config/themes/app_theme.dart';
 import 'package:src/core/config/themes/color_palette.dart';
 import 'package:src/core/config/themes/text_styles.dart';
 import 'package:src/core/constants/constants.dart';
+import 'package:go_router/go_router.dart';
 import 'package:src/modules/auth/controllers/auth_controller.dart';
+import 'package:src/modules/navigation/routes/navigation_routes.dart';
 import 'package:src/modules/user/repositories/wishlist_repository.dart';
 
 /// Driver: page d'affichage des emplacements enregistres.
@@ -18,11 +20,11 @@ class SavedLocationsScreen extends ConsumerStatefulWidget {
 }
 
 class _SavedLocationsScreenState extends ConsumerState<SavedLocationsScreen> {
-  int? _loadedForUid;
+  String? _loadedForUid;
   Future<List<Map<String, dynamic>>>? _future;
 
-  void _ensureFuture(int uid) {
-    if (uid <= 0) {
+  void _ensureFuture(String uid) {
+    if (uid.isEmpty) {
       _loadedForUid = uid;
       _future = Future.value([]);
       return;
@@ -42,7 +44,7 @@ class _SavedLocationsScreenState extends ConsumerState<SavedLocationsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
-    final uid = int.tryParse(user?.id ?? '') ?? 0;
+    final uid = user?.id ?? '';
     _ensureFuture(uid);
     final future = _future!;
 
@@ -58,7 +60,7 @@ class _SavedLocationsScreenState extends ConsumerState<SavedLocationsScreen> {
         backgroundColor: context.backgroundColor,
         elevation: 0,
       ),
-      body: uid <= 0
+      body: uid.isEmpty
           ? Center(
               child: Text(
                 'no saved parkings',
@@ -141,6 +143,16 @@ class _SavedLocationsScreenState extends ConsumerState<SavedLocationsScreen> {
 
                     return Card(
                       child: ListTile(
+                        onTap: () {
+                          if (isLot) {
+                            // Navigate to lot if needed, but the demand is for spots
+                          } else if (spot != null) {
+                            context.pushNamed(
+                              NavigationRoutes.parkingSpotDetail,
+                              pathParameters: {'id': spot['id'].toString()},
+                            );
+                          }
+                        },
                         leading: Icon(
                           isLot ? Icons.apartment : Icons.local_parking,
                         ),

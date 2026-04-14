@@ -188,8 +188,7 @@ class ReservationDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                 ],
-                if (status.toUpperCase() == 'PENDING' ||
-                    status.toUpperCase() == 'CONFIRMED')
+                if (ReservationModel.fromJson(data).isCancellable)
                   OutlinedButton(
                     onPressed: () {
                       CustomModal.show(
